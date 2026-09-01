@@ -5445,22 +5445,14 @@ void func_800A2300(GObj *arg0) {
     }
 }
 
-/* FACTORY: 17/45, residue = whole-loop $v0/$v1 swap. Structure, frame (0x10
-   with the $f20 save), both loop shapes, every displacement and both `bnel`
-   forms are byte-exact; the ROM keeps the walking node pointer in $v0 and the
-   D_800D69C8 array cursor in $v1, IDO reverses them, and the two `addiu %lo`
-   materialisations swap with it. This is the SAME floor already recorded on
-   func_800A8EC0 in ovl1_3.c ("the ROM puts the walking pointer in $v0 and the
-   counter in $v1"). Swept: both declaration orders of p/q; `p = *q++;`
-   combined post-increment (identical). Permuter fuel. */
+/* FACTORY: 16/45, whole-loop $v0/$v1 swap */
 #ifdef NON_MATCHING
 void func_800A238C(f32 arg0, f32 arg1, f32 arg2) {
     UnkParticle *p;
     UnkParticle **q;
     struct Ovl1PNode *n;
 
-    q = D_800D69C8;
-    do {
+    q = D_800D69C8; do {
         p = *q;
         q++;
         if (p != NULL) {

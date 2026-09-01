@@ -55,7 +55,7 @@ extern struct UnkStruct8015C740 D_801883F0_ovl5;
 SPObj *func_8015C740_ovl5(GObj *, struct UnkStruct8015C740 *);
 void func_800AD1A0(void);
 extern struct GObjProcess *gEntityGObjProcessArray5[];
-void func_800A9864(void *, s32, s32);
+s32 func_800A9864(void *, s32, s32);
 void func_80177D04_ovl5(GObj *);
 
 
@@ -362,31 +362,6 @@ void func_80178450_ovl5(GObj *arg0) {
     func_800B1900(((u16 *) omCurrentObj)[1]);
 }
 
-#if defined(MIPS_TO_C) || defined(PORT)
-/* FACTORY: 8/159 words DIFFER (plus one apparent diff on the 0.85f load that
- * is only verify.py's anonymous-.rodata artifact when scoring a scratch copy).
- * The eight are a single $v0/$v1 rotation: the ROM puts `arg1 * 4` in $v0 and
- * `arg2 * 4` in $v1, IDO picks them the other way round, and the two spill
- * SLOTS (0x2C/0x30) are already the ROM's. That is the neighbouring-register
- * floor in tools/decomp/LEVERS.md. Swept and rejected: swapping the leading
- * store and call (38/159), naming the index in a local (25/159), naming the
- * geo pointer in a local (27/159), naming objId in a local (50/159).
- * What DID pay: spelling the D_800D7178 probe the way the rest of this file
- * spells it -- `((s32 *) D_800D7178)[arg1 * 4 + 3]`, which shares the ROM's
- * CSE of `arg1 * 4` (95 -> 81) -- and typing the two dlist tables as pairs
- * the way the matched clone func_8017890C_ovl5 below does (81 -> 9).
- *
- * This is behaviourally exact and LP64-clean, so it doubles as the PORT arm
- * rather than being duplicated: D_800D7178 is 4 u32s on both targets,
- * D_800E9AA0 is a flat 4-byte-slot vram region on the host (tools/pc/
- * vram_syms.txt) which is exactly what the `(s32 *)` cast this file already
- * uses walks, and the dlist pairs are native pointer pairs on the host just
- * as they are for func_8017890C_ovl5. The declarations live inside the guard
- * so the N64 build's view of the file is unchanged. */
-extern void *D_801887A0_ovl5[];
-extern s32 D_801887B0_ovl5[];
-void func_800A9F98(s32, f32);
-
 /* World-badge seat, entered with (slot, style, startFrame). Loads the style's
  * geo, seeks its animation to startFrame -- a fresh start (0) instead plays
  * the model tree's animation from the top -- parks the badge at the slot's
@@ -400,6 +375,9 @@ void func_80178690_ovl5(GObj *arg0, s32 arg1, s32 arg2, s32 arg3) {
     };
     extern struct Ovl5DlPair D_801887F0_ovl5[];
     extern struct Ovl5DlPair D_80188810_ovl5[];
+    extern void *D_801887A0_ovl5[];
+    extern s32 D_801887B0_ovl5[];
+    void func_800A9F98(s32, f32);
     s32 track;
 
     D_8018ECE8_ovl5[arg1] = omCurrentObj->objId;
@@ -436,9 +414,6 @@ void func_80178690_ovl5(GObj *arg0, s32 arg1, s32 arg2, s32 arg3) {
     }
     curObjSleepForever();
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl5/ovl5_6/func_80178690_ovl5.s")
-#endif
 
 typedef struct UnkPtrPair {
     void *unk0;

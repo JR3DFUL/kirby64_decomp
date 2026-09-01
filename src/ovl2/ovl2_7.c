@@ -2204,7 +2204,7 @@ s32 func_80104D2C(Vector *arg0, Vector *arg1, Vector *arg2, f32 *arg3, Vector *a
 #endif
 
 #ifdef MIPS_TO_C
-/* FACTORY: 57/75, frame-size + one-slot rotation. Solved here and kept: the five
+/* FACTORY: 22/75 words (frame fixed by the unreferenced pad[2]), one-slot rotation + lui shift. Solved here and kept: the five
  * low BD00 stores are SEPARATE globals (ROM emits %lo(D_8012BD04)($at) per field,
  * not a base+offset off &D_8012BD00), and the ROM re-bases through arg0->scale and
  * indexes PAST its end -- temp_v0[3]/temp_v0[4] are faceAngle[0]/[1]. Both are
@@ -2218,6 +2218,7 @@ void func_80104FB8(struct PositionState *arg0) {
     extern f32 D_8012BD0C;
     extern f32 D_8012BD10;
     extern f32 D_8012BD14;
+    f32 pad[2];
     f32 sp1C;
     f32 temp_f0;
     f32 *temp_v0;
@@ -6731,9 +6732,8 @@ s32 func_8010BB08(struct PositionState *arg0) {
     return 0;
 }
 
-#ifdef NON_MATCHING
-// Near match: only regalloc differs (s0/s1 swapped; target has arg0 in s0
-// and &D_8012BCA0 in s1 while keeping the flags loads folded through s1).
+#ifdef MIPS_TO_C
+/* FACTORY: 66/78 words, temp-register numbering in the hits store */
 s32 func_8010BBD4(struct PositionState *arg0) {
     u32 var_v1;
 
@@ -6750,9 +6750,8 @@ s32 func_8010BBD4(struct PositionState *arg0) {
     var_v1 = D_8012BCA0.flags.w >> 0x13;
     if ((var_v1 != 0) && (var_v1 & 0xE00) && (D_8012BCA8[-1] != 0x14)) {
         func_80106C5C(arg0, &D_8012BCA0);
-        var_v1 = D_8012BCA0.flags.w >> 0x13;
     }
-    if ((var_v1 & 0x1C0) && (D_8012BCB4->normalType & 4)) {
+    if (((D_8012BCA0.flags.w >> 0x13) & 0x1C0) && (D_8012BCB4->normalType & 4)) {
         D_8012BCA0.flags.f.hits = (D_8012BCA4[-1] >> 0x13) & 0xFE3F;
     }
     BD00.busy = 0;

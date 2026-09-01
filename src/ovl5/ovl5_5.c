@@ -405,13 +405,14 @@ s32 func_80170584_ovl5(s32 arg0, s32 arg1) {
    with the constant in the delay slot (2 instructions long). Swept: all three
    declaration orders, a dead scalar, and an explicit `s32 *p` walked with
    `i--, p--` (that one hoists the address computation above the bltz: 71). */
+/* FACTORY: 59/73 instructions match (14 diffs), $s0/$s1 callee-saved swap only */
 s32 func_8017068C_ovl5(s32 arg0, s32 arg1) {
     s32 i;
     s32 temp;
 
     for (i = arg1; i >= 0; i--) {
         if (D_8018E478_ovl5[arg0][i] == 0) {
-            return 0x29A;
+            break;
         }
         if (func_8016FF88_ovl5(func_80172B10_ovl5(arg0, i)) != 0) {
             temp = D_800EA520[D_8018E478_ovl5[arg0][i]];
@@ -2538,7 +2539,6 @@ void func_8017485C_ovl5(GObj *arg0) {
     D_800E2410[omCurrentObj->objId] = D_8018EB48_ovl5[D_800E98E0[omCurrentObj->objId]];
 }
 
-#ifdef NON_MATCHING
 /* rettype_screen.py FALSE POSITIVE, settled 2026-08-25: it flags
    `b .L80174AB4_ovl5` with `addiu $v0, $v0, 0x2` in the delay slot as a
    returned value.  .L80174AB4_ovl5 is the LOOP HEADER, not the epilogue --
@@ -2550,32 +2550,31 @@ void func_8017485C_ovl5(GObj *arg0) {
    116/120: same length, whole-function register permutation. */
 void func_80174900_ovl5(s32 arg0, s32 arg1) {
     s32 i;
-    s32 id;
-    u8 *q;
+    s32 t;
 
     for (i = 0; i < 4; i++) {
         if (i != arg0) {
-            id = D_8018E478_ovl5[i][arg1];
-            if (id != 0) {
-                if (D_800EA520[id] != 0x29A) {
-                    D_800EA1A0[D_800EA520[id]] = 1;
+            if (D_8018E478_ovl5[i][arg1] != 0) {
+                t = D_800EA520[D_8018E478_ovl5[i][arg1]];
+                if (t != 0x29A) {
+                    D_800EA1A0[t] = 1;
                 }
             } else {
-                q = &D_8018EA00_ovl5[i * 82 + arg1];
-                if (*q == 0xF) {
-                    *q = 2;
-                } else if (*q == 0x10) {
-                    *q = 3;
-                } else if (*q == 0x13) {
-                    *q = 0xA;
+                switch (((u8 (*)[82]) D_8018EA00_ovl5)[i][arg1]) {
+                    case 0xF:
+                        ((u8 (*)[82]) D_8018EA00_ovl5)[i][arg1] = 2;
+                        break;
+                    case 0x10:
+                        ((u8 (*)[82]) D_8018EA00_ovl5)[i][arg1] = 3;
+                        break;
+                    case 0x13:
+                        ((u8 (*)[82]) D_8018EA00_ovl5)[i][arg1] = 0xA;
+                        break;
                 }
             }
         }
     }
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl5/ovl5_5/func_80174900_ovl5.s")
-#endif
 
 /* Hopper critter riding lane arg1 from tile arg2: scrolls in from the far
  * side, then alternates hop waits and hops (random 30..44 frame pauses),

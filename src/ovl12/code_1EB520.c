@@ -242,20 +242,22 @@ void func_801DBA88_ovl12(GObj *arg0) {
        (LEVERS 49). In-body rather than file-scope because the N64 build has no
        call site before the definition and must keep seeing none. */
     void func_801DBDA8_ovl12(void);
+    s32 one;
 
     D_800DEF90[omCurrentObj->objId] = func_801D152C_ovl8;
     D_800DDFD0[omCurrentObj->objId] = 3;
-    D_800E9AA0[omCurrentObj->objId] = 1;
+    one = 1;
+    *(s32 *)&D_800E9AA0[omCurrentObj->objId] = one;
     D_800E9E20[omCurrentObj->objId] = 0;
     D_800EA1A0[omCurrentObj->objId] = 0;
     D_800EA6E0[omCurrentObj->objId] = D_800EA8A0[omCurrentObj->objId] = 0.0f;
     D_800E64D0[omCurrentObj->objId] = D_800E6690[omCurrentObj->objId] = 0.0f;
     D_800E6850[omCurrentObj->objId] = 65535.0f;
-    while (D_800E9560[D_800D7098.unk1C] != 1) {
-        ohSleep(1);
+    while (D_800E9560[D_800D7098.unk1C] != one) {
+        ohSleep(one);
     }
     func_801DBDA8_ovl12();
-    D_800E9E20[omCurrentObj->objId] = 1;
+    D_800E9E20[omCurrentObj->objId] = one;
     curObjSleepForever();
 }
 #else
@@ -826,27 +828,16 @@ void func_801DDCDC_ovl12(GObj *arg0) {
     curObjSleepForever();
 }
 
-/* FACTORY: 47/100 (was 54).  The twin's cause -- `s32 one; one = 1;` as a
-   separate assignment STATEMENT feeding both `== 1` compares -- is real here
-   too and is worth 7 words, but unlike func_801DD400_ovl12 it does not close
-   this one.  The old note's "binding the 1 to an s32 local (IDO folds it)"
-   was an INITIALISER; a statement is not folded, which is the distinction.
-   Measured 2026-08-25 and negative: extending `one` to the `+= 1` and the
-   `temp - 1` as well scores 47 too, identical -- IDO folds both into addiu
-   immediates either way (the ROM has `addiu $t4, $t0, 1` and
-   `addiu $v0, $v0, -1`), so the literal spelling is kept for those two.
-   What is left is a genuine temp rotation: the ROM computes `temp` into $v0
-   and decrements it IN PLACE ($v0 -> $v0), where IDO keeps temp in $t0 and
-   puts temp-1 in $t5, renaming every temp downstream. */
-#ifdef NON_MATCHING
 void func_801DDDA8_ovl12(GObj *arg0) {
-    s32 temp = gEntityFuncListIDArray[omCurrentObj->objId] + D_800E9560[omCurrentObj->objId];
+    s32 temp;
     s32 one;
 
+    temp = gEntityFuncListIDArray[omCurrentObj->objId] + D_800E9560[omCurrentObj->objId];
     one = 1;
     if ((D_800D7098.unk8 == one) || (D_800D7098.unk10 == 0)) {
-        D_800E9560[omCurrentObj->objId] += 1;
-        gEntityFuncListIDArray[omCurrentObj->objId] = temp - 1;
+        D_800E9560[omCurrentObj->objId]++;
+        temp -= 1;
+        gEntityFuncListIDArray[omCurrentObj->objId] = temp;
         assign_new_process_entry(gEntityGObjProcessArray[omCurrentObj->objId], func_801DD924_ovl12);
     } else {
         if (D_800E9E20[omCurrentObj->objId] != 0) {
@@ -864,9 +855,6 @@ void func_801DDDA8_ovl12(GObj *arg0) {
         }
     }
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl12/code_1EB520/func_801DDDA8_ovl12.s")
-#endif
 
 void func_801DDF38_ovl12(GObj *arg0) {
     D_800DDFD0[omCurrentObj->objId] = 3;
@@ -1003,27 +991,21 @@ void func_801DE790_ovl12(GObj *arg0) {
     curObjSleepForever();
 }
 
-#ifdef NON_MATCHING
-/* 11/48: structurally exact and the load order is now right; the residue is a
- * pure one-slot rotation, ROM val/sum in $t0/$a2 against our $a2/$t0. */
-/* barrier_sweep.py (LEVER 71) 2026-08-25: all 3 statement placements tried, none beats the base 11/48. */
 void func_801DE7E8_ovl12(GObj *arg0) {
+    GObj *obj;
     s32 temp;
-    s32 val;
 
-
-    temp = (val = D_800E9560[omCurrentObj->objId]) + gEntityFuncListIDArray[omCurrentObj->objId];
+    obj = omCurrentObj;
+    temp = gEntityFuncListIDArray[obj->objId] + D_800E9560[obj->objId];
     if ((D_800D7098.unk8 == 1) || (D_800D7098.unk10 == 0)) {
-        D_800E9560[omCurrentObj->objId] = val + 1;
-        gEntityFuncListIDArray[omCurrentObj->objId] = temp - 2;
-        assign_new_process_entry(gEntityGObjProcessArray[omCurrentObj->objId], func_801DE3D4_ovl12);
+        D_800E9560[obj->objId]++;
+        temp -= 2;
+        gEntityFuncListIDArray[obj->objId] = temp;
+        assign_new_process_entry(gEntityGObjProcessArray[obj->objId], func_801DE3D4_ovl12);
     } else if (D_800D7098.unk10 == 0) {
         func_801DCDFC_ovl12();
     }
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl12/code_1EB520/func_801DE7E8_ovl12.s")
-#endif
 
 void func_801DE8A8_ovl12(GObj *arg0) {
     D_800DDFD0[omCurrentObj->objId] = 3;
@@ -1756,13 +1738,6 @@ void func_801E0D64_ovl12(GObj *arg0) {
 }
 
 // the pattern
-#ifdef NON_MATCHING
-/* FACTORY: 29/116, 2026-08-25 (was 43/116).  ONE LEVER 90/99 zero fork: the
- * FIRST `D_800E6690[objId] = 0.0f` must be the integer `0`, so that it does not
- * share a `mtc1 $zero` with the `= 0.0f` store to D_800E64D0 eight lines below.
- * All eight subsets of the three zero sites were measured: this one alone is
- * 29, the D_800E9E20 integer store is inert, and flipping the LATER
- * `D_800E64D0[objId] = 0.0f` is 47 -- worse, alone or in any combination. */
 void func_801E0DF8_ovl12(GObj *arg0) {
     D_800DDFD0[omCurrentObj->objId] = 7;
     D_800E9E20[omCurrentObj->objId] = 0;
@@ -1773,17 +1748,14 @@ void func_801E0DF8_ovl12(GObj *arg0) {
         ohSleep(1);
     }
     D_800E9E20[omCurrentObj->objId] = 1;
-    D_800E9AA0[omCurrentObj->objId] = 1;
+    *(s32 *)&D_800E9AA0[omCurrentObj->objId] = 1;
     D_800D7098.unk8 = 1;
     D_800E64D0[omCurrentObj->objId] = 0.0f;
     D_800E6690[omCurrentObj->objId] = D_800E6A10[omCurrentObj->objId] * 0.5f;
-    D_800E6850[omCurrentObj->objId] = ABSF(D_800EAA60[omCurrentObj->objId]);
+    D_800E6850[omCurrentObj->objId] = ABS(D_800EAA60[omCurrentObj->objId]);
     D_800E9720[omCurrentObj->objId] = 0x3C;
     curObjSleepForever();
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl12/code_1EB520/func_801E0DF8_ovl12.s")
-#endif
 
 void func_801E0FC8_ovl12(GObj *arg0) {
     u32 pad;

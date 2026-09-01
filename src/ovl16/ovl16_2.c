@@ -1425,76 +1425,7 @@ void func_801EC444_ovl16(s32 arg0) {
     gEntityFuncListIDArray[omCurrentObj->objId] = 1;
 }
 
-#ifdef MIPS_TO_C
-/* FACTORY: 80/204, and the instruction count is now EXACT (was 168/204 and six
- * short).  The shortfall was NOT the repeated-load CSE the old note blamed: it
- * was the wait-counter dispatch, written as `if ((t == 0) || (t == 1))` where
- * the ROM has a four-way `beq` chain -- `beql $a0,0`, `beq $a0,1`, `beq $a0,2`,
- * `beq $a0,3`, `b default`.  LEVERS 21/24: IDO builds that chain only from a
- * switch with every arm spelled out, INCLUDING the ones that share the default
- * body.  `case 0: case 1:` / `case 2: case 3: default:` produces it exactly,
- * and the two `lui %hi(D_800D7098)` the arms each need fall out with it.
- * 168 -> 80 on one edit.
- * What is left is a whole-function register permutation: aligndiff (LEVER 104)
- * reports shape distance ZERO and LEVER 65b's opcode test says 80 aligned
- * renames, 0 genuinely different.  The ROM homes the unused `arg0` and then
- * reuses $a0 as its first temp (D_800E1B50's base, then the switch value);
- * this draft homes it and takes $t9/$a1 instead.  Permuter fodder, not a
- * reading problem.
- * Measured inert: inlining the switch value instead of naming `t`, 80 either
- * way -- the divergence starts at word 10, before `t` exists. */
-/* Falling-block main: inherit heading/facing from the parent, wait for the
- * fight counter (D_800D7098.unk10) to reach 2 (columns 0/1) or 3 (the rest),
- * drop at -0.65 gravity until y=20, land (camera shake via func_800FB914(1)),
- * spawn the 0x34 type-1 debris, play the settle anim and despawn. */
-void func_801EC4B4_ovl16(s32 arg0) {
-    s32 func_800FB914(s32);
-    s32 t;
-
-    D_800E1B50[omCurrentObj->objId]->unk80->unk10 = 20.0f;
-    D_800E17D0[omCurrentObj->objId] = D_800E17D0[D_800E0D50[omCurrentObj->objId]];
-    D_800E9020[omCurrentObj->objId] = D_800E9020[D_800E0D50[omCurrentObj->objId]];
-    ((s32 *) D_800E9AA0)[omCurrentObj->objId] = 0;
-    D_800DEF90[omCurrentObj->objId] = func_800B7560;
-    D_800DF150[omCurrentObj->objId] = (void (*)(struct GObj *)) func_801EC7E4_ovl16;
-    D_800E8920[omCurrentObj->objId] = 0;
-    func_800B33F4();
-    t = D_800E98E0[omCurrentObj->objId];
-    switch (t) {
-        case 0:
-        case 1:
-            while ((s32) D_800D7098.unk10 < 2) {
-                ohSleep(1);
-            }
-            break;
-        case 2:
-        case 3:
-        default:
-            while ((s32) D_800D7098.unk10 < 3) {
-                ohSleep(1);
-            }
-            break;
-    }
-    D_800E3210[omCurrentObj->objId] = 0.0f;
-    D_800E3750[omCurrentObj->objId] = -0.65f;
-    D_800E3C90[omCurrentObj->objId] = 10.0f;
-    while (gEntitiesNextPosYArray[omCurrentObj->objId] > 20.0f) {
-        ohSleep(1);
-    }
-    D_800E3750[omCurrentObj->objId] = 0.0f;
-    D_800E3210[omCurrentObj->objId] = D_800E3750[omCurrentObj->objId];
-    D_800E3C90[omCurrentObj->objId] = 65535.0f;
-    gEntitiesNextPosYArray[omCurrentObj->objId] = 20.0f;
-    func_800FB914(1);
-    play_sound(0x1B5);
-    t = func_801ACC34_ovl7(0x34, 1);
-    if (t != 0) {
-        D_800E8E60[t] = 1;
-    }
-    func_800AA154(0x104BF);
-    func_8019D958_ovl7(omCurrentObj->objId);
-}
-#elif defined(PORT)
+#ifdef PORT
 /* Falling-block main: inherit heading/facing from the parent, wait for the
  * fight counter (D_800D7098.unk10) to reach 2 (columns 0/1) or 3 (the rest),
  * drop at -0.65 gravity until y=20, land (camera shake via func_800FB914(1)),

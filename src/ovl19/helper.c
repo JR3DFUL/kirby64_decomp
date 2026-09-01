@@ -628,7 +628,7 @@ void func_8022045C_ovl19(s32 arg0) {
 #pragma GLOBAL_ASM("asm/nonmatchings/ovl19/helper/func_8022045C_ovl19.s")
 #endif
 
-/* FACTORY: 43/178, frame 0x88 vs 0x80 (the homed `o` local) plus the prologue schedule that follows */
+/* FACTORY: 41/178, frame 0x88 vs 0x80 (the homed `o` local) plus the prologue schedule that follows */
 #ifdef NON_MATCHING
 extern s32 D_800D6F18;
 extern u8 D_800D6E30[];
@@ -687,11 +687,9 @@ void func_8022054C_ovl19(GObj *arg0) {
             pos.x = 0.0f;
             pos.y = gEntitiesNextPosYArray[omCurrentObj->objId];
             pos.z = 0.0f;
-            angle.x = 0.0f;
-            angle.y = 0.0f;
+            angle.x = 0.0f; angle.y = 0.0f;
             angle.z = 0.0f;
-            scale.x = 1.0f;
-            scale.y = 1.0f;
+            scale.x = 1.0f; scale.y = 1.0f;
             scale.z = 1.0f;
             play_sound(0x1FC);
             func_800FCD14(0xFF, 3, 0.5f, 3, 7, 2, 0, 0, 0x13, &pos, &angle, &scale);

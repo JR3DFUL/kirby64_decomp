@@ -945,42 +945,41 @@ s32 func_801A8BAC_ovl7(void) {
    func_800A22D4 delay slot where we nop (the null-test shape), and the
    $v1-for-$a2 naming cascade that follows. */
 #ifdef NON_MATCHING
+/* FACTORY: 16/200, FP register naming on the four chained-assignment reloads */
 void func_801A8CDC_ovl7(GObj *arg0) {
-    struct EnemyRecord *sp2C;
-    struct SubSub800E1B50_Unk88_UnkC_Unk0 *sp24;
-    f32 temp_f2;
-    struct Sub800E1B50_Unk34 *temp_v0_2;
+    struct EnemyRecord *rec;
+    struct SubSub800E1B50_Unk88_UnkC *ptr;
+    struct SubSub800E1B50_Unk88_UnkC_Unk0 *info;
+    struct Sub800E1B50_Unk34 *tmp;
 
-    sp2C = D_800E1B50[omCurrentObj->objId];
+    rec = D_800E1B50[omCurrentObj->objId];
+    ptr = rec->unk88->unkC;
+    info = ptr->unk0;
     D_800DEF90[omCurrentObj->objId] = func_800B4D70;
-    sp24 = sp2C->unk88->unkC->unk0;
     D_800DF150[omCurrentObj->objId] = func_801A8FFC_ovl7;
     D_800DDA90[omCurrentObj->objId] = 0x23;
     func_800AFBB4(0, omCurrentObj);
     func_800AECC0(0.0f);
     func_800AED20(0.0f);
-    temp_v0_2 = sp2C->unk34;
-    if (temp_v0_2 != NULL) {
-        func_800A22D4(temp_v0_2);
+    if (rec->unk34 != NULL) {
+        tmp = rec->unk34;
+        func_800A22D4(tmp);
     }
     func_800A2300(arg0);
-    sp2C->unk34 = NULL;
+    rec->unk34 = NULL;
     D_800E2090[omCurrentObj->objId] = 0.0f;
     D_800E2250[omCurrentObj->objId] = 0.0f;
     D_800E2410[omCurrentObj->objId] = 0.0f;
-    D_800E4C50[omCurrentObj->objId] = D_800E4E10[omCurrentObj->objId] = 0.0f;
-    D_800EA6E0[omCurrentObj->objId] = sp24->scale;
-    temp_f2 = D_800EA6E0[omCurrentObj->objId];
-    gEntitiesScaleZArray[omCurrentObj->objId] = temp_f2;
-    gEntitiesScaleYArray[omCurrentObj->objId] = temp_f2;
-    gEntitiesScaleXArray[omCurrentObj->objId] = temp_f2;
-    D_800E4FD0[omCurrentObj->objId] = D_800E5190[omCurrentObj->objId] =
-        D_800E5350[omCurrentObj->objId] = 1.0f;
-    D_800E3050[omCurrentObj->objId] = D_800E3210[omCurrentObj->objId] =
-        D_800E33D0[omCurrentObj->objId] = D_800E3590[omCurrentObj->objId] =
-        D_800E3750[omCurrentObj->objId] = D_800E3910[omCurrentObj->objId] = 0.0f;
-    D_800E3AD0[omCurrentObj->objId] = D_800E3C90[omCurrentObj->objId] =
-        D_800E3E50[omCurrentObj->objId] = 65535.0f;
+    D_800E4E10[omCurrentObj->objId] = 0.0f;
+    D_800E4C50[omCurrentObj->objId] = D_800E4E10[omCurrentObj->objId];
+    D_800EA6E0[omCurrentObj->objId] = info->scale;
+    gEntitiesScaleXArray[omCurrentObj->objId] = gEntitiesScaleYArray[omCurrentObj->objId] = gEntitiesScaleZArray[omCurrentObj->objId] = D_800EA6E0[omCurrentObj->objId];
+    D_800E5350[omCurrentObj->objId] = 1.0f;
+    D_800E4FD0[omCurrentObj->objId] = D_800E5190[omCurrentObj->objId] = D_800E5350[omCurrentObj->objId];
+    D_800E3910[omCurrentObj->objId] = 0.0f;
+    D_800E3050[omCurrentObj->objId] = D_800E3210[omCurrentObj->objId] = D_800E33D0[omCurrentObj->objId] = D_800E3590[omCurrentObj->objId] = D_800E3750[omCurrentObj->objId] = D_800E3910[omCurrentObj->objId];
+    D_800E3E50[omCurrentObj->objId] = 65535.0f;
+    D_800E3AD0[omCurrentObj->objId] = D_800E3C90[omCurrentObj->objId] = D_800E3E50[omCurrentObj->objId];
     D_800E8E60[omCurrentObj->objId] = 1;
     D_800E8220[omCurrentObj->objId] = 0;
     *(s32 *) &D_8012E860[0xC] = 0;
@@ -1423,12 +1422,15 @@ block_17:
 #pragma GLOBAL_ASM("asm/nonmatchings/ovl7/ovl7_5/func_801A9930_ovl7.s")
 #endif
 // m2c draft, measured 47/117 diffs
-#ifdef NON_MATCHING
 void func_801A9FC4_ovl7(GObj *arg0) {
+    struct EnemyRecord *rec;
+    struct EneInfo *vt;
     s32 temp_s4;
     s32 temp_s5;
 
-    temp_s4 = ((struct EneAnimSetup *) D_800E1B50[omCurrentObj->objId]->unk88->unkC->unk4)->unk1C->unk14;
+    rec = D_800E1B50[omCurrentObj->objId];
+    vt = ((struct EneAnimSetup *) rec->unk88->unkC->unk4)->unk1C;
+    temp_s4 = (s32) vt->unk14;
     func_800AF408();
     func_800A9D64(omCurrentObj->objId);
     temp_s5 = temp_s4 + 0x20;
@@ -1460,41 +1462,39 @@ loop_1:
     ohSleep(1);
     goto loop_1;
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl7/ovl7_5/func_801A9FC4_ovl7.s")
-#endif
 s32 func_801AA190_ovl7(void) {
     assign_new_process_entry(gEntityGObjProcessArray[omCurrentObj->objId], &func_801AB5A4_ovl7);
     return 1;
 }
 
-#ifdef NON_MATCHING
 void func_801AA1D4_ovl7(GObj *gobj) {
-    struct EnemyRecord *sp2C;
-    struct EneAnimSetup *sp24;
+    struct EnemyRecord *rec;
+    struct SubSub800E1B50_Unk88_UnkC *ptr;
+    struct EneAnimSetup *anim;
+    struct EneInfo *vt;
     struct EneVtable *sp1C;
-    struct SubSub800E1B50_Unk88_UnkC *temp_v1;
-    struct Sub800E1B50_Unk34 *temp_v0_2;
+    struct Sub800E1B50_Unk34 *tmp;
 
-    sp2C = D_800E1B50[omCurrentObj->objId];
-    temp_v1 = sp2C->unk88->unkC;
-    sp24 = (struct EneAnimSetup *)temp_v1->unk4;
+    rec = D_800E1B50[omCurrentObj->objId];
+    ptr = rec->unk88->unkC;
+    anim = (struct EneAnimSetup *)ptr->unk4;
+    vt = ((struct EneAnimSetup *)rec->unk88->unkC->unk4)->unk1C;
+    sp1C = vt->unk14;
     D_800DF150[omCurrentObj->objId] = func_801AA33C_ovl7;
-    sp1C = ((struct EneAnimSetup *)temp_v1->unk4)->unk1C->unk14;
     func_800AF408();
     D_800DF310[omCurrentObj->objId] = NULL;
-    if (sp2C->unk34 != NULL) {
-        temp_v0_2 = sp2C->unk34;
-        func_800A22D4(temp_v0_2);
+    if (rec->unk34 != NULL) {
+        tmp = rec->unk34;
+        func_800A22D4(tmp);
     }
     func_800A2300(gobj);
     D_801D0A98_ovl7 = D_801D0A9C_ovl7 = D_801D0AA0_ovl7 = 0;
     D_801D0AA8_ovl7 = 0;
-    sp2C->unk34 = NULL;
+    rec->unk34 = NULL;
     D_8012E860[0x18] = 0;
-    gEntitiesScaleXArray[omCurrentObj->objId] = sp24->unk10;
-    gEntitiesScaleYArray[omCurrentObj->objId] = sp24->unk10;
-    gEntitiesScaleZArray[omCurrentObj->objId] = sp24->unk10;
+    gEntitiesScaleXArray[omCurrentObj->objId] = anim->unk10;
+    gEntitiesScaleYArray[omCurrentObj->objId] = anim->unk10;
+    gEntitiesScaleZArray[omCurrentObj->objId] = anim->unk10;
     if (sp1C != NULL) {
         if (sp1C->unk40 != NULL) {
             sp1C->unk40(gobj);
@@ -1503,9 +1503,6 @@ void func_801AA1D4_ovl7(GObj *gobj) {
     }
     func_801AB174_ovl7(gobj);
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl7/ovl7_5/func_801AA1D4_ovl7.s")
-#endif
 void func_801AA33C_ovl7(GObj *gobj) {
 }
 
@@ -1664,40 +1661,36 @@ void func_801AA850_ovl7(struct AnimReqSet *arg0) {
 // D_800EC820 instead scores the same 89 with different bytes; the third
 // zero D_800E4C50 is inert). 121 is the ROM's true count (tail jr/nop).
 #ifdef NON_MATCHING
+/* FACTORY: 16/121, v0/v1 naming of rec and of the objId/D_800E77A0 pair */
 void func_801AA914_ovl7(GObj *arg0) {
-    struct EnemyRecord *sp24;
-    struct SubSub800E1B50_Unk88_UnkC *temp_a2;
-    struct SubSub800E1B50_Unk88_UnkC_Unk0 *temp_s0;
-    struct EnemyRecord *temp_v1;
-    u16 temp_v1_2;
-    u32 temp_a1;
-    u32 temp_v0;
+    struct EnemyRecord *rec;
+    struct SubSub800E1B50_Unk88_UnkC *ptr;
+    struct SubSub800E1B50_Unk88_UnkC_Unk0 *info;
+    s32 objId;
 
-    temp_a1 = omCurrentObj->objId;
-    temp_v1 = D_800E1B50[temp_a1];
-    temp_a2 = temp_v1->unk88->unkC;
-    temp_s0 = temp_a2->unk0;
-    sp24 = temp_v1;
-    func_800B19F4(0, temp_a1, temp_a2);
-    D_800EC660[omCurrentObj->objId] = 0;
+    objId = omCurrentObj->objId;
+    rec = D_800E1B50[objId];
+    ptr = rec->unk88->unkC;
+    info = ptr->unk0;
+    func_800B19F4(0, objId, ptr);
+    D_800EC660[omCurrentObj->objId] = 0.0f;
     D_800EC820[omCurrentObj->objId] = 0.0f;
     func_801ABBA0_ovl7(arg0);
     D_800DF150[omCurrentObj->objId] = func_801AAAF8_ovl7;
-    temp_v1->unk48 = 0;
-    temp_v1->unk98 = &D_801CB500_ovl7;
+    rec->unk48 = NULL;
+    rec->unk98 = &D_801CB500_ovl7;
     D_800E8920[omCurrentObj->objId] = 0;
     D_800EA6E0[omCurrentObj->objId] = 0.06981317f;
     D_800E4C50[omCurrentObj->objId] = 0.0f;
-    temp_v0 = omCurrentObj->objId;
-    if ((D_800E7730[temp_v0] == 6) && (temp_v1_2 = D_800E77A0[temp_v0], ((temp_v1_2 < 8) == 0)) && (temp_v1_2 < 0x2C)) {
-        play_sound(0x11B, omCurrentObj, &omCurrentObj);
+    if ((D_800E7730[omCurrentObj->objId] == 6) && (D_800E77A0[omCurrentObj->objId] >= 8) && (D_800E77A0[omCurrentObj->objId] < 0x2C)) {
+        play_sound(0x11B);
     } else {
-        play_sound(0xE1, omCurrentObj, &omCurrentObj);
+        play_sound(0xE1);
     }
-    func_801AC6D0_ovl7(temp_s0);
-    gEntitiesScaleXArray[omCurrentObj->objId] = temp_s0->scale;
-    gEntitiesScaleYArray[omCurrentObj->objId] = temp_s0->scale;
-    gEntitiesScaleZArray[omCurrentObj->objId] = temp_s0->scale;
+    func_801AC6D0_ovl7(info);
+    gEntitiesScaleXArray[omCurrentObj->objId] = info->scale;
+    gEntitiesScaleYArray[omCurrentObj->objId] = info->scale;
+    gEntitiesScaleZArray[omCurrentObj->objId] = info->scale;
     func_800AFBB4(1, omCurrentObj);
     func_801AAE60_ovl7();
     func_801AC11C_ovl7(arg0);

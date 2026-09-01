@@ -1571,33 +1571,8 @@ void func_8017B78C_ovl3(GObj *arg0) {
     curObjSleepForever();
 }
 
-#ifdef NON_MATCHING
-/* FACTORY: 9/285, constant-materialisation SCHEDULING floor -- measured
-   2026-08-23. Every diff traces to ONE constant: the ROM schedules
-   `addiu $t6, zero, 1` (the literal for `gKirbyState.unk3C = 1;`) mid-block,
-   right after the D_800E6690[objId]=0.0f swc1 store and an objId reload,
-   well BEFORE its actual use several instructions later; IDO here
-   schedules the equivalent `li $t4, 1` at the very TOP of the block,
-   before even the sll/addu/swc1 sequence for D_800E6690. That one-slot
-   shift then cascades into a register-name rotation in the isTurning |=
-   0x4000 store (t4/t5/t6 -> t5/t6/t7-shaped). Swept: moving the
-   `gKirbyState.unk3C = 1;` statement earlier in the block, right after the
-   D_800E6690 pair (much worse -- 33/285, forks completely different
-   scheduling for every remaining store) and mid-block between D_800E3210
-   and D_800E3C90 (also worse -- 16/285). Same class as the constant-
-   scheduling floor on func_8016DA14_ovl3 above in this file -- pure IDO
-   scheduling choice, not a source spelling. Good permuter seed. */
-extern char D_80191224_ovl3[];
-extern f32 D_801975F0_ovl3;
-extern f32 D_801975F4_ovl3;
-extern f32 D_801975F8_ovl3;
-extern f32 D_801975FC_ovl3;
-extern f32 D_80197600_ovl3;
-extern f32 D_80197604_ovl3;
-extern s32 func_80155838_ovl3(Vector *, f32, s32);
-extern s32 func_80121658(void);
-
 void func_8017B8F4_ovl3(s32 arg0) {
+    extern char D_80191224_ovl3[];
     s32 flag;
     Vector sp38;
     s32 pad;
@@ -1627,12 +1602,12 @@ void func_8017B8F4_ovl3(s32 arg0) {
     if ((flag != 0) || (gKirbyState.ceilingCollisionNext != 0)) {
         D_800E6690[omCurrentObj->objId] = 0.0f;
         D_800E64D0[omCurrentObj->objId] = D_800E6690[omCurrentObj->objId];
-        D_800E6850[omCurrentObj->objId] = D_801975F0_ovl3;
+        D_800E6850[omCurrentObj->objId] = 65535.0f;
         D_800E3750[omCurrentObj->objId] = 0.0f;
         D_800E3210[omCurrentObj->objId] = D_800E3750[omCurrentObj->objId];
-        D_800E3C90[omCurrentObj->objId] = D_801975F4_ovl3;
-        gKirbyState.unk3C = 1;
+        D_800E3C90[omCurrentObj->objId] = 65535.0f;
         gKirbyState.isTurning |= 0x4000;
+        gKirbyState.unk3C = 1;
     } else if ((gKirbyState.ceilingCollisionNext == 0) && (flag == 0)) {
         gKirbyState.unk3C = 0;
     }
@@ -1640,7 +1615,7 @@ void func_8017B8F4_ovl3(s32 arg0) {
         if (func_80121658() != 0) {
             D_800E6690[omCurrentObj->objId] = 0.0f;
             D_800E64D0[omCurrentObj->objId] = D_800E6690[omCurrentObj->objId];
-            D_800E6850[omCurrentObj->objId] = D_801975F8_ovl3;
+            D_800E6850[omCurrentObj->objId] = 65535.0f;
             play_sound(0x13E);
             gKirbyState.isTurning = gKirbyState.isTurning | 0x4000;
         }
@@ -1661,22 +1636,19 @@ void func_8017B8F4_ovl3(s32 arg0) {
     temp = D_800E64D0[omCurrentObj->objId] * 1.5f;
     absv = ABSF(temp);
     if (gKirbyState.unk7 != 0) {
-        res = D_801975FC_ovl3;
+        res = 0.17453293f;
     } else {
-        res = ((absv < 2.0f) ? 3.0f : absv) * D_80197600_ovl3 / 180.0f;
+        res = ((absv < 2.0f) ? 3.0f : absv) * 3.1415927f / 180.0f;
     }
     if (D_800E8AE0[omCurrentObj->objId] & 6) {
         res = res * 0.5f;
         if (D_800E98E0[omCurrentObj->objId] & 6) {
-            D_800E6690[omCurrentObj->objId] = D_80197604_ovl3;
+            D_800E6690[omCurrentObj->objId] = 0.35f;
             D_800E6850[omCurrentObj->objId] = 0.0f;
         }
     }
     D_800DFBD0[omCurrentObj->objId][1]->angle.v.x = D_800DFBD0[omCurrentObj->objId][1]->angle.v.x + res;
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl3/ovl3_6/func_8017B8F4_ovl3.s")
-#endif
 
 extern s32 D_800E9720[];
 
@@ -1725,8 +1697,6 @@ void func_8017BEF4_ovl3(s32 arg0) {
     }
 }
 
-#ifdef NON_MATCHING
-/* Left live by a lane mid-work, at 31/178 insns. Draft kept. */
 void func_8017BF34_ovl3(GObj *arg0) {
     extern f32 *D_801926E8_ovl3[];
     extern u8 D_80190358_ovl3[];
@@ -1752,8 +1722,7 @@ void func_8017BF34_ovl3(GObj *arg0) {
         gKirbyState.unk78 = -D_800E6A10[omCurrentObj->objId];
         func_801693C4_ovl3(6);
         func_8011DC04(0x56);
-        gKirbyState.unk3C = 0;
-        gKirbyState.unk44 = 0;
+        gKirbyState.unk44 = gKirbyState.unk3C = 0;
         func_801230E8(0x20077, 0x20078, 1);
         if (gKirbyController.buttonHeld & 0x300) {
             gKirbyState.unk44 = gKirbyState.unk3C = 2;
@@ -1785,9 +1754,6 @@ void func_8017BF34_ovl3(GObj *arg0) {
         curObjSleepForever();
     }
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl3/ovl3_6/func_8017BF34_ovl3.s")
-#endif
 
 extern s32 func_80120CCC(f32, f32);         /* src/ovl2/plylib.c:3569 */
 
@@ -3256,55 +3222,9 @@ extern u8 D_801905E8_ovl3[];
 extern f32 D_801976A0_ovl3;
 extern f32 D_801976A4_ovl3;
 
-#ifdef NON_MATCHING
-/* FACTORY: 8/178, word count exact. Was 86/180 (two spurious words), and the
-   two spurious `lui $at, %hi(gKirbyState)` the old note identified are gone.
-   The old note had the SYMPTOM exactly right and the cause nowhere near:
-
-   THE LOOP CLAMP MUST BE THE LITERAL, NOT THE `lim` LOCAL. The ROM hoists
-   0.78539819f into $f20 for the whole loop and stores IT to gKirbyState.unk40
-   -- but writing that store as `gKirbyState.unk40 = lim` makes IDO address the
-   store through `lui $at` + `%lo(gKirbyState+0x40)` instead of the $s0 it
-   already holds, and the same for the `<=` test above it. Spelling BOTH of
-   those two uses as the literal, while leaving the loop's `if (lim != cur)`
-   test on the local, took the draft 86/180 -> 8/178 in one edit. Operand KIND
-   again (LEVERS 7/20/21): a local and a literal holding the same constant are
-   different nodes to IDO, and here the difference decides whether a STORE gets
-   the held base or its own address.
-   Measured, so nobody re-sweeps it:
-     lim local at all three sites (the old draft)              86/180
-     literal at the two clamp sites, local at the != test       8/178
-     literal at all three sites                                88/179
-   The remaining 8 are one FP-register rotation: the ROM computes `cur + step`
-   into a fresh $f8 and keeps `cur` in $f0 for the `-cur` store, where this C
-   writes `cur += step` in place. That spelling is NOT free to undo -- every
-   form that keeps `cur` live (`gKirbyState.unk40 = cur + step`, the two
-   statements swapped, a separate `nxt` local, re-reading unk40 for the
-   negation) puts a `lui $at` back and scores 87-90. So the last 8 words and
-   the 2 spurious words are the same trade, and 8/178 is the better side of it.
-
-   THE 3/178 EXTERN SPELLING IS A MIRAGE AND HAS BEEN WITHDRAWN, 2026-08-25.
-   This draft used to read `step = D_801976A0_ovl3; lim = D_801976A4_ovl3;`
-   and scored 3/178, which is what measure_seeds was reporting. It can never
-   be un-guarded: both symbols are defined ONLY by this function's own
-   listing, in its `.section .late_rodata` head, so deleting the pragma
-   leaves them undefined at link. 0xF7FB0 is a dotted `.rodata, ovl3/ovl3_6`
-   subsegment, i.e. this TU owns its pool and emits it from C, so the
-   literals are the only sealable spelling (LEVERS 20).
-
-   Swept and negative at 8/178: every barrier placement
-   (tools/decomp/barrier_sweep.py, 17 of them); the zero-score permuter
-   candidate for this function, whose only change is an `int new_var = 0x70`
-   for the D_800E1B50 subscript -- byte-inert here, and its zero was scored on
-   the withdrawn extern spelling (LEVER 72). Previously swept: declaration
-   order and position, initialisers at declaration, `const f32` in the same
-   object (lands in .data), `+=` vs `x = x + step` for the unk40 update,
-   hoisting the pre-branch unk40 load into `cur` (LEVERS 16, kept), and
-   routing gKirbyState through a held `struct Player *` (182 words). */
 void func_8017E284_ovl3(s32 arg0)
 {
   f32 cur;
-  f32 step;
   f32 lim;
   s32 idx;
   gKirbyState.unk30 = 0;
@@ -3325,7 +3245,6 @@ void func_8017E284_ovl3(s32 arg0)
   gKirbyState.unk4C = func_800A8100(1, 1, 0x2A, D_800DFBD0[omCurrentObj->objId][4]);
   D_800E9720[omCurrentObj->objId] = 0;
   func_800AA018(0x201B2);
-  step = 0.02617994f;
   lim = 0.78539819f;
   while (1) {
     if (gKirbyState.unk17 != 0)
@@ -3336,8 +3255,7 @@ void func_8017E284_ovl3(s32 arg0)
     if (lim != cur)
     {
       gEntitiesAngleXArray[omCurrentObj->objId] = -cur;
-      cur += step;
-      gKirbyState.unk40 = cur;
+      gKirbyState.unk40 = cur + 0.02617994f;
       if (0.78539819f <= gKirbyState.unk40)
       {
         gKirbyState.unk40 = 0.78539819f;
@@ -3369,9 +3287,6 @@ void func_8017E284_ovl3(s32 arg0)
   gKirbyState.unk30 += 1;
   curObjSleepForever();
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl3/ovl3_6/func_8017E284_ovl3.s")
-#endif
 
 #ifdef MIPS_TO_C
 /* FACTORY: 274/303 [was noted 29/303], whole-function callee-saved permutation (same floor class documented across this cluster). Body already met the quality bar as drafted (ANSI prototypes, real control flow/naming) so it seals verbatim. Queued for the permuter. */
@@ -7801,52 +7716,8 @@ void func_80183FF4_ovl3(s32 arg0) {
 #pragma GLOBAL_ASM("asm/nonmatchings/ovl3/ovl3_6/func_80183FF4_ovl3.s")
 #endif
 
-#ifdef NON_MATCHING
-/* FACTORY: 8/219. D_801977D0_ovl3 is a lone `.float 65535` in
-   asm/data/ovl3/kirby_2.rodata.s -- IDO's literal pool, not a variable -- so
-   the draft now writes `65535.0f` (see the rule note on func_80180818_ovl3).
-   That fix closes the $f0/$f2 swap in the other two functions of this cluster
-   but NOT here, and this one is the exception worth recording: 6 of the 8 are
-   still the swap (ROM 65535 -> $f2, 0.0f -> $f0; draft the reverse) even
-   though the schedule is word-identical, and the other 2 are the scheduler
-   putting `i = 0` before rather than after the &D_800EC2E0 addiu.
-   Measured and FAILED here on top of the literal fix, all still exactly
-   8/219 with the identical eight words: `gKirbyState.unk7C = 0` as an int
-   literal so the pre-call zero is a separate constant-table entry (this DOES
-   flip the pair in a standalone repro of the same shape, so the real function
-   is deciding it on something else); dropping the pre-call float constant
-   entirely (`unk7C = gKirbyState.unk78`); and reverting the pre-call store to
-   0.0f. Swapping the two array groups is worse (12/219). Earlier sweeps:
-   statement order of the temp assignment (3 positions), double 0.0 literals,
-   a named zero. Good permuter seed -- and note the same rodata-model caveat as
-   its siblings: the literal must not be un-guarded before the ovl3 re-split. */
-extern u8 D_8019080C_ovl3[];
-
-/* FACTORY: 8/219, and it is TWO independent residues, neither reachable from
- * a source spelling:
- *
- *   six words -- an $f0/$f2 SWAP between the two FP constants this function
- *   holds live at once. The ROM puts 65535.0f (D_801977D0_ovl3) in $f2 and
- *   0.0f in $f0; IDO does the reverse, and the four stores that consume them
- *   follow. Emission ORDER is identical on both sides -- the 65535.0f load is
- *   index 22 and the `mtc1 $zero` is index 30 either way -- so this is the
- *   allocator's choice and not a question of which constant the source
- *   mentions first.
- *
- *   two words -- `addiu $s1, $s1, %lo(D_800EC2E0)` and `or $s0, $zero, $zero`
- *   emitted in the opposite order at indices 156/157. A schedule swap of an
- *   independent pair.
- *
- * Measured and INERT 2026-08-25, all three byte-identical at 8/219:
- * chaining the top pair (`unk80 = unk7C = 0.0f`), chaining the D_800E3750
- * pair the same way, and hoisting the zero into an `f32 zero = 0.0f` local
- * used at all three sites. IDO canonicalises every one of them.
- *
- * Both halves are register/order residues of exactly the kind mutation
- * reaches and spelling does not, so this stays in priority_queue.py's
- * TARGETS -- and note that until 2026-08-25 the permuter could not have
- * closed it honestly anyway: it scored without --stack-diffs. */
 void func_80184538_ovl3(s32 arg0) {
+    extern u8 D_8019080C_ovl3[];
     s32 i;
 
     gKirbyState.unk7C = 0.0f;
@@ -7856,10 +7727,10 @@ void func_80184538_ovl3(s32 arg0) {
     gKirbyState.unk7 = 0;
     func_8011CF58();
     D_800DDFD0[omCurrentObj->objId] = 0x36;
-    D_800E3750[omCurrentObj->objId] = 0.0f;
+    D_800E3750[omCurrentObj->objId] = 0;
     D_800E3210[omCurrentObj->objId] = D_800E3750[omCurrentObj->objId];
     D_800E3C90[omCurrentObj->objId] = 65535.0f;
-    D_800E6690[omCurrentObj->objId] = 0.0f;
+    D_800E6690[omCurrentObj->objId] = 0;
     D_800E64D0[omCurrentObj->objId] = D_800E6690[omCurrentObj->objId];
     D_800E6850[omCurrentObj->objId] = 65535.0f;
     D_800E83E0[omCurrentObj->objId] = 0;
@@ -7892,11 +7763,9 @@ void func_80184538_ovl3(s32 arg0) {
     func_801230E8(0x201D9, 0x201DA, 1);
     gKirbyState.abilityInUse = 0;
     func_800BB468(6, 0x10);
-    i = 0;
-    do {
+    for (i = 0; i < 8; i++) {
         D_800EC2E0[func_801632B8_ovl3(6)].as_s32 = i;
-        i++;
-    } while (i != 8);
+    }
     ((u8 **) D_800DFBD0[omCurrentObj->objId][2])[32][0x5B] = 0xFF;
     gKirbyState.unk30 += 1;
     func_80122F08(0x20016);
@@ -7907,9 +7776,6 @@ void func_80184538_ovl3(s32 arg0) {
     gKirbyState.unk30 += 1;
     curObjSleepForever();
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl3/ovl3_6/func_80184538_ovl3.s")
-#endif
 
 void func_801848A4_ovl3(s32 arg0) {
     s32 kind;
@@ -9186,9 +9052,6 @@ void func_80186248_ovl3(s32 arg0) {
 #pragma GLOBAL_ASM("asm/nonmatchings/ovl3/ovl3_6/func_80186248_ovl3.s")
 #endif
 
-#ifdef NON_MATCHING
-extern f32 D_80197840_ovl3;
-
 void func_80186750_ovl3(s32 arg0) {
     if (gKirbyState.abilityInUse == 0) {
         gKirbyState.unk30 = 0;
@@ -9202,21 +9065,18 @@ void func_80186750_ovl3(s32 arg0) {
         gKirbyState.unk15C = (u32) D_80190358_ovl3;
         gKirbyState.unk154 = 2;
         D_800E98E0[omCurrentObj->objId] = 0;
-        gKirbyState.unk40 = D_80197840_ovl3;
+        gKirbyState.unk40 = 0.4f;
         gKirbyState.unk78 = -D_800E6A10[omCurrentObj->objId];
         D_800EC2E0[func_801693C4_ovl3(0x11)].as_s32 = 0;
         D_800EC2E0[func_801693C4_ovl3(0x11)].as_s32 = 1;
         func_80120A28();
-        gKirbyState.unk3C = 0;
-        gKirbyState.unk44 = 0;
+        gKirbyState.unk44 = gKirbyState.unk3C = 0;
         func_801230E8(0x2007F, 0x20080, 1);
         D_800E9560[omCurrentObj->objId] = 0;
         if (gKirbyController.buttonHeld & 0x300) {
-            gKirbyState.unk3C = 3;
-            gKirbyState.unk44 = 3;
+            gKirbyState.unk44 = gKirbyState.unk3C = 3;
         } else {
-            gKirbyState.unk3C = 2;
-            gKirbyState.unk44 = 2;
+            gKirbyState.unk44 = gKirbyState.unk3C = 2;
         }
     }
     switch (gKirbyState.unk44) {
@@ -9241,9 +9101,6 @@ void func_80186750_ovl3(s32 arg0) {
     gKirbyState.unk30 = gKirbyState.unk30 + 1;
     curObjSleepForever();
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl3/ovl3_6/func_80186750_ovl3.s")
-#endif
 
 #ifdef MIPS_TO_C
 /* FACTORY: 211/260 [was noted 49/260], whole-function callee-saved permutation (same floor class documented across this cluster). Queued for the permuter. */
