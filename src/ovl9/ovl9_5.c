@@ -913,96 +913,7 @@ void func_801E7F0C_ovl9(void) {
     func_8019F3B0_ovl7();
 }
 
-#ifdef MIPS_TO_C
-/* FACTORY: 2/215 [was 111/215, "saved-register choice" -- that seal was the
-   id cache].  2026-08-26, four edits:
-   (1) objid_inline_sweep's full inline: delete `u32 id` and its six
-       re-assignments, every subscript `omCurrentObj->objId` (111 -> 21) --
-       LEVERS 4/97/111; the &omCurrentObj/$s2 shape falls out;
-   (2) `s32 reserved0` declared FIRST pays for the deleted id slot and puts
-       sp68 back on the ROM's 0x68 (LEVER 97c; declared after `roll` it
-       lands below sp68 and is worth nothing);
-   (3) the pitch expression's two terms swapped -- the ROM evaluates
-       `value * -0.17453294f` first: `(-1.2217305f * v) + (v * -0.17453294f
-       * step)` spelled in THAT order is 19 -> 12 (LEVER 2's evaluation-order
-       family);
-   (4) launch-speed mul operands swapped -- `D_800E6A10[id] *
-       D_8021BF6C_ovl9[roll]` (facing first) colours the table load into $f4
-       and the whole tail's registers with it, 12 -> 2 with (3) (measured
-       through the tree file; on an isolated scratch the two late_rodata
-       words D_8021D07C/D_8021D080 add two artifact rows).
-   Residue: 2 words -- `addu $t3,$v0,$a1` / `addu $t5,$s1,$a1` (the hoisted
-   &D_800E9FE0 and &D_800E6A10 address adds above the >= 9 branch) come out
-   transposed.  Scheduler tie: barrier_sweep on THIS state (all placements)
-   best 4, compare-arm swap 13, LEVER 16 local for the compare operand 22
-   (frame moves). */
-extern f32 D_8021BF6C_ovl9[];
-extern f32 D_8021BF9C_ovl9[];
-extern s32 func_8019A900_ovl7(s32 *);
-extern f32 func_8019B608_ovl7(s32);
-extern s32 random_soft_s32_range(s32);
-void ohSleep(s32);
-/* Takeoff state: enter anim state 0 with the perch tables, queue the
- * launch animations (0x1021A then 0x10219), pick a fresh random hop
- * pattern 0..11 (rerolling the previous one), fly toward Kirby's
- * side (rolls 9..11 flip away), and if that means turning around,
- * ease the -70deg body pitch across 4 ticks (else just wait 4
- * ticks); then load the pattern's launch speed (D_8021BF6C * facing)
- * and climb rate (D_8021BF9C) and enter flight state 2. */
-extern s32 D_801C8880_ovl7[];
-extern s32 D_801CBBC0;
-void func_801E7F34_ovl9(struct GObj *arg0) {
-    /* RESERVED: pays for the deleted `u32 id` slot (LEVER 97c); declared
-       first so sp68 stays on the ROM's 0x68. */
-    s32 reserved0;
-    s32 sp68;
-    f32 dir;
-    s32 roll;
-
-    D_800DDFD0[omCurrentObj->objId] = 0;
-    D_800E1B50[omCurrentObj->objId]->unk8C = D_801C8880_ovl7;
-    D_800E1B50[omCurrentObj->objId]->unk98 = &D_801CBBC0;
-    func_800AECC0(gameTicksPerDraw);
-    func_800AED20(gameTicksPerDraw);
-    func_800B33F4();
-    D_800E8920[omCurrentObj->objId] = 1;
-    func_800AA018(0x1021A);
-    func_800AA018(0x10219);
-    if (func_8019A900_ovl7(&sp68) != 0) {
-        dir = sp68;
-    } else {
-        dir = func_8019B608_ovl7(0);
-    }
-    roll = random_soft_s32_range(0xC);
-    while (roll == D_800E98E0[omCurrentObj->objId]) {
-        roll = random_soft_s32_range(0xC);
-    }
-    D_800E98E0[omCurrentObj->objId] = roll;
-    D_800E9C60[omCurrentObj->objId] = 0;
-    if (D_800E98E0[omCurrentObj->objId] >= 9) {
-        dir = -dir;
-    }
-    if (dir != D_800E6A10[omCurrentObj->objId]) {
-        D_800E9FE0[omCurrentObj->objId].as_u32 = 1;
-    } else {
-        D_800E9FE0[omCurrentObj->objId].as_u32 = 0;
-    }
-    D_800E6A10[omCurrentObj->objId] = dir;
-    if (D_800E9FE0[omCurrentObj->objId].as_u32 != 0) {
-        f32 step;
-
-        for (step = 3.0f; step >= 0.0f; step -= 1.0f) {
-            D_800E4C50[omCurrentObj->objId] = (-1.2217305f * D_800E6A10[omCurrentObj->objId]) + (D_800E6A10[omCurrentObj->objId] * -0.17453294f * step);
-            ohSleep(1);
-        }
-    } else {
-        ohSleep(4);
-    }
-    D_800E64D0[omCurrentObj->objId] = D_800E6A10[omCurrentObj->objId] * D_8021BF6C_ovl9[D_800E98E0[omCurrentObj->objId]];
-    D_800E3210[omCurrentObj->objId] = D_8021BF9C_ovl9[D_800E98E0[omCurrentObj->objId]];
-    gEntityFuncListIDArray[omCurrentObj->objId] = 2;
-}
-#elif defined(PORT)
+#ifdef PORT
 extern f32 D_8021BF6C_ovl9[];
 extern f32 D_8021BF9C_ovl9[];
 extern s32 func_8019A900_ovl7(s32 *);
@@ -1072,7 +983,68 @@ void func_801E7F34_ovl9(struct GObj *arg0) {
     gEntityFuncListIDArray[omCurrentObj->objId] = 2;
 }
 #else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl9/ovl9_5/func_801E7F34_ovl9.s")
+extern f32 D_8021BF6C_ovl9[];
+extern f32 D_8021BF9C_ovl9[];
+extern s32 func_8019A900_ovl7(s32 *);
+extern f32 func_8019B608_ovl7(s32);
+extern s32 random_soft_s32_range(s32);
+void ohSleep(s32);
+/* Takeoff state: enter anim state 0 with the perch tables, queue the
+ * launch animations (0x1021A then 0x10219), pick a fresh random hop
+ * pattern 0..11 (rerolling the previous one), fly toward Kirby's
+ * side (rolls 9..11 flip away), and if that means turning around,
+ * ease the -70deg body pitch across 4 ticks (else just wait 4
+ * ticks); then load the pattern's launch speed (D_8021BF6C * facing)
+ * and climb rate (D_8021BF9C) and enter flight state 2. */
+extern s32 D_801C8880_ovl7[];
+extern s32 D_801CBBC0;
+void func_801E7F34_ovl9(struct GObj *arg0) {
+    /* RESERVED: pays for the deleted `u32 id` slot (LEVER 97c); declared
+       first so sp68 stays on the ROM's 0x68. */
+    s32 reserved0;
+    s32 sp68;
+    f32 dir;
+    s32 roll;
+
+    D_800DDFD0[omCurrentObj->objId] = 0;
+    D_800E1B50[omCurrentObj->objId]->unk8C = D_801C8880_ovl7;
+    D_800E1B50[omCurrentObj->objId]->unk98 = &D_801CBBC0;
+    func_800AECC0(gameTicksPerDraw);
+    func_800AED20(gameTicksPerDraw);
+    func_800B33F4();
+    D_800E8920[omCurrentObj->objId] = 1;
+    func_800AA018(0x1021A);
+    func_800AA018(0x10219);
+    if (func_8019A900_ovl7(&sp68) != 0) {
+        dir = sp68;
+    } else {
+        dir = func_8019B608_ovl7(0);
+    }
+    roll = random_soft_s32_range(0xC);
+    while (roll == D_800E98E0[omCurrentObj->objId]) {
+        roll = random_soft_s32_range(0xC);
+    }
+    D_800E98E0[omCurrentObj->objId] = roll;
+    D_800E9C60[omCurrentObj->objId] = 0;
+    if (D_800E98E0[omCurrentObj->objId] >= 9) {
+        dir = -dir;
+    }
+    if (dir != D_800E6A10[omCurrentObj->objId]) { D_800E9FE0[omCurrentObj->objId].as_u32 = 1; } else { D_800E9FE0[omCurrentObj->objId].as_u32 = 0; }
+    D_800E6A10[omCurrentObj->objId] = dir;
+    if (D_800E9FE0[omCurrentObj->objId].as_u32 != 0) {
+        f32 step;
+
+        for (step = 3.0f; step >= 0.0f; step -= 1.0f) {
+            D_800E4C50[omCurrentObj->objId] = (-1.2217305f * D_800E6A10[omCurrentObj->objId]) + (D_800E6A10[omCurrentObj->objId] * -0.17453294f * step);
+            ohSleep(1);
+        }
+    } else {
+        ohSleep(4);
+    }
+    D_800E64D0[omCurrentObj->objId] = D_800E6A10[omCurrentObj->objId] * D_8021BF6C_ovl9[D_800E98E0[omCurrentObj->objId]];
+    D_800E3210[omCurrentObj->objId] = D_8021BF9C_ovl9[D_800E98E0[omCurrentObj->objId]];
+    gEntityFuncListIDArray[omCurrentObj->objId] = 2;
+}
 #endif
 
 extern s32 D_801C8880_ovl7[];

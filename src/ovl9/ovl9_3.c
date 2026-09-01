@@ -122,7 +122,8 @@ void func_801DCE44_ovl9(GObj *arg0) {
 }
 
 #ifdef MIPS_TO_C
-/* FACTORY: 8/260 (was 231/260, and the "saved-register choice" note it
+/* FACTORY: 4/260 [was 8/260; the if/else head joined onto one physical line
+   fixes the %hi order, leaving speed in $f0 vs the ROM's $f2] (was 231/260, and the "saved-register choice" note it
    carried was a misdiagnosis -- the $s1/$s2 swap was a SYMPTOM).  Four
    real defects, re-derived from the listing 2026-08-25:
      1. the switch and the `== 1` test must not share the held constant 1.
@@ -212,11 +213,7 @@ void func_801DCE6C_ovl9(struct GObj *arg0) {
     func_800AF27C();
     func_800AECC0(0.0f);
     func_800AED20(0.0f);
-    if (D_800E8920[omCurrentObj->objId] == 0) {
-        D_800EAC20[omCurrentObj->objId] = 0.0f;
-    } else {
-        if (D_800E8AE0[omCurrentObj->objId] & 1) {
-            speed = 0.5f;
+    if (D_800E8920[omCurrentObj->objId] == 0) { D_800EAC20[omCurrentObj->objId] = 0.0f; } else { if (D_800E8AE0[omCurrentObj->objId] & 1) { speed = 0.5f;
         } else {
             speed = 1.0f;
         }
@@ -714,124 +711,7 @@ void func_801DDDD0_ovl9(struct GObj *arg0) {
     gEntityFuncListIDArray[omCurrentObj->objId] = 4;
 }
 
-#ifdef MIPS_TO_C
-/* FACTORY: 4/185 [was 6/185; 10, 156 and 28 before that].
-   2026-08-26 second pass: objid_inline_sweep's full inline BEATS the partial
-   one.  Deleting `u32 id` ENTIRELY and writing every subscript
-   `omCurrentObj->objId` is 6 -> 4: uopt's own CSE then produces all four
-   per-arm re-read shapes, including the timeout arm's `lw $a3/sll $a3,$a3`
-   (its PRE re-establishes the killed index on exactly that path), which the
-   named local could never give (the variable's home register pinned the raw
-   value in $v1).  The earlier hand experiment that kept `id` for the
-   dispatch and inlined only the post-switch uses (163/186) measured the
-   WRONG split -- delete the whole cache or none of it.
-   Residue, 2 words: the CA550/CA598 if/else hoists `lui $t9` before
-   `lui $t7` and parks `lui $t6` after both addus in the ROM; ours swaps the
-   two luis and hoists $t6 into the compare gap.  Pure scheduler tie.
-   barrier_sweep re-run on THIS state: 22 placements, best 6/185.  Prior
-   negatives (drop-the-re-read spill, s32 id, 0.0f< spelling, arm swap) were
-   measured on the named-local body and are superseded by the full inline.
-   [Old note kept below.]
-   (was) 
-   2026-08-26: THE STRUCT WAS 4 BYTES TOO BIG.  PcOvl9AnimInfo's filler10 was
-   a guessed 0x10; the ROM places sp2C at 0x2C under a 0x48 frame with the
-   `sp2C.unkC` argument reload at 0x38(sp), which only fits a 0x1C struct.
-   filler10[0xC] puts every sp offset on the ROM's slot, 10 -> 6 (both arms'
-   declarations shrunk; func_801DF588_ovl9's out-buffer is bounded by the
-   ROM's own frame).
-   Earlier finding kept: the ROM re-reads `omCurrentObj->objId` at the END OF
-   EVERY ARM of the rising-off-the-ground if/else if/else (156 -> 10), LEVER
-   97(a) applied to WHERE the reads sit.
-   Residue, 6 words in two clusters, both coloring ties: (a) the timeout
-   arm's post-call re-read is `lw $a3/sll $a3,$a3` in the ROM (raw id dead at
-   the shift) against `lw $v1/sll $a3,$v1` here; (b) the CA550/CA598 arm's
-   two D_800E1B50 luis come t9-then-t7 with `addu $t9` before `lui $t6` in
-   the ROM, swapped here.  Measured at the CORRECTED frame, all inert or
-   worse, so nobody re-spends them: deleting the timeout re-read (97/184,
-   IDO spills $a3 around the call); spelling every post-switch subscript
-   `omCurrentObj->objId` inline and dropping the re-read (163/186, the head
-   comes apart -- the dispatch needs the raw local); s32 id for u32 (6,
-   inert); `0.0f < D_800E64D0[id]` (6, inert); swapping the CA550/CA598 arms
-   with `<=` (9); barrier_sweep re-run at the new frame, 22 placements, best
-   8/185.  The old barrier_sweep negative predates the frame fix and is
-   superseded by this one. */
-extern struct GObjProcess *gEntityGObjProcessArray[];
-extern s32 D_801CA550;
-extern s32 D_801CA598;
-extern u8 D_8012E7C5;
-extern u8 D_8012E90C[];
-s32 func_801DF588_ovl9(s32, void *);
-extern void func_80169430_ovl3(s32, s32, s32, s32);
-void func_801DF29C_ovl9(GObj *);
-void func_801DDD44_ovl9(struct GObj *);
-struct PcOvl9AnimInfo {
-    u8 unk0;
-    u8 unk1;
-    u8 unk2;
-    u8 unk3;
-    u8 filler4[8];
-    s32 unkC;
-    u8 filler10[0xC];
-};
-/* Stun-state per-frame hook: age the stun timer D_800E9E20, run the
- * shared mover, and while rising off the ground either shake in place
- * (func_801DF29C) or -- after 5 ticks, or immediately in mode 3 --
- * escalate to state 7 and rebind the thread entry.  Ground modes time
- * out at 166 ticks into state 8 the same way.  When both the entity
- * and Kirby are grounded and the global inhale byte is clear, select
- * the directional hit table (D_801CA550/D_801CA598 by run direction),
- * and if the current animation frame carries an anim event, forward it
- * to the HUD/star handler func_80169430 (kind 7) and clear the
- * one-shot flag; otherwise fall back to the plain table and the ovl7
- * post-move fixup.  Always finishes with the sleep/despawn helpers. */
-void func_801DDF9C_ovl9(GObj *arg0) {
-    struct PcOvl9AnimInfo sp2C;
-
-    D_800E9E20[omCurrentObj->objId]++;
-    func_801A0D74_ovl7(arg0);
-    if (gEntitiesPosYArray[omCurrentObj->objId] < gEntitiesNextPosYArray[omCurrentObj->objId]) {
-        if (D_800E7880[omCurrentObj->objId] == 3) {
-            func_801DF29C_ovl9(arg0);
-        } else if (D_800E9E20[omCurrentObj->objId] >= 5) {
-            gEntityFuncListIDArray[omCurrentObj->objId] = 7;
-            assign_new_process_entry(gEntityGObjProcessArray[omCurrentObj->objId], func_801DCA78_ovl9);
-        } else {
-            func_801DF29C_ovl9(arg0);
-        }
-    }
-    switch (D_800E7880[omCurrentObj->objId]) {
-        case 3:
-            break;
-        case 0:
-        case 1:
-        case 2:
-            if (D_800E9E20[omCurrentObj->objId] >= 0xA6) {
-                gEntityFuncListIDArray[omCurrentObj->objId] = 8;
-                assign_new_process_entry(gEntityGObjProcessArray[omCurrentObj->objId], func_801DCA78_ovl9);
-            }
-            break;
-    }
-    if ((D_800E8920[omCurrentObj->objId] == 1) && (D_800E8920[0] == 1) && (D_8012E90C[4] == 0)) {
-        if (D_800E64D0[omCurrentObj->objId] > 0.0f) {
-            D_800E1B50[omCurrentObj->objId]->unk8C = &D_801CA550;
-        } else {
-            D_800E1B50[omCurrentObj->objId]->unk8C = &D_801CA598;
-        }
-        if (func_801DF588_ovl9(0, &sp2C) != 0) {
-            func_80169430_ovl3(sp2C.unkC, sp2C.unk0, sp2C.unk1, 7);
-            D_800EBBE0[omCurrentObj->objId] = 0;
-        } else if (D_8012E7C5 != 0x15) {
-            D_800E1B50[omCurrentObj->objId]->unk8C = &D_801C8080_ovl7;
-            func_8019F3F0_ovl7();
-        }
-    } else {
-        D_800E1B50[omCurrentObj->objId]->unk8C = &D_801C8080_ovl7;
-        func_8019F3F0_ovl7();
-    }
-    func_801DDD44_ovl9(arg0);
-    func_801DF454_ovl9(arg0);
-}
-#elif defined(PORT)
+#ifdef PORT
 extern struct GObjProcess *gEntityGObjProcessArray[];
 extern void assign_new_process_entry(struct GObjProcess *, void (*)(GObj *));
 extern s32 D_801CA550;
@@ -914,7 +794,78 @@ void func_801DDF9C_ovl9(GObj *arg0) {
     func_801DF454_ovl9(arg0);
 }
 #else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl9/ovl9_3/func_801DDF9C_ovl9.s")
+extern struct GObjProcess *gEntityGObjProcessArray[];
+extern s32 D_801CA550;
+extern s32 D_801CA598;
+extern u8 D_8012E7C5;
+extern u8 D_8012E90C[];
+s32 func_801DF588_ovl9(s32, void *);
+extern void func_80169430_ovl3(s32, s32, s32, s32);
+void func_801DF29C_ovl9(GObj *);
+void func_801DDD44_ovl9(struct GObj *);
+struct PcOvl9AnimInfo {
+    u8 unk0;
+    u8 unk1;
+    u8 unk2;
+    u8 unk3;
+    u8 filler4[8];
+    s32 unkC;
+    u8 filler10[0xC];
+};
+/* Stun-state per-frame hook: age the stun timer D_800E9E20, run the
+ * shared mover, and while rising off the ground either shake in place
+ * (func_801DF29C) or -- after 5 ticks, or immediately in mode 3 --
+ * escalate to state 7 and rebind the thread entry.  Ground modes time
+ * out at 166 ticks into state 8 the same way.  When both the entity
+ * and Kirby are grounded and the global inhale byte is clear, select
+ * the directional hit table (D_801CA550/D_801CA598 by run direction),
+ * and if the current animation frame carries an anim event, forward it
+ * to the HUD/star handler func_80169430 (kind 7) and clear the
+ * one-shot flag; otherwise fall back to the plain table and the ovl7
+ * post-move fixup.  Always finishes with the sleep/despawn helpers. */
+void func_801DDF9C_ovl9(GObj *arg0) {
+    struct PcOvl9AnimInfo sp2C;
+
+    D_800E9E20[omCurrentObj->objId]++;
+    func_801A0D74_ovl7(arg0);
+    if (gEntitiesPosYArray[omCurrentObj->objId] < gEntitiesNextPosYArray[omCurrentObj->objId]) {
+        if (D_800E7880[omCurrentObj->objId] == 3) {
+            func_801DF29C_ovl9(arg0);
+        } else if (D_800E9E20[omCurrentObj->objId] >= 5) {
+            gEntityFuncListIDArray[omCurrentObj->objId] = 7;
+            assign_new_process_entry(gEntityGObjProcessArray[omCurrentObj->objId], func_801DCA78_ovl9);
+        } else {
+            func_801DF29C_ovl9(arg0);
+        }
+    }
+    switch (D_800E7880[omCurrentObj->objId]) {
+        case 3:
+            break;
+        case 0:
+        case 1:
+        case 2:
+            if (D_800E9E20[omCurrentObj->objId] >= 0xA6) {
+                gEntityFuncListIDArray[omCurrentObj->objId] = 8;
+                assign_new_process_entry(gEntityGObjProcessArray[omCurrentObj->objId], func_801DCA78_ovl9);
+            }
+            break;
+    }
+    if ((D_800E8920[omCurrentObj->objId] == 1) && (D_800E8920[0] == 1) && (D_8012E90C[4] == 0)) {
+        do { if (D_800E64D0[omCurrentObj->objId] > 0.0f) { D_800E1B50[omCurrentObj->objId]->unk8C = &D_801CA550; } else { D_800E1B50[omCurrentObj->objId]->unk8C = &D_801CA598; } } while (0);
+        if (func_801DF588_ovl9(0, &sp2C) != 0) {
+            func_80169430_ovl3(sp2C.unkC, sp2C.unk0, sp2C.unk1, 7);
+            D_800EBBE0[omCurrentObj->objId] = 0;
+        } else if (D_8012E7C5 != 0x15) {
+            D_800E1B50[omCurrentObj->objId]->unk8C = &D_801C8080_ovl7;
+            func_8019F3F0_ovl7();
+        }
+    } else {
+        D_800E1B50[omCurrentObj->objId]->unk8C = &D_801C8080_ovl7;
+        func_8019F3F0_ovl7();
+    }
+    func_801DDD44_ovl9(arg0);
+    func_801DF454_ovl9(arg0);
+}
 #endif
 
 /* FACTORY: 27/227, callee-saved permutation.  Length, frame, both loops,
