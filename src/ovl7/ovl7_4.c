@@ -607,21 +607,19 @@ void func_801A56A0_ovl7(GObj *arg0) {
     D_800EC2E0[omCurrentObj->objId].as_s32 = 1;
 }
 
-#ifdef NON_MATCHING
 void func_801A56C8_ovl7(void) {
+    struct DObj *dobj;
     Vector sp20;
 
+    dobj = D_800DE350[D_800E0D50[omCurrentObj->objId]]->data.dobj->firstChild;
     sp20.x = gEntitiesNextPosXArray[omCurrentObj->objId];
     sp20.y = gEntitiesNextPosYArray[omCurrentObj->objId];
     sp20.z = gEntitiesNextPosZArray[omCurrentObj->objId];
-    func_800A4B34(&sp20, D_800DE350[D_800E0D50[omCurrentObj->objId]]->data.dobj->firstChild);
+    func_800A4B34(&sp20, dobj);
     D_800E2090[omCurrentObj->objId] = sp20.x;
     D_800E2250[omCurrentObj->objId] = sp20.y;
     D_800E2410[omCurrentObj->objId] = sp20.z;
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl7/ovl7_4/func_801A56C8_ovl7.s")
-#endif
 /* MATCHED (400 insns).  Sibling of func_801A4754_ovl7 and shares its two
    levers -- the split `cc = ent->unk88->unkC; info = cc->unk0;` and the
    func_801A50B0_ovl7 chained clear-block -- plus two of its own, both worth

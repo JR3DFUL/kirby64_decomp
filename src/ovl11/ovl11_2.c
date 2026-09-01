@@ -163,51 +163,15 @@ void func_801DF650_ovl11(struct GObj *arg0) {
     curObjSleepForever();
 }
 
-#ifdef NON_MATCHING
-/* 6/28, and it USED to read 5/28 with a (void) head -- read the whole of this
-   before "fixing" the number back.
-
-   LEVER 58 applies and is certain: `jal func_801A0D74_ovl7` at 801DF778 is
-   reached only down the D_800E98E0 != 0 arm, nothing on that path writes $a0,
-   its delay slot is the D_800E98E0 store, there is no home store in the 28
-   words, and func_801A0D74_ovl7 is `s32 (GObj *)`. This proc is installed in
-   D_800DF150, declared `void (*[])(struct GObj *)`, so the (void) head was a
-   type error that IDO was reporting as warning 709 at the assignment.
-
-   What the parameter bought and what it cost, both measured:
-     - it bought the ROM's `$a1 = the loaded value` and (with the objId field
-       inlined at both uses) the in-place `sll`, which the old note recorded as
-       two halves that were "reachable separately but not together". They are
-       together now.
-     - it cost the $v0/$v1 pair: the ROM puts the scaled index in $v0 and the
-       pointer in $v1, IDO does the reverse. With $a0 free, IDO had been
-       parking the pointer THERE, which is what made the old 5/28 look better
-       than this -- the draft was scoring well by using the register the ROM
-       reserves for the argument.
-   Swept at 6/28, all inert: declaration order of temp_a1/temp_v1, and
-   initialising the pointer at its declaration. Keeping the raw-objId local
-   instead of inlining the field costs one more (7/28). What is left is the
-   neighbouring-register $v0/$v1 pair that LEVERS lists as a floor; it is a
-   better permuter seed than the old 5 because the head is now the right one
-   and the permuter cannot change a signature. */
-/* barrier_sweep.py (LEVER 71) 2026-08-25: all 8 statement placements tried, none beats the base 6/28. */
 void func_801DF728_ovl11(struct GObj *arg0) {
-    s32 *temp_v1;
-    s32 temp_a1;
-
-    temp_v1 = &D_800E98E0[omCurrentObj->objId];
-    temp_a1 = *temp_v1;
-    if (temp_a1 == 0) {
+    if (D_800E98E0[omCurrentObj->objId] == 0) {
         assign_new_process_entry(gEntityGObjProcessArray[omCurrentObj->objId], func_801ACF84_ovl7);
-        return;
+    } else {
+        D_800E98E0[omCurrentObj->objId]--;
+        func_801A0D74_ovl7(arg0);
+        func_801A03B4_ovl7();
     }
-    *temp_v1 = temp_a1 - 1;
-    func_801A0D74_ovl7(arg0);
-    func_801A03B4_ovl7();
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl11/ovl11_2/func_801DF728_ovl11.s")
-#endif
 void func_801DF798_ovl11(void) {
     f32 d;
     f32 a;
