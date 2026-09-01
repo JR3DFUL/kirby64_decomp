@@ -634,7 +634,7 @@ s32 func_8011C344(Mtx *arg0, Vector *arg1, Vector *arg2) {
     return 1;
 }
 
-#ifdef MIPS_TO_C
+#if 1 /* D12 MIPS_TO_C */
 /* File scope within the guard, so the parameter can be typed and so the tags
    are file-scope tags (a struct first named inside a body is a BLOCK-scope
    tag, which then collides with any file-scope declaration of the same name).
@@ -735,6 +735,7 @@ void func_8011C4E8(s32 arg0, struct PlyRibbonHolder *arg1) {
     f32 s;
     Vector base;
     u32 i;
+    Gfx *gfx;
     Vector pos;
     Vector prev;
 
@@ -765,11 +766,11 @@ void func_8011C4E8(s32 arg0, struct PlyRibbonHolder *arg1) {
             }
             pt++;
         }
-        gSPDisplayList(gDisplayListHeads[2]++, &D_80126EB0);
+        gfx = gDisplayListHeads[2]++; gfx->words.w0 = 0xDE000000; gfx->words.w1 = (u32) &D_80126EB0;
     }
 }
 #else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl2/plylib/func_8011C4E8.s")
+/* D12 PARKED func_8011C4E8 */
 #endif
 
 void func_8011C720(s32 arg0) {

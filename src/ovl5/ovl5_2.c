@@ -2790,31 +2790,27 @@ s32 func_80161720_ovl5(void) {
     return 1;
 }
 
-#ifdef NON_MATCHING
-// 31/118, same length. Residue is one scheduling root: the ROM materialises
-// the 35.0f into $f4 before the u32->f32 conversion of `n`, IDO after it,
-// which rotates the whole FP register file. Both multiply operand orders
-// compile identically.
-extern s32 D_8018E21C_ovl5;
-extern u8 D_8018E220_ovl5;
-extern u8 D_8018E221_ovl5;
-extern void *D_8018681C_ovl5;
-s32 func_800BB4E4(s32, s32, s32);
-void func_800A9760(void *);
-
 void func_8016179C_ovl5(GObj *arg0) {
+    extern s32 D_8018E21C_ovl5;
+    extern u8 D_8018E221_ovl5;
+    extern void *D_8018681C_ovl5;
+    extern u8 D_8018E224_ovl5[];
+    s32 func_800BB4E4(s32, s32, s32);
+    void func_800A9760(void *);
     u32 i;
     u32 n;
     s32 j;
     s32 t;
     f32 target;
+    f32 fn;
 
     i = 0;
     n = 0;
     D_8018E21C_ovl5 = omCurrentObj->objId;
     func_800A9760(D_8018681C_ovl5);
     ohSleep(0x1E);
-    target = 35.0f * n;
+    fn = n;
+    target = 35.0f * fn;
     while (1) {
         if (target == (f32) i) {
             if (func_801616A8_ovl5() != 0) {
@@ -2832,16 +2828,13 @@ void func_8016179C_ovl5(GObj *arg0) {
             D_800E98E0[t] = 10;
             D_800E9E20[t] = n;
             n++;
-            target = 35.0f * n;
+            fn = n;
+            target = 35.0f * fn;
         }
         i++;
         ohSleep(1);
     }
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl5/ovl5_2/func_8016179C_ovl5.s")
-#endif
-
 extern u8 D_8018E208_ovl5[];
 extern s32 random_soft_s32_range(s32);
 
