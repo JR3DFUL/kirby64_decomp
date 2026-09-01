@@ -581,13 +581,13 @@ void vec3_cross_product(Vector *v1, Vector *v2, Vector *dst) {
    assigns the integer `0`, not 0.0f -- the float literal shared a register the
    ROM materialises separately. Flipping the sp2C zeros or the sp44 compares
    instead measured worse (76-86). */
-#ifdef NON_MATCHING
 s32 func_8011C344(Mtx *arg0, Vector *arg1, Vector *arg2) {
+    f32 scale;
+    f32 vlen;
     Mat4 sp50;
     Vector sp44;
     Vector sp38;
     Vector sp2C;
-    f32 vlen;
 
     sp44.x = arg2->x - arg1->x;
     sp44.y = arg2->y - arg1->y;
@@ -616,14 +616,14 @@ s32 func_8011C344(Mtx *arg0, Vector *arg1, Vector *arg2) {
     sp50[1][1] = sp2C.y;
     sp50[1][2] = sp2C.z;
 
+    scale = vlen / 20.0f;
+    sp50[2][0] = sp44.x * scale;
+    sp50[2][1] = sp44.y * scale;
+    sp50[2][2] = sp44.z * scale;
+
     sp50[0][3] =
     sp50[1][3] =
     sp50[2][3] = 0;
-
-    vlen /= 20.0f;
-    sp50[2][0] = sp44.x * vlen;
-    sp50[2][1] = sp44.y * vlen;
-    sp50[2][2] = sp44.z * vlen;
 
     sp50[3][0] = arg1->x;
     sp50[3][1] = arg1->y;
@@ -633,9 +633,6 @@ s32 func_8011C344(Mtx *arg0, Vector *arg1, Vector *arg2) {
     HS64_MtxF2L(&sp50, arg0);
     return 1;
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl2/plylib/func_8011C344.s")
-#endif
 
 #ifdef MIPS_TO_C
 /* File scope within the guard, so the parameter can be typed and so the tags
@@ -3659,10 +3656,7 @@ s32 func_80120BCC(void) {
     return ret;
 }
 
-#ifdef NON_MATCHING
 s32 func_80120CCC(f32 arg0, f32 arg1) {
-    f32 temp_f2;
-
     if (gKirbyState.unk78 != 0) {
         if (gKirbyState.unk78 == 1.0f) {
             if (gKirbyState.unk80 >= 0.0f) {
@@ -3681,10 +3675,9 @@ s32 func_80120CCC(f32 arg0, f32 arg1) {
                 }
             }
         } else if (gKirbyState.unk80 <= 0.0f) {
-            temp_f2 = -arg1;
             gKirbyState.unk80 -= arg0;
-            if (gKirbyState.unk80 <= temp_f2) {
-                gKirbyState.unk7C = temp_f2;
+            if (gKirbyState.unk80 <= -arg1) {
+                gKirbyState.unk7C = -arg1;
                 gKirbyState.unk78 = 0.0f;
                 gKirbyState.unk80 = gKirbyState.unk7C;
             }
@@ -3702,9 +3695,6 @@ s32 func_80120CCC(f32 arg0, f32 arg1) {
     gEntitiesAngleYArray[omCurrentObj->objId] = D_800E17D0[omCurrentObj->objId] + gKirbyState.unk7C;
     return 0;
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl2/plylib/func_80120CCC.s")
-#endif
 #ifdef MIPS_TO_C
 /* FACTORY: 31/143 instructions match (112 diffs). Structure and every N64 spelling recovered: D_801283E8 is a 0xC-stride row {struct DmgPal *unk0, s32 unk4 count, s32 unk8 flash} and D_801283F0 is just that row's +8 member symbol (same masked lo16, so the row-array spelling is correct); the palette records are 0x10-stride with the hold time at +0xC; and CRUCIALLY damageFlashTimer/damagePaletteTimer are declared u16 in Player.h but the ROM reads them with lh and materialises their -1/-2 constants with addiu, so every read and store must go through *(s16 *)&field -- the plain (s16) cast emits lhu+sll+sra and the plain store emits ori 0xfffe (that one change was worth 14 words). timer must be s32, not s16, or the compare gets a redundant sign-extend. Confirmed the reset tests the PRE-decrement value (sltiu in the bne delay slot), as the PORT arm notes and m2c gets wrong. Residue: the ROM hoists &D_800D7010 into a0 before the D_800E7CE0 test so both arms share it; IDO here re-materialises it per arm, leaving the block 3 words short and rotating the temp registers after it. An explicit held u32 *dst local did not move it */
 void func_80120E74(UNUSED s32 arg0) {
@@ -4116,6 +4106,7 @@ void func_801219C8(void) {
 }
 
 #ifdef NON_MATCHING
+/* FACTORY: 88/114 words, one extra lui: the ROM reads D_8012E90C as D_8012E908+4 off one shared $at, which the file-scope scalar externs cannot spell */
 void func_80121A04(void) {
     GObj *var_a0;
 
@@ -4151,9 +4142,10 @@ void func_80121A04(void) {
             ((struct UnkPos4C *) D_8012EAE0->unk4C)->unkC = D_8012E90C;
         }
     } else {
+        var_a0 = D_8012EAE0;
         D_8012EADC = 0;
-        if (D_8012EAE0 != NULL) {
-            func_800A22D4((u32) (uintptr_t) D_8012EAE0);
+        if (var_a0 != NULL) {
+            func_800A22D4((u32) (uintptr_t) var_a0);
             D_8012EAE0 = NULL;
         }
     }
@@ -4193,14 +4185,13 @@ s32 func_80121C90(void) {
 
 
 #ifdef NON_MATCHING
+/* FACTORY: 108/118 words, one register: the hoisted &omCurrentObj base is $a0 in the ROM and $v1 here, in both arms */
 void func_80121D3C(void) {
     GObj *temp_v0;
-    s32 var_v1;
 
     if (gKirbyState.unk9 & 1) {
-        var_v1 = (s16)gKirbyState.unk6A;
-        if (var_v1 != 0) {
-            gKirbyState.unk6A = var_v1 - 1;
+        if ((s16)gKirbyState.unk6A != 0) {
+            gKirbyState.unk6A = (s16)gKirbyState.unk6A - 1;
             if ((s16)gKirbyState.unk6A == 0) {
                 gKirbyState.unk68 = 0;
                 gKirbyState.unk9 &= 0xFFFE;
@@ -4794,7 +4785,7 @@ void func_80122CA0(s32 arg0, s32 arg1, f32 arg2) {
 }
 
 #ifdef MIPS_TO_C
-/* FACTORY: 7/139 positional (132 diffs), but structurally solved: frame 0x90 exact, and the N64 record view recovered -- D_8012BCA0 is NOT a flat byte block here, it is parallel arrays (record pointers at +0x40, source ids at +0x4C, both stride 4) that IDO walks with ONE induction pointer, which is why both displacements ride the same register. Record flag is a u8 at +4 tested against a hoisted constant 1. Note D_8012BCA0 must be declared 'extern u8 D_8012BCA0[]' and cast at each use: IDO rejects two block-scope externs of one object under block-scope struct types even when the definitions are textually identical (verified), and func_80122558 in this TU also declares it. Residue: the ROM holds &raised in s5 (6 callee-saved regs) where IDO here uses 5 and re-materialises the address, shifting every save slot by one. Tried an explicit held f32 *rp in two declaration positions; both grew the frame instead */
+/* FACTORY: 112/137 words, register/loop-form: cnt and &raised swapped in s4/s5, dy in f2 not f0, and the outer loop keeps sltu where the ROM has bne i,cnt (u32 i or i != cnt makes IDO eliminate i and drop to five saved regs); layout, u32 counts, inner bne and prologue are exact */
 void func_80122CE8(void) {
     struct WaterRec {
         /* 0x00 */ s32 unk0;
@@ -4808,22 +4799,22 @@ void func_80122CE8(void) {
     extern u8 D_8012BCA0[];
     s32 func_8010DF9C(f32 *);
     s32 func_8010E048(struct WaterRec *, s32, f32 *, f32 *, void **, f32 *);
-    struct WaterRec *rec;
-    u32 id;
-    s32 cnt;
-    s32 cnt2;
-    s32 i;
-    s32 j;
-    u16 kind;
     f32 dy;
+    s32 i;
     f32 pos[3];
+    struct WaterRec *rec;
+    u32 cnt2;
+    u32 j;
     f32 raised[3];
+    u32 cnt;
     void *n;
     f32 pt[3];
+    u16 kind;
+    u32 id;
 
     id = omCurrentObj->objId;
     pos[0] = gEntitiesNextPosXArray[id];
-    pos[1] = *D_800E0490[id][1] + gEntitiesNextPosYArray[id];
+    pos[1] = gEntitiesNextPosYArray[id] + *D_800E0490[id][1];
     pos[2] = gEntitiesNextPosZArray[id];
     cnt = func_8010DF9C(pos);
     if (cnt == 0) {
@@ -4833,8 +4824,8 @@ void func_80122CE8(void) {
         rec = ((struct ColResultWater *) D_8012BCA0)->waterRec[i];
         if (rec->unk4 == 1) {
             raised[0] = pos[0];
-            raised[2] = pos[2];
             raised[1] = pos[1] + 120.0f;
+            raised[2] = pos[2];
             cnt2 = func_8010DF9C(raised);
             if (cnt2 != 0) {
                 for (j = 0; j < cnt2; j++) {
