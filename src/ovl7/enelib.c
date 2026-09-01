@@ -2932,53 +2932,52 @@ void func_8019ED58_ovl7(EneCurve *arg0) {
 // `temp_f2 < 0` (integer) in the ABS guard. The other two zeros measured
 // worse flipped (var_f14 41, unk24 58/72).
 #ifdef NON_MATCHING
+/* FACTORY: 62/71 words, FP regalloc (ii/j register pair swapped, one mul.s operand slot) */
 void func_8019EEE4_ovl7(EneCurve *arg0) {
-    f32 temp_f18;
-    f32 temp_f20;
-    f32 temp_f22;
-    f32 temp_f2;
-    f32 temp_f2_2;
-    f32 var_f0;
-    f32 var_f12;
-    f32 var_f12_2;
-    f32 var_f14;
-    f32 var_f16;
-    s32 temp_v0;
+    f32 nf;
+    f32 u;
+    f32 a;
+    f32 sum;
+    f32 i;
+    f32 j;
+    f32 ii;
+    f32 jj;
+    s32 n;
 
-    temp_v0 = arg0->unk2C;
-    if (temp_v0 < 2) {
-        var_f0 = 2.0f;
+    n = arg0->unk2C;
+    if (n < 2) {
+        nf = 2.0f;
         arg0->unk2C = 2;
     } else {
-        var_f0 = temp_v0;
+        nf = n;
     }
-    temp_f2 = arg0->unk28;
-    if (temp_f2 < 0) {
-        var_f12 = -temp_f2;
+    u = arg0->unk28;
+    if (u < 0) {
+        a = -u;
     } else {
-        var_f12 = temp_f2;
+        a = u;
     }
-    var_f14 = 0.0f;
-    temp_f2_2 = var_f12 / (var_f0 * var_f0);
-    var_f16 = 1.0f;
+    sum = 0.0f;
+    u = a / (nf * nf);
+    i = 1.0f;
     arg0->unk24 = 0.0f;
-    if (var_f0 >= 1.0f) {
+    if (nf >= 1.0f) {
         do {
-            temp_f20 = var_f16 + 1.0f;
-            var_f14 += var_f16;
-            temp_f18 = var_f16 * var_f16 * temp_f2_2;
-            temp_f22 = temp_f2_2 * (temp_f20 * temp_f20);
-            if (temp_f18 < temp_f22) {
-                var_f12_2 = -(temp_f18 - temp_f22);
+            j = i + 1.0f;
+            sum += i;
+            ii = i * i * u;
+            jj = (j * j) * u;
+            if (ii < jj) {
+                a = -(ii - jj);
             } else {
-                var_f12_2 = temp_f18 - temp_f22;
+                a = ii - jj;
             }
-            var_f16 = temp_f20;
-            arg0->unk24 = arg0->unk24 + var_f12_2;
-        } while (temp_f20 <= var_f0);
+            i = j;
+            arg0->unk24 = arg0->unk24 + a;
+        } while (j <= nf);
     }
-    arg0->unk24 = arg0->unk24 / var_f14;
-    arg0->unk18.z = (arg0->unk28 / var_f0) + (arg0->unk24 * (var_f0 * 0.5f));
+    arg0->unk24 = arg0->unk24 / sum;
+    arg0->unk18.z = (arg0->unk28 / nf) + (arg0->unk24 * (nf * 0.5f));
 }
 #else
 #pragma GLOBAL_ASM("asm/nonmatchings/ovl7/enelib/func_8019EEE4_ovl7.s")
@@ -3002,43 +3001,19 @@ void func_8019F000_ovl7(void *arg0, f32 *arg1, s32 arg2, f32 arg3) {
     D_800E3750[omCurrentObj->objId] = sp20.unk24;
 }
 
-#ifdef NON_MATCHING
-// 12/47 (was 20/47). LEVER 58 APPLIES HERE and paid 8 words: the prologue is
-// `addiu $sp,-0x18 / sw $ra,0x14($sp)` with no home store, $a0 is never
-// written anywhere in the listing, and both jals leave it alone -- so the
-// incoming GObj * is being handed straight to func_801A3AE0_ovl7 /
-// func_801A3E0C_ovl7, which src/ovl7/ovl7_3.c defines as `(GObj *)` and which
-// D_800DEDD0 (`void (*[])(struct GObj *)`) says this proc is too. Declaring
-// `struct GObj *arg0` and passing it occupies $a0 and drops every remaining
-// diff to naming.
-// The 12 that remain are one whole-function rotation: the ROM holds
-// omCurrentObj in $a2, objId in $v0, the D_800E7CE0 address in $v1 and its
-// value in $a1; IDO comes out $a3/$a2/$v1/$a1 with the value in $v0, i.e. one
-// register high for the first two and never touching $a3 the way the ROM
-// never touches it. Swept since the lever landed, both WORSE: inlining
-// `omCurrentObj->objId` at every use instead of the named index (19 -- it does
-// produce the ROM's in-place `sll`, and still rotates), and caching
-// omCurrentObj in its own local (23). Earlier sweeps at the 20 baseline
-// (element-before-value, s32 vs u32 index) are not worth repeating.
 void func_8019F130_ovl7(struct GObj *arg0) {
-    struct EnemyRecord *temp_t0;
-    s32 temp_a1;
-    u32 temp_v0;
-    u16 temp_v0_2;
+    struct GObj *obj = omCurrentObj;
+    struct EnemyRecord *ent;
     void func_801A3AE0_ovl7(struct GObj *);
     void func_801A3E0C_ovl7(struct GObj *);
 
-    temp_v0 = omCurrentObj->objId;
-    temp_a1 = D_800E7CE0[temp_v0];
-    temp_t0 = D_800E1B50[temp_v0];
-    D_800E7CE0[temp_v0] = temp_a1 - 1;
-    if (temp_a1 <= 0) {
-        D_800E7CE0[omCurrentObj->objId] = 0;
+    ent = D_800E1B50[obj->objId];
+    if (D_800E7CE0[obj->objId]-- <= 0) {
+        D_800E7CE0[obj->objId] = 0;
     }
-    if (temp_t0->unk3D != 0) {
-        temp_v0_2 = D_800E77A0[omCurrentObj->objId];
-        if ((temp_v0_2 < 0x4E) || (temp_v0_2 >= 0x5D)) {
-            if (temp_t0->unk6C == 2) {
+    if (ent->unk3D != 0) {
+        if ((D_800E77A0[obj->objId] < 0x4E) || (D_800E77A0[obj->objId] >= 0x5D)) {
+            if (ent->unk6C == 2) {
                 func_801A3AE0_ovl7(arg0);
             } else {
                 func_801A3E0C_ovl7(arg0);
@@ -3046,9 +3021,7 @@ void func_8019F130_ovl7(struct GObj *arg0) {
         }
     }
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl7/enelib/func_8019F130_ovl7.s")
-#endif
+
 void func_8019F1EC_ovl7(void) {
     if (gKirbyHp > 0.0f) {
         D_800BE544 = -9999;
