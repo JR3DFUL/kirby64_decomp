@@ -2029,24 +2029,10 @@ void func_8015DBE4_ovl3(s32 arg0) {
 extern f32 D_80196764_ovl3[][2];
 extern f32 **D_801967A4_ovl3[];
 void func_8015E754_ovl3(s32);
-#ifdef NON_MATCHING
-/* 9/198 (was 65/197): the LEVER 90/99 zero pair, BOTH stores together --
-   `D_800E6690[objId] = 0` and `D_800E3750[objId] = 0` as integer literals
-   fork the two store zeros off the two `< 0.0f` compare zeros the ROM keeps
-   in $f12/$f14 (either store alone is 14 and 38; found by zerofork_sweep's
-   2026-08-26 ovl3-6 run).  aligndiff.py prints NOTHING on the residue: what
-   is left is the $f12<->$f14 assignment of the two shared zeros (ROM wants
-   compare=f12, store=f14; this C colours them the other way) plus the p
-   spill slot 0x18 vs 0x1C.  Measured inert or worse on that residue:
-   stores as 0U (9), compares as `< 0` (65/197 -- it merges the pairs),
-   decl orders s/idx/c/p +-pad (12, 13), s,pad,idx,c,p (13, frame 0x38),
-   deleting `c` to reuse `s` (76 -- the cosf call needs c's own web for the
-   ROM's schedule). */
 void func_8015E43C_ovl3(s32 arg0) {
     f32 s;
-    f32 *p;
-    u32 idx;
     f32 c;
+    u32 idx;
 
     idx = D_800EC2E0[omCurrentObj->objId].as_u32;
     func_80161CE0_ovl3(arg0);
@@ -2067,29 +2053,25 @@ void func_8015E43C_ovl3(s32 arg0) {
     gEntitiesScaleYArray[omCurrentObj->objId] = 0.2f;
     gEntitiesScaleZArray[omCurrentObj->objId] = 0.2f;
     func_800A9864(0x2003C, 0x21, 0x10);
-    p = D_80196764_ovl3[idx];
-    s = sinf(p[0]) * 18.0f;
-    c = cosf(p[0]) * 18.0f;
+    s = sinf(D_80196764_ovl3[idx][0]) * 18.0f;
+    c = cosf(D_80196764_ovl3[idx][0]) * 18.0f;
     D_800E64D0[omCurrentObj->objId] = s;
-    D_800E6690[omCurrentObj->objId] = 0;
-    if (s < 0.0f) {
+    D_800E6690[omCurrentObj->objId] = 0.0f;
+    if (s < 0) {
         D_800E6850[omCurrentObj->objId] = -s;
     } else {
         D_800E6850[omCurrentObj->objId] = s;
     }
     D_800E3210[omCurrentObj->objId] = c;
-    D_800E3750[omCurrentObj->objId] = 0;
-    if (c < 0.0f) {
+    D_800E3750[omCurrentObj->objId] = 0.0f;
+    if (c < 0) {
         D_800E3C90[omCurrentObj->objId] = -c;
     } else {
         D_800E3C90[omCurrentObj->objId] = c;
     }
-    *(f32 *) ((u8 *) D_800DFBD0[omCurrentObj->objId][1] + 0x30) = p[1];
+    *(f32 *) ((u8 *) D_800DFBD0[omCurrentObj->objId][1] + 0x30) = D_80196764_ovl3[idx][1];
     curObjSleepForever();
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl3/plyshot/func_8015E43C_ovl3.s")
-#endif
 
 extern char D_80190D4C_ovl3[];
 
