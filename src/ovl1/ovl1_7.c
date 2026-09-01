@@ -987,6 +987,7 @@ void func_800B158C(GObj *gobj) {
     }
 }
 #else
+/* FACTORY: 10/116, one-slot temp rotation inside the case-4 block (lever-61 barrier moved the base to $a1) */
 void func_800B158C(GObj *gobj) {
     UnkStruct800B158C *gobj_4C = gobj->unk4C;
     u16 var_a0;
@@ -1016,6 +1017,7 @@ void func_800B158C(GObj *gobj) {
                     var_a0 |= 0x10;
                 }
                 gobj_4C->unk6F = gobj_4C->unkCF = var_a0;
+                do { } while (0);
                 gobj_4C->unk58 = gobj_4C->unkB8 = gEntitiesAngleXArray[omCurrentObj->objId];
                 gobj_4C->unk60 = gobj_4C->unkC0 = gEntitiesAngleYArray[omCurrentObj->objId];
                 break;

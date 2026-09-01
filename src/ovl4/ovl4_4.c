@@ -392,14 +392,6 @@ void func_80158CFC_ovl4(GObj *arg0) {
  * `sp24 == (f32) 0`, `!(sp24 != 0.0f)` and the empty-then polarity form in
  * both operand orders -- all 3/163. `sp24 == 0.0` (double) is 100/164 and
  * an integer-bits compare is 102/162. */
-#ifdef NON_MATCHING
-extern f32 D_8015C3BC_ovl4[];
-extern f32 D_8015C384_ovl4[];
-extern s32 saveCurrentFileNum;
-void func_800B3070(s32, f32);
-void func_800B9C50(s32);
-void animUpdateModelTreeAnimation(GObj *);
-
 /* FACTORY: 3/163. All three are one fact: at the join after the
  * func_800A9F98 if/else, the ROM materialises the 0.0f into $f16
  * (`mtc1 $zero, $f16`, hoisted into BOTH arms -- once into the `b` delay slot
@@ -429,6 +421,12 @@ void animUpdateModelTreeAnimation(GObj *);
  * down (`func_800B2F54(..., sp24)`), so IDO ranks its load above the constant
  * in the ready list. That points at the later use, not at this comparison. */
 void func_80158E98_ovl4(s32 arg0, s32 arg1, s32 arg2) {
+    extern f32 D_8015C3BC_ovl4[];
+    extern f32 D_8015C384_ovl4[];
+    extern s32 saveCurrentFileNum;
+    void func_800B3070(s32, f32);
+    void func_800B9C50(s32);
+    void animUpdateModelTreeAnimation(GObj *);
     f32 sp24;
     s32 pad0;
     s32 v;
@@ -452,9 +450,9 @@ void func_80158E98_ovl4(s32 arg0, s32 arg1, s32 arg2) {
         func_800A9F98(0x30012, sp24);
     } else {
         sp24 = v;
-        func_800A9F98(0x30014, sp24);
+        func_800A9F98(0x30014, v);
     }
-    if (0.0f == sp24) {
+    if (0.0f == v) {
         animUpdateModelTreeAnimation(D_800DE350[omCurrentObj->objId]);
     }
     func_800AECC0(2.0f);
@@ -480,9 +478,6 @@ void func_80158E98_ovl4(s32 arg0, s32 arg1, s32 arg2) {
     func_800AED20(0.0f);
     func_800B9C50(saveCurrentFileNum);
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl4/ovl4_4/func_80158E98_ovl4.s")
-#endif
 
 f32 func_80159124_ovl4(s32 arg0) {
     if (D_8015C71C_ovl4 == 1) {

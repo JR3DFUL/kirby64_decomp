@@ -1044,11 +1044,13 @@ s32 func_801DF01C_ovl14(f32);
    words (0.05f, 65535.0f) with no repeated value, so it is NOT the shared
    float-literal CSE that closed func_801E8F74_ovl9 either. */
 /* barrier_sweep.py (LEVER 71) 2026-08-25: all 32 statement placements tried, none beats the base 15/236. */
+/* FACTORY: 4/236, cvt/load FP register order on the -n*rate product (new_var hoist, one pad) */
 void func_801DDE60_ovl14(GObj *arg0) {
     s32 i;
+    f32 new_var;
     s32 n;
     f32 rate;
-    s32 pad[2];
+    s32 pad;
 
     n = 10;
     rate = 0.05f;
@@ -1069,7 +1071,8 @@ void func_801DDE60_ovl14(GObj *arg0) {
     ohSleep(0x14);
     D_800E64D0[omCurrentObj->objId] = D_800E6A10[omCurrentObj->objId] * n;
     ohSleep(0x1E);
-    D_800E6690[omCurrentObj->objId] = D_800E6A10[omCurrentObj->objId] * (-n * rate);
+    new_var = D_800E6A10[omCurrentObj->objId];
+    D_800E6690[omCurrentObj->objId] = new_var * (-n * rate);
     D_800E6850[omCurrentObj->objId] = n;
     ohSleep(0x14);
     D_800E6690[omCurrentObj->objId] = 0.0f;
@@ -1706,7 +1709,6 @@ s32 func_801DF01C_ovl14(f32 arg0) {
 }
 
 
-#ifdef NON_MATCHING
 /* FACTORY: 4/161, re-measured 2026-08-24 with VERIFY_SECBASE_SRC pointing at
    the real path -- the phantom the old note describes does not appear, so 4
    is the whole residue and both remaining pairs are FP register names.
@@ -1754,7 +1756,7 @@ s32 func_801DF290_ovl14(void) {
     sp30.unk4 = D_800E6BD0[omCurrentObj->objId];
     temp = random_soft_s32_range(0x10);
     if (func_800F9888((s32 *) &sp30,
-                      D_800E6A10[omCurrentObj->objId] * ((f32) (temp - 1) * 40.0f)) == 0) {
+                      (0, D_800E6A10[omCurrentObj->objId] * ((f32) (temp - 1) * 40.0f))) == 0) {
         D_800E5F90[track] = D_800E6150[track] = sp30.unk0;
         D_800E6BD0[track] = D_800E6D90[track] = sp30.unk4;
     } else {
@@ -1764,9 +1766,6 @@ s32 func_801DF290_ovl14(void) {
     D_800EC2E0[track].as_s32 = random_soft_s32_range(3);
     return track;
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl14/ovl14/func_801DF290_ovl14.s")
-#endif
 
 void func_801DF514_ovl14(void) {
     s32 temp_v0;
