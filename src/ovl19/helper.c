@@ -628,20 +628,7 @@ void func_8022045C_ovl19(s32 arg0) {
 #pragma GLOBAL_ASM("asm/nonmatchings/ovl19/helper/func_8022045C_ovl19.s")
 #endif
 
-/* 47/178, instruction count exact and every block in the right place.
- * Residue is (a) the frame: 0x90 vs the ROM's 0x80 with the three Vectors
- * correctly ordered but sitting 12 bytes high, and (b) four `bne`/`beq`
- * operand orders (the ROM puts the freshly-loaded p[n] in rs, IDO always puts
- * $v0 there) plus the prologue schedule that follows from the frame.
- * Measured: caching `GObj *o = omCurrentObj` per loop iteration and reusing
- * `o->objId` for the post-loop gEntitiesNextPosYArray store is what takes it
- * from 152 to 47 -- the ROM reuses the loop's last objId*4 in $a0.
- * Frame swept: declaration order of the three Vectors (correct as written --
- * it is what puts scale lowest), `Vector sp5C[3]` as one array, an added s32
- * pad (+8), dropping a Vector (-8, so the step is 8 per 12 bytes), the p
- * pointer inlined as a cast expression at every use (identical), and
- * (u32)&D_800D6F10 + 8 instead of &D_800D6F18 (much worse).  Reversing the
- * comparison operands in the source is inert. */
+/* FACTORY: 43/178, frame 0x88 vs 0x80 (the homed `o` local) plus the prologue schedule that follows */
 #ifdef NON_MATCHING
 extern s32 D_800D6F18;
 extern u8 D_800D6E30[];
@@ -659,8 +646,6 @@ void func_8022054C_ovl19(GObj *arg0) {
     Vector angle;
     Vector scale;
     GObj *o;
-    s32 id;
-    s32 v;
 
     if (p[7] == 0) {
         p[7] = 1;
@@ -672,15 +657,13 @@ void func_8022054C_ovl19(GObj *arg0) {
         func_800F8E6C(arg0);
         while (1) {
             o = omCurrentObj;
-            id = o->objId;
-            if (D_800E98E0[id] != 0) {
-                v = p[3];
-                if (-1 != v) {
-                    if (v == p[0]) {
+            if (D_800E98E0[o->objId] != 0) {
+                if (p[3] != -1) {
+                    if (p[0] == p[3]) {
                         p[4] |= 1;
-                    } else if (v == p[1]) {
+                    } else if (p[1] == p[3]) {
                         p[4] |= 2;
-                    } else if (v == p[2]) {
+                    } else if (p[2] == p[3]) {
                         p[4] |= 4;
                     }
                     p[3] = -1;
@@ -692,7 +675,7 @@ void func_8022054C_ovl19(GObj *arg0) {
                     }
                 }
             } else {
-                func_800B1900((u16) id);
+                func_800B1900((u16) o->objId);
             }
             ohSleep(1);
         }
@@ -960,18 +943,7 @@ void func_80221108_ovl19(struct GObj *arg0, s32 arg1, f32 arg2) {
 #else
 #pragma GLOBAL_ASM("asm/nonmatchings/ovl19/helper/func_80221108_ovl19.s")
 #endif
-// the same rabbit hole as func_80220280_ovl19
-/* 75/184, instruction count exact.  This is a near-clone of func_8022054C_ovl19
- * above (same D_800D6F18 state machine, same three-Vector func_800FCD14 call)
- * and it is blocked the same way: frame 0x90 where the ROM has 0x80.
- * Measured on both clones: the local block responds to local BYTES in 8-byte
- * steps and does not respond to scalar locals at all (dropping `id`, dropping
- * `o`, `Vector sp[3]` as one array, and all declaration orders leave 0x90).
- * The gap between the saved-register area (ends 0x50 in both) and the start of
- * the locals is 0x18 for IDO and 0x0C for the ROM; func_80220B40_ovl19 in this
- * same file MATCHES with the identical three-Vector local set and a 4-byte gap,
- * so the gap is not a function of the locals alone -- the two blocked clones
- * are the ones that save six registers instead of three. */
+/* FACTORY: 71/184, frame 0x88 vs 0x80 (the homed `o` local) plus a callee-saved permutation */
 #ifdef NON_MATCHING
 void func_802211A0_ovl19(GObj *arg0) {
     s32 *p = (s32 *)((u32)&D_800D6F18);
@@ -979,8 +951,6 @@ void func_802211A0_ovl19(GObj *arg0) {
     Vector angle;
     Vector scale;
     GObj *o;
-    s32 id;
-    s32 v;
 
     {
         D_800DEF90[omCurrentObj->objId] = NULL;
@@ -991,15 +961,13 @@ void func_802211A0_ovl19(GObj *arg0) {
         func_800F8E6C(arg0);
         while (1) {
             o = omCurrentObj;
-            id = o->objId;
-            if (D_800E98E0[id] != 0) {
-                v = p[3];
-                if (-1 != v) {
-                    if (v == p[0]) {
+            if (D_800E98E0[o->objId] != 0) {
+                if (p[3] != -1) {
+                    if (p[0] == p[3]) {
                         p[4] |= 1;
-                    } else if (v == p[1]) {
+                    } else if (p[1] == p[3]) {
                         p[4] |= 2;
-                    } else if (v == p[2]) {
+                    } else if (p[2] == p[3]) {
                         p[4] |= 4;
                     }
                     p[3] = -1;
@@ -1011,7 +979,7 @@ void func_802211A0_ovl19(GObj *arg0) {
                     }
                 }
             } else {
-                func_800B1900((u16) id);
+                func_800B1900((u16) o->objId);
             }
             ohSleep(1);
         }

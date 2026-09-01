@@ -97,72 +97,41 @@ void func_800B87E0(void) {
     }
 }
 
-// Draft, 34/110: correct; residue is the frame being 8 bytes too big (IDO gives
-// 10 local slots where the ROM has 8) and the register rotation that follows from
-// it. Two levers are load-bearing here: `j = 0; p = src; q = dst;` in THAT order
-// (assignment order, not declaration order, decides that $v0 holds the counter),
-// and `8U` as the SECOND loop's bound -- without the unsigned spelling IDO CSEs
-// the two `8`s into one saved register and drops the ROM's second `addiu $s0,8`.
-// Swept: local count/order, one-temp and zero-temp compare forms, separate
-// counters for the two loops.
-#ifdef NON_MATCHING
 void func_800B891C(s32 fileNum) {
     void func_80004D98(s32, void *);
     s32 j;
-    u32 *p;
-    u32 *q;
     u32 *src;
     u32 *dst;
     u32 i;
-    u32 a;
-    u32 b;
+    u32 pad;
     if ((saveCurrentFileNum >= 0) && (saveCurrentFileNum < 3)) {
         src = (u32 *) &gSaveBuffer1.files[fileNum];
         dst = (u32 *) &gSaveBuffer2.files[fileNum];
         for (i = 0; i < 11; i++) {
-            j = 0;
-            p = src;
-            q = dst;
-            do {
-                a = *p;
-                b = *q;
-                j += 4;
-                p++;
-                if (a != b) {
+            for (j = 0; j < 2; j++) {
+                if (src[j] != dst[j]) {
                     func_80004D98((u8) (*(u16 *) &D_800D5150[fileNum * 2 + 0] + i), src);
                     break;
                 }
-                q++;
-            } while (j != 8);
+            }
             src += 2;
             dst += 2;
         }
         src = (u32 *) &gSaveBuffer1.files[fileNum];
         dst = (u32 *) &gSaveBuffer2.files[fileNum];
         for (i = 0; i != 11; i++) {
-            j = 0;
-            p = src;
-            q = dst;
-            do {
-                a = *p;
-                b = *q;
-                j += 4;
-                p++;
-                if (a != b) {
+            for (j = 0; j < 2; j++) {
+                if (src[j] != dst[j]) {
                     func_80004D98((u8) (*(u16 *) &D_800D5150[fileNum * 2 + 6] + i), src);
                     break;
                 }
-                q++;
-            } while (j != 8U);
+            }
             src += 2;
             dst += 2;
         }
         gSaveBuffer2.files[fileNum] = gSaveBuffer1.files[fileNum];
     }
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl1/save_file/func_800B891C.s")
-#endif
 
 void func_800B8AD4(s32 fileNum) {
     func_80004D34(D_800D5157[fileNum * 2], &gSaveBuffer1.files[fileNum], 0x58);

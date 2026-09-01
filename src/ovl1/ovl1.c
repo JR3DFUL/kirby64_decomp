@@ -713,30 +713,9 @@ UnkParticle *func_8009BA74(UnkParticle *this_pc, s32 bank_id, u32 flags, u16 tex
                            f32 friction, u32 texture_flags, UnkGenerator *gn);
 
 #ifdef NON_MATCHING
-/* FACTORY: 18/117 -- MEASURED 2026-08-25. Structure, count and every store
- * offset match; the residue is ONE MISSING INSTRUCTION and a one-slot temp
- * rotation, and the missing instruction is what shifts everything after it.
- *
- * The ROM materialises zero into a register -- `or $v0, $zero, $zero` at index
- * 105 -- and stores $v0 to envColor[2], [1], [0] (0x56/0x55/0x54), then stores
- * literal `$zero` to 0xB and 0x57. The draft stores `$zero` to all five, so it
- * is one word short from index 105 on. Separately, at indices 64/65 and 90-97
- * the ROM's `ori $t6, $a2, 0x10` and `addiu $t7, 1` are one temp register
- * higher than the draft's $t5/$t6.
- *
- * Measured 2026-08-25 and byte-identical at 18/117, so do not retry: hoisting
- * `val = 0` above the if/else instead of assigning it in both arms; declaring
- * `val` as u8 rather than s32; reversing the envColor chain; extending the
- * chain to textureFrame; and assigning the chain's result back into val.
- * Measured and WORSE: moving `val = 0` below the if/else, 35/117 -- that one
- * really does change the live range and the wrong way.
- *
- * IDO folds `val` to $zero in every spelling because both arms of the if
- * assign 0 to it, and nothing in the source can make it un-foldable while
- * keeping the semantics. Permuter fuel; queued in priority_queue.py. */
+/* FACTORY: 12/117, the ROM materialises `or $v0,$zero,$zero` for the three envColor byte stores where IDO stores $zero */
 UnkParticle *func_8009BA74(UnkParticle *this_pc, s32 bank_id, u32 flags, u16 texture_id, u8 *bytecode, s32 lifetime, f32 pos_x, f32 pos_y, f32 pos_z, f32 vel_x, f32 vel_y, f32 vel_z, f32 size, f32 gravity, f32 friction, u32 texture_flags, UnkGenerator *gn) {
     UnkParticle *new_pc;
-    s32 val;
 
     new_pc = D_800D69C0;
 
@@ -788,8 +767,7 @@ UnkParticle *func_8009BA74(UnkParticle *this_pc, s32 bank_id, u32 flags, u16 tex
     new_pc->friction = friction;
 
     new_pc->lifetime = lifetime + 1;
-    new_pc->scriptOffset = 0;
-    new_pc->returnPoint = 0;
+    new_pc->scriptOffset = new_pc->returnPoint = 0;
 
     new_pc->bytecode = bytecode;
 
@@ -798,14 +776,12 @@ UnkParticle *func_8009BA74(UnkParticle *this_pc, s32 bank_id, u32 flags, u16 tex
     }
     if (bytecode != NULL) {
         new_pc->waitTimer = 1;
-        val = 0;
     } else {
         new_pc->waitTimer = 0;
-        val = 0;
     }
 
     new_pc->primColor[0] = new_pc->primColor[1] = new_pc->primColor[2] = new_pc->primColor[3] = new_pc->paletteIndex = 0xFF;
-    new_pc->envColor[0] = new_pc->envColor[1] = new_pc->envColor[2] = val;
+    new_pc->envColor[0] = new_pc->envColor[1] = new_pc->envColor[2] = 0;
 
     new_pc->textureFrame = 0;
     new_pc->envColor[3] = 0;
@@ -2347,15 +2323,7 @@ halt:
 #pragma GLOBAL_ASM("asm/nonmatchings/ovl1/ovl1/func_8009C4E0.s")
 #endif
 
-/* FACTORY: 26/48. Behaviourally complete and the instruction count matches.
-   Two coupled residues: (a) the ROM holds &D_800D69C8 in $s6 and the 0x10 loop
-   bound in $s5, IDO reverses them (the array base is materialised first in the
-   ROM); (b) the ROM emits the `p = next` assignment TWICE around a branch-likely
-   (`bnel $v0,$t9` + a duplicated `or $s0,$v0`, then `b` + a third copy) and
-   re-tests $s0 at the bottom, where IDO collapses it to `bne`+nop and tests
-   $v0 (next) directly. The compare operand order IS already right -- with a
-   memory load on one side the asm order is the reverse of the source order
-   (measured on func_800A2440), hence `p->next == next`. Permuter fuel. */
+/* FACTORY: 5/48, $s5/$s6 swap between the hoisted &D_800D69C8 and the 0x10 loop bound */
 #ifdef NON_MATCHING
 void func_8009E834(GObj *arg0) {
     UnkParticle *func_8009C4E0(UnkParticle *, UnkParticle *, s32);
@@ -2366,8 +2334,7 @@ void func_8009E834(GObj *arg0) {
     UnkParticle *next;
 
     flags = arg0->flags;
-    i = 0;
-    do {
+    for (i = 0; i < 0x10; i++) {
         if (!(flags & 0x10000)) {
             p = D_800D69C8[i];
             prev = NULL;
@@ -2376,14 +2343,15 @@ void func_8009E834(GObj *arg0) {
                     next = func_8009C4E0(p, prev, i);
                     if (p->next == next) {
                         prev = p;
+                        p = next;
+                    } else {
+                        p = next;
                     }
-                    p = next;
                 } while (p != NULL);
             }
         }
-        i++;
         flags >>= 1;
-    } while (i != 0x10);
+    }
 }
 #else
 #pragma GLOBAL_ASM("asm/nonmatchings/ovl1/ovl1/func_8009E834.s")

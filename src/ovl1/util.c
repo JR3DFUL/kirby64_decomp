@@ -957,59 +957,7 @@ void func_800A5D88(DObj *arg0, f32 *m) {
 #pragma GLOBAL_ASM("asm/nonmatchings/ovl1/util/func_800A5D88.s")
 #endif
 
-#ifdef MIPS_TO_C
-/* FACTORY: DIFF 28/157. Residue: one phantom 4-byte temp slot (frame 0x58 vs
- * 0x50 -- all three fp spill offsets uniformly +8; the sw/lw compiler temp at
- * 0x30 and the save layout match), plus the scale-block first-multiply
- * operand order (mul.s f16,f4 vs f4,f16 -- the LEVERS mul.s floor) and the
- * one-slot load rotations that follow from it. Compare polarity/order and
- * the angle-pointer spill pattern match. Allocator-shaped. */
-void func_800A5F94(s32 arg0, f32 *m) {
-    f32 cx;
-    f32 sy;
-    f32 sz;
-    f32 sx;
-    f32 cy;
-    f32 cz;
-    f32 t;
-
-    sx = func_800A5B64(gEntitiesAngleXArray[arg0]);
-    cx = func_800A5BDC(gEntitiesAngleXArray[arg0]);
-    sy = func_800A5B64(gEntitiesAngleYArray[arg0]);
-    cy = func_800A5BDC(gEntitiesAngleYArray[arg0]);
-    sz = func_800A5B64(gEntitiesAngleZArray[arg0]);
-    cz = func_800A5BDC(gEntitiesAngleZArray[arg0]);
-    m[0] = cy * cz;
-    m[1] = cy * sz;
-    m[2] = -sy;
-    t = sx * sy;
-    m[3] = (t * cz) - (cx * sz);
-    m[4] = (t * sz) + (cx * cz);
-    m[5] = sx * cy;
-    t = cx * sy;
-    m[6] = (t * cz) + (sx * sz);
-    m[7] = (t * sz) - (sx * cz);
-    m[8] = cx * cy;
-    if (gEntitiesScaleXArray[arg0] != 1.0f) {
-        m[0] = m[0] * gEntitiesScaleXArray[arg0];
-        m[1] = m[1] * gEntitiesScaleXArray[arg0];
-        m[2] = m[2] * gEntitiesScaleXArray[arg0];
-    }
-    if (gEntitiesScaleYArray[arg0] != 1.0f) {
-        m[3] = m[3] * gEntitiesScaleYArray[arg0];
-        m[4] = m[4] * gEntitiesScaleYArray[arg0];
-        m[5] = m[5] * gEntitiesScaleYArray[arg0];
-    }
-    if (gEntitiesScaleZArray[arg0] != 1.0f) {
-        m[6] = m[6] * gEntitiesScaleZArray[arg0];
-        m[7] = m[7] * gEntitiesScaleZArray[arg0];
-        m[8] = m[8] * gEntitiesScaleZArray[arg0];
-    }
-    m[9] = gEntitiesNextPosXArray[arg0];
-    m[10] = gEntitiesNextPosYArray[arg0];
-    m[11] = gEntitiesNextPosZArray[arg0];
-}
-#elif defined(PORT)
+#ifdef PORT
 /* Entity-array variant of func_800A5D88 (draft above): same RST build from
  * the per-entity angle/scale/next-pos SoA arrays. */
 void func_800A5F94(s32 arg0, f32 *m) {
@@ -1052,7 +1000,48 @@ void func_800A5F94(s32 arg0, f32 *m) {
     m[11] = gEntitiesNextPosZArray[arg0];
 }
 #else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl1/util/func_800A5F94.s")
+void func_800A5F94(s32 arg0, f32 *m) {
+    f32 cx;
+    f32 sy;
+    f32 sz;
+    f32 sx;
+    f32 cy;
+    f32 cz;
+
+    sx = func_800A5B64(gEntitiesAngleXArray[arg0]);
+    cx = func_800A5BDC(gEntitiesAngleXArray[arg0]);
+    sy = func_800A5B64(gEntitiesAngleYArray[arg0]);
+    cy = func_800A5BDC(gEntitiesAngleYArray[arg0]);
+    sz = func_800A5B64(gEntitiesAngleZArray[arg0]);
+    cz = func_800A5BDC(gEntitiesAngleZArray[arg0]);
+    m[0] = cy * cz;
+    m[1] = cy * sz;
+    m[2] = -sy;
+    m[3] = (sx * sy * cz) - (cx * sz);
+    m[4] = (sx * sy * sz) + (cx * cz);
+    m[5] = sx * cy;
+    m[6] = (cx * sy * cz) + (sx * sz);
+    m[7] = (cx * sy * sz) - (sx * cz);
+    m[8] = cx * cy;
+    if (gEntitiesScaleXArray[arg0] != 1.0f) {
+        m[0] = gEntitiesScaleXArray[arg0] * m[0];
+        m[1] = gEntitiesScaleXArray[arg0] * m[1];
+        m[2] = gEntitiesScaleXArray[arg0] * m[2];
+    }
+    if (gEntitiesScaleYArray[arg0] != 1.0f) {
+        m[3] = gEntitiesScaleYArray[arg0] * m[3];
+        m[4] = gEntitiesScaleYArray[arg0] * m[4];
+        m[5] = gEntitiesScaleYArray[arg0] * m[5];
+    }
+    if (gEntitiesScaleZArray[arg0] != 1.0f) {
+        m[6] = gEntitiesScaleZArray[arg0] * m[6];
+        m[7] = gEntitiesScaleZArray[arg0] * m[7];
+        m[8] = gEntitiesScaleZArray[arg0] * m[8];
+    }
+    m[9] = gEntitiesNextPosXArray[arg0];
+    m[10] = gEntitiesNextPosYArray[arg0];
+    m[11] = gEntitiesNextPosZArray[arg0];
+}
 #endif
 
 void func_800A6208(f32 m[4][3], Vector *v) {
