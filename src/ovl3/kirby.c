@@ -1686,12 +1686,10 @@ void func_8016DD0C_ovl3(s32 arg0) {
 extern u8 D_801903E0_ovl3[];
 
 #ifdef NON_MATCHING
-/* 214/221: same instruction COUNT and same shape; this C hoists
-   &D_800E3210 into a third callee-saved register ($s1) where the ROM
-   re-materialises %hi/%lo at each of its four uses, so the frame is 8
-   bytes larger and everything renumbers. Swept: the (x & 6) == 6 flag as a
-   local vs inline (no change to the count). */
+/* FACTORY: 150/221 words, one-slot temp rotation */
 void func_8016DDE8_ovl3(GObj *arg0) {
+    s32 launched;
+
     gKirbyState.unk30 = 0;
     gKirbyState.isFullJump = 0;
     gKirbyState.jumpHeight = 0;
@@ -1703,6 +1701,11 @@ void func_8016DDE8_ovl3(GObj *arg0) {
         gKirbyState.unk15C = (u32) D_80190358_ovl3;
     }
     if ((D_800E8AE0[omCurrentObj->objId] & 6) == 6) {
+        launched = 1;
+    } else {
+        launched = 0;
+    }
+    if (launched != 0) {
         play_sound(0x10B);
         gKirbyState.unkCC = 4.0f;
         D_800E3210[omCurrentObj->objId] = 8.5f;
