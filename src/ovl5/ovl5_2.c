@@ -2516,6 +2516,7 @@ void func_80160D50_ovl5(GObj *arg0) {
     gEntitiesAngleZArray[omCurrentObj->objId] = sp24.z;
 }
 
+/* FACTORY: 17/131 words, s0/s1/s2 rotation of prev/3/&D_8018E258 plus a $v0 handle temp */
 #ifdef NON_MATCHING
 // 58/131, same length: a one-slot rotation of the callee-saved file.
 // ROM: s0=prev, s1=3, s2=&D_8018E258, s3=&omCurrentObj, s4=&D_801868F4.
@@ -2530,39 +2531,35 @@ void func_80160E6C_ovl5(GObj *arg0, s32 arg1) {
     f32 vol;
 
     D_800E98E0[omCurrentObj->objId] = arg1;
-    D_800DDA90[omCurrentObj->objId] = 0x25;
     prev = D_8018E1E0_ovl5[arg1] + 1;
+    D_800DDA90[omCurrentObj->objId] = 0x25;
     D_800DF150[omCurrentObj->objId] = func_80161078_ovl5;
     func_800A9864(D_801868F0_ovl5, 0x1869F, 0x10);
     func_800AECC0(0.0f);
     func_800AED20(0.0f);
     while (1) {
-        s32 v = D_8018E1E0_ovl5[arg1];
-
-        if (prev != v) {
-            prev = v;
-            if (v < 10) {
-                if (prev < 5) {
-                    func_800AFBB4(0, omCurrentObj);
-                    if (3 == D_8018E258_ovl5) {
-                        vol = 2.0f;
-                    } else {
-                        vol = 0.0f;
-                    }
-                } else {
-                    func_800AFBB4(1, omCurrentObj);
-                    if (3 == D_8018E258_ovl5) {
-                        vol = 2.0f;
-                    } else {
-                        vol = 0.0f;
-                    }
-                }
-            } else {
+        if (prev != D_8018E1E0_ovl5[arg1]) {
+            prev = D_8018E1E0_ovl5[arg1];
+            if (D_8018E1E0_ovl5[arg1] >= 10) {
                 func_800AFBB4(1, omCurrentObj);
                 if (3 == D_8018E258_ovl5) {
                     vol = 3.0f;
                 } else {
                     vol = 1.0f;
+                }
+            } else if (prev >= 5) {
+                func_800AFBB4(1, omCurrentObj);
+                if (3 == D_8018E258_ovl5) {
+                    vol = 2.0f;
+                } else {
+                    vol = 0.0f;
+                }
+            } else {
+                func_800AFBB4(0, omCurrentObj);
+                if (3 == D_8018E258_ovl5) {
+                    vol = 2.0f;
+                } else {
+                    vol = 0.0f;
                 }
             }
             if (D_801868F4_ovl5[0] != NULL) {

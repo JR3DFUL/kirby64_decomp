@@ -249,29 +249,28 @@ s32 func_80166E30_ovl5(s32 arg0) {
 }
 
 
-#ifdef NON_MATCHING
-extern char D_8018D5F0_ovl5[];
-s32 func_801658C4_ovl5(s32);
-s32 func_80165D30_ovl5(s32);
-s32 func_80165A4C_ovl5(s32);
-extern u8 D_8018E3C4_ovl5;
-/* 148/149: frame, saved-register count and structure are the ROM's; the six
-   callee-saved registers are permuted. */
 void func_80166F14_ovl5(s32 arg0) {
-    Vector sp3C;
-    s32 sp58[4];
+    extern char D_8018D5F0_ovl5[];
+    s32 func_801658C4_ovl5(s32);
+    s32 func_80165D30_ovl5(s32);
+    s32 func_80165A4C_ovl5(s32);
     s32 sp68[64];
-    u8 *p;
+    s32 sp58[4];
     s32 i;
     s32 n;
+    s32 j;
+    u8 *p;
+    Vector sp3C;
 
-    for (i = 0; i < 4; i++) {
-        if (D_8018E3C0_ovl5[i] == 0) {
-            sp58[i] = 0x29A;
-        } else if (i == arg0) {
-            sp58[i] = 0x29A;
+    for (n = 0; n < 4; n++) {
+        if (D_8018E3C0_ovl5[n] != 0) {
+            if (n != arg0) {
+                sp58[n] = func_80165F1C_ovl5(n);
+            } else {
+                sp58[n] = 0x29A;
+            }
         } else {
-            sp58[i] = func_80165F1C_ovl5(i);
+            sp58[n] = 0x29A;
         }
     }
     n = 0;
@@ -304,16 +303,16 @@ void func_80166F14_ovl5(s32 arg0) {
         gEntitiesNextPosXArray[omCurrentObj->objId] = sp3C.x;
         gEntitiesNextPosYArray[omCurrentObj->objId] = 0.0f;
         gEntitiesNextPosZArray[omCurrentObj->objId] = sp3C.z;
-        for (i = 0, p = D_8018E3C0_ovl5; i != 4; i++, p++) {
-            if (*p != 0) {
-                if (arg0 != i) {
-                    if (func_8016725C_ovl5(arg0, i) != 0) {
+        for (j = 0; j != 4; j++) {
+            if (D_8018E3C0_ovl5[j] != 0) {
+                if (arg0 != j) {
+                    if (func_8016725C_ovl5(arg0, j) != 0) {
                         break;
                     }
                 }
             }
         }
-        if (!(p < &D_8018E3C4_ovl5)) {
+        if (j >= 4) {
             break;
         }
         if (func_80165A4C_ovl5(arg0) == 0) {
@@ -321,9 +320,6 @@ void func_80166F14_ovl5(s32 arg0) {
         }
     }
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl5/ovl5_4/func_80166F14_ovl5.s")
-#endif
 
 
 f32 func_80167164_ovl5(s32 arg0) {
@@ -3255,48 +3251,33 @@ void func_8016E650_ovl5(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     spobj->yOffset = arg3;
 }
 
-#ifdef NON_MATCHING
-// 88/120: the ROM keeps every value in a saved register (frame 0x48, no stack
-// locals, $fp = &D_8018E288_ovl5[arg1]); IDO spills that pointer and three
-// more, frame 0x68. An explicit `s32 *pv` local does not move it.
-extern s32 D_8018E288_ovl5[];
-extern struct UnkStruct8015C740 D_80186DC8_ovl5;
-extern f32 D_80186DE8_ovl5[];
-extern f32 D_80186E10_ovl5[];
-extern f32 D_80186C88_ovl5[][2];
-SPObj *func_8015C740_ovl5(GObj *, struct UnkStruct8015C740 *);
-void func_800ACBDC(GObj *);
-void func_800AD1A0(void);
-
 void func_8016E6F0_ovl5(GObj *arg0, s32 arg1) {
-    s32 *pv = &D_8018E288_ovl5[arg1];
-    s32 prev = *pv + 1;
+    extern s32 D_8018E288_ovl5[];
+    extern struct UnkStruct8015C740 D_80186DC8_ovl5;
+    extern f32 D_80186DE8_ovl5[][2];
+    extern f32 D_80186C88_ovl5[][2];
+    s32 prev = D_8018E288_ovl5[arg1] + 1;
     f32 *base;
-    f32 *p;
-    f32 *end;
     SPObj *sp;
-    s32 v;
+    s32 i;
 
     D_800DEF90[omCurrentObj->objId] = NULL;
     setProcessMain(gEntityGObjProcessArray5[omCurrentObj->objId], procMainStub);
     D_800DDA90[omCurrentObj->objId] = 0x24;
     omLinkGObjDL(arg0, &func_800AD1A0, 10, 0x80000000, 10);
     while (1) {
-        v = *pv;
-        if (prev != v) {
-            if (v == 0) {
+        if (prev != D_8018E288_ovl5[arg1]) {
+            prev = D_8018E288_ovl5[arg1];
+            if (D_8018E288_ovl5[arg1] == 0) {
                 func_800B1900(((u16 *) omCurrentObj)[1]);
             }
-            prev = v;
             base = D_80186C88_ovl5[arg1];
             func_800ACBDC(arg0);
-            p = D_80186DE8_ovl5;
-            end = &D_80186DE8_ovl5[prev * 2];
-            do {
+            for (i = 0; i < 5; i++) {
                 sp = func_8015C740_ovl5(arg0, &D_80186DC8_ovl5);
-                sp->xOffset = p[0] + base[0];
-                sp->yOffset = p[1] + base[1];
-                if (!(p < end)) {
+                sp->xOffset = base[0] + D_80186DE8_ovl5[i][0];
+                sp->yOffset = base[1] + D_80186DE8_ovl5[i][1];
+                if (i >= prev) {
                     sp->primColorRed = 100;
                     sp->primColorGreen = 100;
                     sp->primColorBlue = 100;
@@ -3304,15 +3285,11 @@ void func_8016E6F0_ovl5(GObj *arg0, s32 arg1) {
                     sp->envColorGreen = 0;
                     sp->envColorBlue = 0;
                 }
-                p += 2;
-            } while (p != D_80186E10_ovl5);
+            }
         }
         ohSleep(1);
     }
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl5/ovl5_4/func_8016E6F0_ovl5.s")
-#endif
 
 void func_8016E8D0_ovl5(s32 arg0, s32 arg1, f32 arg2, f32 arg3) {
     s32 sp34;
