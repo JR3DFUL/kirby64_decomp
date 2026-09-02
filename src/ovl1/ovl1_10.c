@@ -148,6 +148,7 @@ void func_800BA7A0(RumbleCont *arg0, RumbleItem *arg1, s32 arg2) {
  * followed by a chained store is still 13. The `continue` in case 4 is
  * load-bearing: without it the loop test is not duplicated into both arms. */
 #ifdef NON_MATCHING
+/* FACTORY: 5/62 words, temp numbering */
 void func_800BA90C(RumbleCont *arg0, RumbleItem *arg1) {
     u16 *ptr;
 
@@ -168,7 +169,7 @@ void func_800BA90C(RumbleCont *arg0, RumbleItem *arg1) {
                 arg1->unk01 = 0;
                 break;
             case 3:
-                arg1->unk04 = *ptr & 0x1FFF;
+                arg1->unk04 = (s16) *ptr & 0x1FFF;
                 ptr++;
                 arg1->unk10 = ptr;
                 arg1->unk0C = ptr;
