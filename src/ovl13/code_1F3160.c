@@ -1720,26 +1720,7 @@ extern struct Ovl13Unk800D7118 D_800D7118;
 #endif
 
 #ifdef MIPS_TO_C
-/* FACTORY: 276/468 words DIFFER. CONFIRMED 2026-08-25 by measure_seeds, which
-   had reported this draft UNSCORABLE up to today -- the number was right, but
-   only a hand splice that also copied in the sibling declaration block could
-   produce it, and nothing automatic could. The declarations are now in-body
-   (see the function) and the number is reproducible with
-   `measure_seeds.py src/ovl13/code_1F3160.c`. Original note follows.
-   (Measured, draft spliced alone into a scratch
-   copy of the TU, in-tree so verify.py sees this TU's migrated .rodata).
-   468 words against the ROM's 464 and a frame of 0x68 against 0x58, so the
-   Vector the SRT read lands in sits at sp+0x5C where the ROM has it at 0x44:
-   the ROM keeps 0x14 of locals above it that no declaration order I tried
-   reproduces (moving the Vector to the end of the declaration list, LEVERS 13
-   and 32, changed nothing -- IDO keeps every scalar here in a register).
-   Swept: m2c's ten `temp_v1_N = omCurrentObj->objId` caches inlined
-   (LEVERS 4) -- KEEPING them measures 435/464 with a 0x90 frame, so inlining
-   is what buys the 0x28 of frame back and it is worth the four extra words.
-   Corrected against the listing, not m2c: utilGetTransformSRT takes TWO
-   arguments (m2c invented a third, `D_800DFBD0`), and its first is a Vector,
-   so m2c's sp44/sp48/sp4C are that Vector's x/y/z; `->unk4`/`->unk8` are
-   D_800DFBD0[id][1] and [2], and 0x1C/0x20/0x24 are pos.v.x/y/z. */
+/* FACTORY: 460/464 words, register naming only: the hoisted &D_800E3590 base takes $a0 where the ROM has $v0, instruction stream otherwise identical */
 void func_801E0A90_ovl13(GObj *arg0) {
     /* In-body, not in a sibling guard: these must still be in scope when this
        draft's own guard is CUT, which is what un-guarding means and what
@@ -1749,8 +1730,6 @@ void func_801E0A90_ovl13(GObj *arg0) {
        draft was UNSCORABLE. Spellings copied verbatim from that block. */
     extern s32 D_801D93F0;
     extern void func_800B7790(s32);
-    extern void func_800BB468(s32, s32);
-    extern void func_800FB914(s32);
     extern void func_800FD754(s32, f32, f32, f32);
     extern void utilGetTransformSRT(Vector *, struct DObj *);
     struct Ovl13Unk800D7118 {
@@ -1758,16 +1737,11 @@ void func_801E0A90_ovl13(GObj *arg0) {
         s32 unk3C;
     };
     extern struct Ovl13Unk800D7118 D_800D7118;
+    s32 pad;
+    struct EnemyRecord *ent;
     Vector sp44;
-    struct EnemyRecord *temp_s4;
-    GObj *temp_s0;
-    f32 temp_f0;
-    f32 temp_f0_2;
-    f32 temp_f0_3;
-    struct DObj *temp_v0;
-    struct DObj *temp_v1;
 
-    temp_s4 = D_800E1B50[omCurrentObj->objId];
+    ent = D_800E1B50[omCurrentObj->objId];
     D_800EBF60[omCurrentObj->objId] = func_8019E0E8_ovl7(2U, 5U);
     D_800E98E0[D_800EBF60[omCurrentObj->objId]] = 1;
     D_800D7098.unk4 = 0;
@@ -1777,16 +1751,10 @@ void func_801E0A90_ovl13(GObj *arg0) {
     gEntitiesNextPosYArray[omCurrentObj->objId] = sp44.y;
     gEntitiesNextPosZArray[omCurrentObj->objId] = sp44.z;
     D_800DFBD0[omCurrentObj->objId][1]->pos.v.z = 0.0f;
-    temp_v0 = D_800DFBD0[omCurrentObj->objId][1];
-    temp_f0 = temp_v0->pos.v.z;
-    temp_v0->pos.v.y = temp_f0;
-    D_800DFBD0[omCurrentObj->objId][1]->pos.v.x = temp_f0;
+    D_800DFBD0[omCurrentObj->objId][1]->pos.v.x = D_800DFBD0[omCurrentObj->objId][1]->pos.v.y = D_800DFBD0[omCurrentObj->objId][1]->pos.v.z;
     D_800DFBD0[omCurrentObj->objId][2]->pos.v.z = 0.0f;
-    temp_v1 = D_800DFBD0[omCurrentObj->objId][2];
-    temp_f0_2 = temp_v1->pos.v.z;
-    temp_v1->pos.v.y = temp_f0_2;
-    D_800DFBD0[omCurrentObj->objId][2]->pos.v.x = temp_f0_2;
-    temp_s4->unk80->unk10 = 60.0f;
+    D_800DFBD0[omCurrentObj->objId][2]->pos.v.x = D_800DFBD0[omCurrentObj->objId][2]->pos.v.y = D_800DFBD0[omCurrentObj->objId][2]->pos.v.z;
+    ent->unk80->unk10 = 60.0f;
     func_800AED20(0.0f);
     func_800AECC0(gameTicksPerDraw * 0.5f);
     D_800DDFD0[omCurrentObj->objId] = 7;
@@ -1806,7 +1774,7 @@ void func_801E0A90_ovl13(GObj *arg0) {
     D_800E3E50[omCurrentObj->objId] = 65535.0f;
     D_800E3750[omCurrentObj->objId] = 0.0f;
     D_800E3C90[omCurrentObj->objId] = 65535.0f;
-    if (D_800D6E5C != 0.0f) {
+    if (D_800D6E5C != 0) {
         func_800BC11C(D_800E7B20[omCurrentObj->objId]);
     }
     play_sound(0x1E7);
@@ -1816,25 +1784,22 @@ void func_801E0A90_ovl13(GObj *arg0) {
     func_801E37E8_ovl13(arg0);
     D_800D7118.unk3C = 0;
     D_800EAFA0[omCurrentObj->objId] = 0.0f;
-    temp_f0_3 = D_800EAFA0[omCurrentObj->objId];
-    D_800EADE0[omCurrentObj->objId] = temp_f0_3;
-    D_800EAC20[omCurrentObj->objId] = temp_f0_3;
+    D_800EAC20[omCurrentObj->objId] = D_800EADE0[omCurrentObj->objId] = D_800EAFA0[omCurrentObj->objId];
     func_800AA018(0x10427);
-    temp_s0 = omCurrentObj;
-    D_800E3750[temp_s0->objId] = -0.2f;
-    D_800E3C90[temp_s0->objId] = 2.0f;
-    D_800E6690[temp_s0->objId] = 0.0f;
+    D_800E3750[omCurrentObj->objId] = -0.2f;
+    D_800E3C90[omCurrentObj->objId] = 2.0f;
+    D_800E6690[omCurrentObj->objId] = 0.0f;
     D_800E64D0[omCurrentObj->objId] = D_800E6690[omCurrentObj->objId];
-    D_800E6850[temp_s0->objId] = 65535.0f;
-    D_800EAFA0[temp_s0->objId] = 0.017453292f;
+    D_800E6850[omCurrentObj->objId] = 65535.0f;
+    D_800EAFA0[omCurrentObj->objId] = 0.017453292f;
     if (D_800E8920[omCurrentObj->objId] == 0) {
         do {
             ohSleep(1);
         } while (D_800E8920[omCurrentObj->objId] == 0);
     }
-    D_800E3750[temp_s0->objId] = 0.0f;
+    D_800E3750[omCurrentObj->objId] = 0.0f;
     D_800E3210[omCurrentObj->objId] = D_800E3750[omCurrentObj->objId];
-    D_800E3C90[temp_s0->objId] = 65535.0f;
+    D_800E3C90[omCurrentObj->objId] = 65535.0f;
     func_800FB914(2);
     D_800EAFA0[omCurrentObj->objId] = 0.0f;
     D_800D70D8.unk4 = gEntitiesNextPosXArray[omCurrentObj->objId];
@@ -2136,26 +2101,11 @@ extern f32 *D_801DAB04;
 #endif
 
 #ifdef MIPS_TO_C
-/* FACTORY: 104/384 words DIFFER. CONFIRMED 2026-08-25 by measure_seeds, which
-   had reported this draft UNSCORABLE until its two declarations moved in-body.
-   (Measured, draft spliced alone into a scratch
-   copy of the TU, in-tree so verify.py sees this TU's migrated .rodata).
-   Word count 383 against the ROM's 384. Residue is one register: the ROM keeps
-   the `omCurrentObj` POINTER in $v1 across each straight run and this draft
-   lands it in $a1, then loses it at the second half of the descent where the
-   ROM still has it -- one missing re-use, and a $t-register renaming cascade
-   behind it. Swept and rejected: keeping m2c's `temp_v1 = omCurrentObj` local
-   (it is the obvious fix for exactly that re-use and measures 209/386 -- the
-   local takes a saved register the ROM does not spend). Also applied: m2c's
-   eight `temp_v0N = omCurrentObj->objId` caches inlined (LEVERS 4), and its
-   `D_800DFBD0[id]->unk4->unkNN` chains respelled against the real DObj
-   layout -- [1]/[2] are the DObj slots, 0x24 is pos.v.z, 0x30 angle.v.x,
-   0x34 angle.v.y. */
+/* FACTORY: 318/383 words, register naming only: the omCurrentObj pointer temp lands in $a1 and the index temp in $v1 where the ROM has $v1/$v0 ($v0 unused in ours), instruction stream otherwise identical */
 void func_801E2034_ovl13(GObj *arg0) {
     /* In-body so that cutting THIS guard leaves a TU that compiles. */
     extern s32 D_801D93A8;
     extern f32 *D_801DAB04;
-    f32 *temp_v0_9;
     f32 var_f0;
 
     D_800DDFD0[omCurrentObj->objId] = 0xA;
@@ -2210,8 +2160,7 @@ void func_801E2034_ovl13(GObj *arg0) {
         } while ((gEntitiesNextPosYArray[D_800EBBE0[omCurrentObj->objId]] - 680.0f) < gEntitiesNextPosYArray[omCurrentObj->objId]);
     }
     func_800B33F4();
-    temp_v0_9 = &gEntitiesNextPosYArray[omCurrentObj->objId];
-    *temp_v0_9 += 440.0f;
+    gEntitiesNextPosYArray[omCurrentObj->objId] += 440.0f;
     D_800DFBD0[omCurrentObj->objId][1]->pos.v.z = 0.0f;
     D_800DFBD0[omCurrentObj->objId][1]->angle.v.y = 3.1415927f;
     D_800DFBD0[omCurrentObj->objId][2]->angle.v.x = -1.5707964f;

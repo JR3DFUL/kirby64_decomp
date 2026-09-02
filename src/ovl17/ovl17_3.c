@@ -77,27 +77,13 @@ void func_801E3324_ovl17(Vector *);
 void func_801E109C_ovl17(struct GObj *);
 void func_801E15A4_ovl17(struct GObj *);
 
-/* FACTORY: 139/230.  Divergence starts at word 53 and is an FP register
-   rotation through the whole 50.0f/(sp3C + 20.0f) block ($f18/$f4/$f6 against
-   the ROM's $f4/$f18/$f8) -- everything downstream of it renames.
-   LEVER 70 (ABSF) MEASURED AND BYTE-INERT here, 139/230 either way, and the
-   three sites are now spelled with the macro so absf_sweep stops listing
-   them.  The scope correction that follows from it: ABSF() and the if/else
-   STATEMENT pair are the same bytes whenever both arms assign the SAME
-   lvalue -- here `D_800E3AD0[objId]` -- because IDO sinks the store into both
-   arms either way (the ROM recomputes the subscript address separately in
-   each arm at 801E0F4C and 801E0F68).  LEVER 70 only pays against
-   `v = x; if (x < 0.0f) v = -x;`, which reads the operand once; it buys
-   nothing against a two-armed if/else that already names the operand twice. */
-#ifdef NON_MATCHING
 void func_801E0D00_ovl17(struct GObj *arg0) {
     s32 sp3C;
     s32 sp38;
-    f32 sp34;
-    f32 sp30;
-    f32 sp2C;
-    f32 sp20;
+    Vector vec;
     f32 temp_f0;
+    s32 pad;
+    f32 sp20;
 
     if (D_800E7880[omCurrentObj->objId] == 1) {
         func_801E15A4_ovl17(arg0);
@@ -110,38 +96,35 @@ void func_801E0D00_ovl17(struct GObj *arg0) {
     } else {
         sp3C = random_soft_s32_range(0x14);
     }
-    sp38 = (s32) (50.0f / ((f32) sp3C + 20.0f));
+    sp38 = (s32) (50.0f / (20.0f + (f32) sp3C));
     if (D_800E7880[omCurrentObj->objId] == 2) {
         sp38 = (s32) ((f32) sp38 * 1.1f);
     }
     func_800A9864(0x100BC, 0x23, 0x10);
     D_800DDA90[omCurrentObj->objId] = 0x25;
     func_800AA018(0x105C4);
-    sp2C = D_800EA6E0[omCurrentObj->objId];
-    sp30 = D_800EA8A0[omCurrentObj->objId];
-    sp34 = D_800EAA60[omCurrentObj->objId];
-    lbvector_Normalize((Vector *) &sp2C);
+    vec.x = D_800EA6E0[omCurrentObj->objId];
+    vec.y = D_800EA8A0[omCurrentObj->objId];
+    vec.z = D_800EAA60[omCurrentObj->objId];
+    lbvector_Normalize(&vec);
     sp20 = (f32) sp38;
-    lbvector_Scale((Vector *) &sp2C, sp20);
-    temp_f0 = sp2C * 15.0f;
+    lbvector_Scale(&vec, sp20);
+    temp_f0 = vec.x * 15.0f;
     D_800E3050[omCurrentObj->objId] = temp_f0;
-    D_800E3590[omCurrentObj->objId] = (sp2C * -0.3f) * sp20;
+    D_800E3590[omCurrentObj->objId] = (vec.x * -0.3f) * sp20;
     D_800E3AD0[omCurrentObj->objId] = ABSF(temp_f0);
-    temp_f0 = sp30 * 15.0f;
+    temp_f0 = vec.y * 15.0f;
     D_800E3210[omCurrentObj->objId] = temp_f0;
-    D_800E3750[omCurrentObj->objId] = (sp30 * -0.3f) * sp20;
+    D_800E3750[omCurrentObj->objId] = (vec.y * -0.3f) * sp20;
     D_800E3C90[omCurrentObj->objId] = ABSF(temp_f0);
-    temp_f0 = sp34 * 15.0f;
+    temp_f0 = vec.z * 15.0f;
     D_800E33D0[omCurrentObj->objId] = temp_f0;
-    D_800E3910[omCurrentObj->objId] = (sp34 * -0.3f) * sp20;
+    D_800E3910[omCurrentObj->objId] = (vec.z * -0.3f) * sp20;
     D_800E3E50[omCurrentObj->objId] = ABSF(temp_f0);
     D_800E98E0[omCurrentObj->objId] = 0;
     ohSleep(sp3C + 0x14);
     func_801E1170_ovl17(arg0);
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl17/ovl17_3/func_801E0D00_ovl17.s")
-#endif
 void func_801E109C_ovl17(struct GObj *arg0) {
     f32 temp_f0;
     f32 temp_f2;
@@ -499,94 +482,7 @@ big:
     D_800EAFA0[omCurrentObj->objId] = D_800EAA60[D_800E0D50[D_800E0D50[omCurrentObj->objId]]];
 }
 
-#ifdef MIPS_TO_C
-/* FACTORY: 299/302 [was noted 4/262], frame 0x50 vs the ROM's 0x48 and the opposite hoisting
-   decision: the ROM keeps &omCurrentObj in $s0 for the whole body (saving it
-   at 0x18), ours re-materialises it into $t6 at each use and saves nothing.
-   Sibling of func_801E1CB4_ovl17 in this file, which has the same pair of
-   defects -- one fix should serve both. */
-/* PORT: homing-missile launch state, from asm/nonmatchings/ovl17/ovl17_3/
- * func_801E1CB4_ovl17.s. Copies the parent boss's (D_800E0D50) orientation
- * into this track, runs the shared aim pass func_801E23E0 (a bare pragma
- * on N64; still a weak abort stub on PC until it is ported), spawns the
- * muzzle-flash generator (effect 6/3, kind 3 or 6 by D_800E7880) and seeds
- * its emitter with the missile's position and angles -- through the PORT
- * Ovl1Generator view of ovl1_2_2.c (emitter ptr at +0x58, vectors at
- * +0x8/+0x14); the N64 code dereferences the generator unchecked, the PC
- * arm guards NULL -- then launches along local +Z at speed 15 (accel 0.5,
- * cap |15*dir|), sleeps 45 frames and hands the track to
- * func_801A3E80_ovl7. D_800E98E0 keeps the generator as a truncated
- * 32-bit address (established pointer-in-u32 idiom, non-PIE sub-4GiB). */
-struct PcOvl17Emitter {
-    /* LP64 view of Ovl1Emitter (ovl1_2_2.c PORT arm) */
-    struct PcOvl17Emitter *next;
-    Vector unk4;
-    Vector unk10;
-};
-struct PcOvl17Gen {
-    /* LP64 view of Ovl1Generator: emitter pointer at +0x58 */
-    u8 pad0[0x58];
-    struct PcOvl17Emitter *xf;
-};
-
-void func_801E1CB4_ovl17(struct GObj *arg0) {
-    struct PcOvl17Gen *func_800A8234(s32, s32, s32);
-    void func_801E23E0_ovl17(void);
-    void func_801E343C_ovl17(Vector *);
-    void func_801E2170_ovl17(struct GObj *);
-    struct EnemyRecord *ent;
-    struct PcOvl17Gen *gen;
-    Vector dir;
-    s32 parent;
-    f32 t;
-
-    D_800DEF90[omCurrentObj->objId] = func_800B4924;
-    ent = D_800E1B50[omCurrentObj->objId];
-    D_800DF150[omCurrentObj->objId] = func_801E2170_ovl17;
-    D_800E8920[omCurrentObj->objId] = 0;
-    parent = D_800E0D50[omCurrentObj->objId];
-    gEntitiesAngleXArray[omCurrentObj->objId] = gEntitiesAngleXArray[parent];
-    gEntitiesAngleYArray[omCurrentObj->objId] = gEntitiesAngleYArray[parent];
-    gEntitiesAngleZArray[omCurrentObj->objId] = gEntitiesAngleZArray[parent];
-    D_800EA6E0[omCurrentObj->objId] = D_800EA6E0[parent];
-    D_800EA8A0[omCurrentObj->objId] = D_800EA8A0[parent];
-    D_800EAA60[omCurrentObj->objId] = D_800EAA60[parent];
-    func_801E23E0_ovl17();
-    if (D_800E7880[omCurrentObj->objId] == 0) {
-        gen = func_800A8234(6, 3, 3);
-    } else {
-        gen = func_800A8234(6, 3, 6);
-    }
-    D_800E98E0[omCurrentObj->objId] = (s32) (uintptr_t) gen;
-    if ((gen != NULL) && (gen->xf != NULL)) {
-        gen->xf->unk4.x = gEntitiesNextPosXArray[omCurrentObj->objId];
-        gen->xf->unk4.y = gEntitiesNextPosYArray[omCurrentObj->objId];
-        gen->xf->unk4.z = gEntitiesNextPosZArray[omCurrentObj->objId];
-        gen->xf->unk10.x = gEntitiesAngleXArray[omCurrentObj->objId];
-        gen->xf->unk10.y = gEntitiesAngleYArray[omCurrentObj->objId];
-        gen->xf->unk10.z = gEntitiesAngleZArray[omCurrentObj->objId];
-    }
-    setProcessMain(gEntityGObjProcessArray5[omCurrentObj->objId], procMainStub);
-    func_800AFBB4(0, omCurrentObj);
-    D_800DDA90[omCurrentObj->objId] = 0x25;
-    func_801E343C_ovl17(&dir);
-    t = dir.x * 15.0f;
-    D_800E3050[omCurrentObj->objId] = t;
-    D_800E3590[omCurrentObj->objId] = dir.x * 0.5f;
-    D_800E3AD0[omCurrentObj->objId] = (t < 0.0f) ? -t : t;
-    t = dir.y * 15.0f;
-    D_800E3210[omCurrentObj->objId] = t;
-    D_800E3750[omCurrentObj->objId] = dir.y * 0.5f;
-    D_800E3C90[omCurrentObj->objId] = (t < 0.0f) ? -t : t;
-    t = dir.z * 15.0f;
-    D_800E33D0[omCurrentObj->objId] = t;
-    D_800E3910[omCurrentObj->objId] = dir.z * 0.5f;
-    D_800E3E50[omCurrentObj->objId] = (t < 0.0f) ? -t : t;
-    ohSleep(0x2D);
-    ent->unk40 = 1;
-    func_801A3E80_ovl7(arg0);
-}
-#elif defined(PORT)
+#ifdef PORT
 /* PORT: homing-missile launch state, from asm/nonmatchings/ovl17/ovl17_3/
  * func_801E1CB4_ovl17.s. Copies the parent boss's (D_800E0D50) orientation
  * into this track, runs the shared aim pass func_801E23E0 (a bare pragma
@@ -671,7 +567,78 @@ void func_801E1CB4_ovl17(struct GObj *arg0) {
     func_801A3E80_ovl7(arg0);
 }
 #else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl17/ovl17_3/func_801E1CB4_ovl17.s")
+/* PORT: homing-missile launch state, from asm/nonmatchings/ovl17/ovl17_3/
+ * func_801E1CB4_ovl17.s. Copies the parent boss's (D_800E0D50) orientation
+ * into this track, runs the shared aim pass func_801E23E0 (a bare pragma
+ * on N64; still a weak abort stub on PC until it is ported), spawns the
+ * muzzle-flash generator (effect 6/3, kind 3 or 6 by D_800E7880) and seeds
+ * its emitter with the missile's position and angles -- through the PORT
+ * Ovl1Generator view of ovl1_2_2.c (emitter ptr at +0x58, vectors at
+ * +0x8/+0x14); the N64 code dereferences the generator unchecked, the PC
+ * arm guards NULL -- then launches along local +Z at speed 15 (accel 0.5,
+ * cap |15*dir|), sleeps 45 frames and hands the track to
+ * func_801A3E80_ovl7. D_800E98E0 keeps the generator as a truncated
+ * 32-bit address (established pointer-in-u32 idiom, non-PIE sub-4GiB). */
+void func_801E1CB4_ovl17(struct GObj *arg0) {
+    struct Ovl17Emit {
+        s32 unk0;
+        Vector unk4;
+        Vector unk10;
+    };
+    struct Ovl17Gen {
+        u8 pad0[0x4C];
+        struct Ovl17Emit *unk4C;
+    };
+    struct Ovl17Gen *func_800A8234(s32, s32, s32);
+    void func_801E23E0_ovl17(void);
+    void func_801E343C_ovl17(Vector *);
+    void func_801E2170_ovl17(struct GObj *);
+    Vector dir;
+    struct Ovl17Gen *gen;
+    struct EnemyRecord *ent;
+
+    ent = D_800E1B50[omCurrentObj->objId];
+    D_800DEF90[omCurrentObj->objId] = func_800B4924;
+    D_800DF150[omCurrentObj->objId] = func_801E2170_ovl17;
+    D_800E8920[omCurrentObj->objId] = 0;
+    gEntitiesAngleXArray[omCurrentObj->objId] = gEntitiesAngleXArray[D_800E0D50[omCurrentObj->objId]];
+    gEntitiesAngleYArray[omCurrentObj->objId] = gEntitiesAngleYArray[D_800E0D50[omCurrentObj->objId]];
+    gEntitiesAngleZArray[omCurrentObj->objId] = gEntitiesAngleZArray[D_800E0D50[omCurrentObj->objId]];
+    D_800EA6E0[omCurrentObj->objId] = D_800EA6E0[D_800E0D50[omCurrentObj->objId]];
+    D_800EA8A0[omCurrentObj->objId] = D_800EA8A0[D_800E0D50[omCurrentObj->objId]];
+    D_800EAA60[omCurrentObj->objId] = D_800EAA60[D_800E0D50[omCurrentObj->objId]];
+    func_801E23E0_ovl17();
+    if (D_800E7880[omCurrentObj->objId] == 0) {
+        D_800E98E0[omCurrentObj->objId] = (s32) func_800A8234(6, 3, 3);
+    } else {
+        D_800E98E0[omCurrentObj->objId] = (s32) func_800A8234(6, 3, 6);
+    }
+    gen = (struct Ovl17Gen *) D_800E98E0[omCurrentObj->objId];
+    if (gen->unk4C != NULL) {
+        gen->unk4C->unk4.x = gEntitiesNextPosXArray[omCurrentObj->objId];
+        gen->unk4C->unk4.y = gEntitiesNextPosYArray[omCurrentObj->objId];
+        gen->unk4C->unk4.z = gEntitiesNextPosZArray[omCurrentObj->objId];
+        gen->unk4C->unk10.x = gEntitiesAngleXArray[omCurrentObj->objId];
+        gen->unk4C->unk10.y = gEntitiesAngleYArray[omCurrentObj->objId];
+        gen->unk4C->unk10.z = gEntitiesAngleZArray[omCurrentObj->objId];
+    }
+    setProcessMain(gEntityGObjProcessArray5[omCurrentObj->objId], procMainStub);
+    func_800AFBB4(0, omCurrentObj);
+    D_800DDA90[omCurrentObj->objId] = 0x25;
+    func_801E343C_ovl17(&dir);
+    D_800E3050[omCurrentObj->objId] = dir.x * 15.0f;
+    D_800E3590[omCurrentObj->objId] = dir.x * 0.5f;
+    D_800E3AD0[omCurrentObj->objId] = ABSF(dir.x * 15.0f);
+    D_800E3210[omCurrentObj->objId] = dir.y * 15.0f;
+    D_800E3750[omCurrentObj->objId] = dir.y * 0.5f;
+    D_800E3C90[omCurrentObj->objId] = ABSF(dir.y * 15.0f);
+    D_800E33D0[omCurrentObj->objId] = dir.z * 15.0f;
+    D_800E3910[omCurrentObj->objId] = dir.z * 0.5f;
+    D_800E3E50[omCurrentObj->objId] = ABSF(dir.z * 15.0f);
+    ohSleep(0x2D);
+    ent->unk40 = 1;
+    func_801A3E80_ovl7(arg0);
+}
 #endif
 
 void func_801E2170_ovl17(struct GObj *arg0) {
@@ -1588,10 +1555,7 @@ void func_801E4668_ovl17(struct GObj *arg0) {
 #endif
 
 #ifdef MIPS_TO_C
-/* FACTORY: 258/262 [was noted 3/302], frame 0x58 vs the ROM's 0x40 (24 bytes of locals we reserve
-   and it does not) plus the same &omCurrentObj hoist as
-   func_801E49B8_ovl17 above: the ROM holds it in $s0, ours re-materialises
-   it.  Shed the extra 24 bytes first; the register choice usually follows. */
+/* FACTORY: 262/263 words, the last word is `lw $a0, 0x48($sp)`: the ROM passes arg0 to func_801E2320_ovl17, whose file-scope prototype at the top of this file is (void) */
 /* PORT: turret return-fire shot spawn, from asm/nonmatchings/ovl17/
  * ovl17_3/func_801E49B8_ovl17.s. Sets up the shot track (model 0x100F2,
  * hit routine func_801E4DD4, scale 0.2, parent's angles), places it at
@@ -1599,15 +1563,12 @@ void func_801E4668_ovl17(struct GObj *arg0) {
  * at the origin (normalized -pos), launches at speed 15 (accel 0.4,
  * cap |25*dir|), sleeps 60 frames, then explodes via func_801E2320. */
 void func_801E49B8_ovl17(struct GObj *arg0) {
-    struct DObj *anchor;
     Vector pos;
     Vector dir;
-    s32 parent;
-    f32 t;
+    struct DObj *anchor;
 
+    anchor = D_800DFBD0[D_800E0D50[omCurrentObj->objId]][0x19];
     D_800DEF90[omCurrentObj->objId] = func_800B4924;
-    parent = D_800E0D50[omCurrentObj->objId];
-    anchor = D_800DFBD0[parent][0x19];
     D_800DF150[omCurrentObj->objId] = func_801E4DD4_ovl17;
     D_800E8920[omCurrentObj->objId] = 0;
     func_800A9864(0x100F2, 0x23, 0x10);
@@ -1616,9 +1577,9 @@ void func_801E49B8_ovl17(struct GObj *arg0) {
     gEntitiesScaleXArray[omCurrentObj->objId] = 0.2f;
     gEntitiesScaleYArray[omCurrentObj->objId] = 0.2f;
     gEntitiesScaleZArray[omCurrentObj->objId] = 0.2f;
-    gEntitiesAngleXArray[omCurrentObj->objId] = gEntitiesAngleXArray[parent];
-    gEntitiesAngleYArray[omCurrentObj->objId] = gEntitiesAngleYArray[parent];
-    gEntitiesAngleZArray[omCurrentObj->objId] = gEntitiesAngleZArray[parent];
+    gEntitiesAngleXArray[omCurrentObj->objId] = gEntitiesAngleXArray[D_800E0D50[omCurrentObj->objId]];
+    gEntitiesAngleYArray[omCurrentObj->objId] = gEntitiesAngleYArray[D_800E0D50[omCurrentObj->objId]];
+    gEntitiesAngleZArray[omCurrentObj->objId] = gEntitiesAngleZArray[D_800E0D50[omCurrentObj->objId]];
     func_800B2340(&pos, anchor, 0xFFFF);
     gEntitiesNextPosXArray[omCurrentObj->objId] = pos.x;
     gEntitiesNextPosYArray[omCurrentObj->objId] = pos.y;
@@ -1627,18 +1588,15 @@ void func_801E49B8_ovl17(struct GObj *arg0) {
     dir.y = -gEntitiesNextPosYArray[omCurrentObj->objId];
     dir.z = -gEntitiesNextPosZArray[omCurrentObj->objId];
     lbvector_Normalize(&dir);
-    t = dir.x * 25.0f;
     D_800E3050[omCurrentObj->objId] = dir.x * 15.0f;
     D_800E3590[omCurrentObj->objId] = dir.x * 0.4f;
-    D_800E3AD0[omCurrentObj->objId] = (t < 0.0f) ? -t : t;
-    t = dir.y * 25.0f;
+    D_800E3AD0[omCurrentObj->objId] = ABSF(dir.x * 25.0f);
     D_800E3210[omCurrentObj->objId] = dir.y * 15.0f;
     D_800E3750[omCurrentObj->objId] = dir.y * 0.4f;
-    D_800E3C90[omCurrentObj->objId] = (t < 0.0f) ? -t : t;
-    t = dir.z * 25.0f;
+    D_800E3C90[omCurrentObj->objId] = ABSF(dir.y * 25.0f);
     D_800E33D0[omCurrentObj->objId] = dir.z * 15.0f;
     D_800E3910[omCurrentObj->objId] = dir.z * 0.4f;
-    D_800E3E50[omCurrentObj->objId] = (t < 0.0f) ? -t : t;
+    D_800E3E50[omCurrentObj->objId] = ABSF(dir.z * 25.0f);
     ohSleep(0x3C);
     func_801E2320_ovl17();
 }
