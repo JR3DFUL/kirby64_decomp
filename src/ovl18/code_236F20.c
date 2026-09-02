@@ -217,8 +217,8 @@ void func_80224E50_ovl18(UNUSED s32 arg0) {
     curObjSleepForever();
 }
 
-/* FACTORY: 53/71 -- MEASURED 2026-08-25 by the annotate pass. The number is all this line claims; no
-   listing was read for it and no cause is diagnosed. */
+/* FACTORY: 7/72 words (was 53/71: objId inlined in the first arm, arg0 kept for the else arm),
+   objId held in $a1 where the ROM holds $v0; register residue. */
 #ifdef NON_MATCHING
 /* 53/71: structure exact. The ROM keeps objId in $v0 and copies it into $a1 at
  * BOTH func_80111C88 call sites; IDO coalesces the load straight into $a1, so
@@ -231,8 +231,8 @@ void func_80224FCC_ovl18(s32 arg0) {
     if (D_800E98E0[omCurrentObj->objId] != 0) {
         func_80111550(omCurrentObj->objId);
         arg0 = omCurrentObj->objId;
-        if (D_800E98E0[arg0] == 1) {
-            func_80111ECC(func_80111C88(&D_8022A628_ovl18, arg0));
+        if (D_800E98E0[omCurrentObj->objId] == 1) {
+            func_80111ECC(func_80111C88(&D_8022A628_ovl18, omCurrentObj->objId));
         } else {
             func_80111ECC(func_80111C88(&D_8022A5BC_ovl18, arg0));
         }

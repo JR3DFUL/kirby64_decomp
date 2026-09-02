@@ -366,16 +366,15 @@ Ovl1Generator *func_800A802C(s32 arg0, s32 arg1, s32 arg2, Vector *arg3, Vector 
     return NULL;
 }
 
-/* FACTORY: 24/76 -- MEASURED 2026-08-25 by the annotate pass. The number is all this line claims; no
-   listing was read for it and no cause is diagnosed. */
+/* FACTORY: 23/76 words, gen reloaded into $v0 instead of $t0 after func_800B2340 */
 #ifdef NON_MATCHING
 Ovl1Generator *func_800A8100(s32 arg0, s32 arg1, s32 arg2, struct DObj *arg3) {
     extern f32 gEntitiesNextPosXArray[];
     extern f32 gEntitiesNextPosYArray[];
     extern f32 gEntitiesNextPosZArray[];
     s32 func_800B2340(Vector *, struct DObj *, u32);
-    Ovl1Generator *gen;
     s32 id;
+    Ovl1Generator *gen;
     Vector sp24;
 
     if ((D_800D6FB8->flags & (0x10000 << arg1)) == 0) {

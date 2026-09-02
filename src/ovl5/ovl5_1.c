@@ -108,7 +108,6 @@ struct UnkStruct8015C9B4 {
  * writes it out as `void func_8015CB74_ovl5(void) {}` after this one, the way
  * ovl5_2.c does for func_80160A70_ovl5, and verify.py then trims the pair
  * (the 13/112 above is measured WITH the stub). Body-blocked only. */
-#ifdef NON_MATCHING
 void func_8015C9B4_ovl5(struct UnkStruct8015C9B4 *arg0, Vector *vec, f32 *outX, f32 *outY) {
     Mat4 dst;
     Mat4 persp;
@@ -138,6 +137,9 @@ void func_8015C9B4_ovl5(struct UnkStruct8015C9B4 *arg0, Vector *vec, f32 *outX, 
         absW = w;
     }
     if (absW < 0.1f) {
+        if (1)
+        {
+        }
         if (w < 0.0f) {
             divisor = -0.1f;
         } else {
@@ -148,9 +150,10 @@ void func_8015C9B4_ovl5(struct UnkStruct8015C9B4 *arg0, Vector *vec, f32 *outX, 
     *outX = x * divisor;
     *outY = y * divisor;
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl5/ovl5_1/func_8015C9B4_ovl5.s")
-#endif
+
+void func_8015CB74_ovl5(void) {
+}
+
 void func_8015CB7C_ovl5(void) {
     if ((D_800D6B24 == 0) && (D_800D7178.unk74 == 0)) {
         if (gPlayerControllers[0].buttonPressed & START_BUTTON) {

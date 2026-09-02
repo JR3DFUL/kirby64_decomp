@@ -190,14 +190,16 @@ void func_801B0A20_ovl7(GObj *arg0) {
    D_800EC660 store costs one (22/128) and pushes the omCurrentObj
    materialisation below the frame adjustment, which the ROM has first -- so the
    source order is right and only the schedule is not. barrier_sweep.py
-   (LEVER 71), all 10 placements, none beats 21. Permuter food. */
+   (LEVER 71), all 10 placements, none beats 21. Permuter food.
+   FACTORY: 8/128 words (`ent` initializer + `child` temp before the 40.0f store), frame 0x28 vs ROM 0x20 */
 void func_801B0C20_ovl7(GObj *arg0) {
-    struct EnemyRecord *ent;
+    struct EnemyRecord *ent = D_800E1B50[omCurrentObj->objId];
     struct DObj *d;
+    struct DObj *child;
 
+    child = arg0->data.dobj->firstChild;
     D_800EC660[omCurrentObj->objId] = 40.0f;
-    d = arg0->data.dobj->firstChild;
-    ent = D_800E1B50[omCurrentObj->objId];
+    d = child;
     D_800EC820[omCurrentObj->objId] = 0.0f;
     func_801ABBA0_ovl7(arg0);
     D_800DEF90[omCurrentObj->objId] = func_800B6FD8;
@@ -313,7 +315,6 @@ void func_801B1130_ovl7(GObj *arg0) {
    `arg0->data.dobj->firstChild` read to be the last statement before the call
    (so $a0's last use abuts the jal) left it at index 8 unchanged.  Pure
    statement-permutation residue -- hand this to the permuter. */
-#ifdef NON_MATCHING
 /* 67/139 -> 19/139, 2026-08-25: `func_801ABBA0_ovl7(arg0)`. LEVERS 58/67 --
    func_801ABBA0_ovl7 takes a parameter (see func_801B0C20_ovl7's note above),
    and a draft that cannot use arg0 homes it in the prologue where the ROM
@@ -329,11 +330,13 @@ void func_801B152C_ovl7(void);
 
 void func_801B1300_ovl7(GObj *arg0) {
     struct EnemyRecord *sp2C = D_800E1B50[omCurrentObj->objId];
+    DObj *child;
     DObj *sp28;
     s32 i;
 
+    child = arg0->data.dobj->firstChild;
     D_800EC660[omCurrentObj->objId] = 40.0f;
-    sp28 = arg0->data.dobj->firstChild;
+    sp28 = child;
     D_800EC820[omCurrentObj->objId] = 0.0f;
     D_800EC2E0[omCurrentObj->objId].as_s32 = 0;
     i = 0x3C;
@@ -360,9 +363,6 @@ void func_801B1300_ovl7(GObj *arg0) {
     }
     func_801AC11C_ovl7(arg0);
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl7/ovl7_8/func_801B1300_ovl7.s")
-#endif
 
 void func_801B152C_ovl7(void) {
     if (D_800E83E0[omCurrentObj->objId] != 0) {

@@ -65,10 +65,9 @@ void func_8017F6F8_ovl5(GObj *arg0) {
 }
 
 #ifdef NON_MATCHING
-/* Faithful, not byte-exact (24/179): the ROM keeps `objId << 2` in $v1 and the
-   loaded counter in $a0 and materialises &gPlayerControllers later; this C
-   gets $a0/$v0 and hoists the controller base. An explicit objId local makes
-   it worse (29); declaration order is inert. */
+/* FACTORY: 14/179 words (was 24: `if (*p != 0) { *p = *p - 1; }` without the
+   `t` local), the ROM materialises &gPlayerControllers and the 0x9000 andi
+   AFTER the early-out branches where IDO hoists them; schedule residue. */
 #include "main/contpad.h"
 extern s32 D_8018EDD8_ovl5;
 void play_sound(s32);
@@ -81,9 +80,8 @@ void func_8017F7B0_ovl5(GObj *arg0) {
 
     if (D_8018EDD0_ovl5 == 0) {
         p = &D_800E98E0[omCurrentObj->objId];
-        t = *p;
-        if (t != 0) {
-            *p = t - 1;
+        if (*p != 0) {
+            *p = *p - 1;
             return;
         }
         if (gPlayerControllers[0].buttonPressed & 0x4000) {
@@ -195,7 +193,6 @@ SPObj *func_8017FBA4_ovl5(GObj *arg0, s32 arg1, f32 arg2, f32 arg3) {
     return sp;
 }
 
-#ifdef NON_MATCHING
 /* 17/75 (was 18): `accum = 0` -- the integer literal forks the init off the
    compare zero (LEVER 90; zerofork_sweep 2026-08-26).  What is left is a
    pure colouring rotation, both files at once: ROM s0=done/s1=arg1/s2=1
@@ -223,7 +220,10 @@ void func_8017FC58_ovl5(GObj *arg0, s32 arg1, f32 arg2) {
         t = (delta < 0.0f) ? -delta : delta;
         if (12.0f < t + accum) {
             t = 12.0f - accum;
-            done = 1;
+            if (1)
+            {
+                done = 1;
+            }
             if (arg1 == 1) {
                 delta = t;
             } else {
@@ -231,9 +231,9 @@ void func_8017FC58_ovl5(GObj *arg0, s32 arg1, f32 arg2) {
             }
         } else {
             t = (delta < 0.0f) ? -delta : delta;
-            accum += t;
+            accum += t * 1.0f;
         }
-        sp = (SPObj *) arg0->unk4C;
+        sp = arg0->unk4C;
         while (sp != NULL) {
             sp->yOffset += delta;
             sp = (SPObj *) sp->unk8;
@@ -241,9 +241,6 @@ void func_8017FC58_ovl5(GObj *arg0, s32 arg1, f32 arg2) {
         ohSleep(1);
     } while (done == 0);
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl5/ovl5_10/func_8017FC58_ovl5.s")
-#endif
 
 extern f32 D_80189BE0_ovl5[];
 extern s32 D_8018EDD8_ovl5;
