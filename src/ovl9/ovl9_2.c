@@ -850,34 +850,25 @@ void func_801DB930_ovl9(struct GObj *arg0) {
     }
 }
 
-/* 23 diffs, all one cause: the ROM's frame is 0x38 (Vector at sp+0x2C, the
-   unk84 pointer spilled at sp+0x24) while IDO allocates 0x30. Dead scalar
-   locals in every position are eliminated and never grow it. */
-/* 17 diffs (was 23): `s32 pad0;` between the Vector and the pointer local puts
-   the frame at 0x38 and the spill at 0x24, both exact. The residue is a pure
-   one-slot register rotation -- the ROM uses $v1/$a3/$t7/$t0 where IDO takes
-   $v0/$t7/$t8/$v1. Swept: all pad positions, declaration order, an implicit
-   func_800B2340, its s32 return type, extra DObj/objId/ent locals. */
-#ifdef NON_MATCHING
 extern void func_800B2340(Vector *, struct DObj *, u32);
 extern void func_8019F410_ovl7(struct DObj *);
 
 void func_801DBC38_ovl9(struct GObj *arg0) {
     Vector sp2C;
-    s32 pad0;
+    struct DObj *dobj;
     struct EnemyProbe *temp;
+    struct EnemyRecord *rec;
 
-    temp = D_800E1B50[omCurrentObj->objId]->unk84;
-    func_800B2340(&sp2C, D_800DFBD0[omCurrentObj->objId][2], omCurrentObj->objId);
+    dobj = D_800DFBD0[omCurrentObj->objId][2];
+    rec = D_800E1B50[omCurrentObj->objId];
+    temp = rec->unk84;
+    func_800B2340(&sp2C, dobj, (s32) omCurrentObj->objId);
     if (temp != NULL) {
         *(f32 *) &temp->footOffsetY = sp2C.y - gEntitiesNextPosYArray[omCurrentObj->objId];
     }
     func_801A0D74_ovl7(arg0);
     func_8019F410_ovl7(D_800DFBD0[omCurrentObj->objId][2]);
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl9/ovl9_2/func_801DBC38_ovl9.s")
-#endif
 void func_801DBCF0_ovl9(GObj *arg0) {
     D_800E9AA0[omCurrentObj->objId].as_s32 = 0;
 }

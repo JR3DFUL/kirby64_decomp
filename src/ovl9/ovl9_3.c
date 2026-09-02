@@ -121,119 +121,7 @@ void func_801DCE44_ovl9(GObj *arg0) {
     func_801DF454_ovl9(arg0);
 }
 
-#ifdef MIPS_TO_C
-/* FACTORY: 4/260 [was 8/260; the if/else head joined onto one physical line
-   fixes the %hi order, leaving speed in $f0 vs the ROM's $f2] (was 231/260, and the "saved-register choice" note it
-   carried was a misdiagnosis -- the $s1/$s2 swap was a SYMPTOM).  Four
-   real defects, re-derived from the listing 2026-08-25:
-     1. the switch and the `== 1` test must not share the held constant 1.
-        The ROM materialises `addiu $at, $zero, 1` fresh at both sites and
-        keeps $s1 for the three `= 1` STORES only; IDO CSEd all five, which
-        deleted two instructions and shifted ~200 words.  Casting the two
-        COMPARED values to u32 breaks the CSE (LEVER 45, keyed on type) --
-        and doing so is also what flips the saved-register assignment onto
-        the ROM's $s2=&omCurrentObj / $s1=1, because the constant's extra
-        uses were what ranked it above the address here.
-     2. case 2's wait is `while (240.0f < ABS(func_8019DA50_ovl7()))`.  The
-        three `jal func_8019DA50_ovl7` per test are ABS()'s three argument
-        expansions (LEVER 40), not a `dist` local; and it is ABS(), not
-        ABSF(), because the ROM re-materialises `mtc1 $zero, $f6` where
-        ABSF's 0.0f would have shared $f20 (LEVER 3).
-     3. there is no `id` local: every site reads omCurrentObj->objId inline.
-        The tell is that the ROM shifts in place (`sll $v0, $v0, 2`) at all
-        five index sites, which it can only do when the unshifted value is
-        dead.  Worth 66 words, and it is also what stops $s2 being used for
-        the re-read after play_sound.
-     4. `speed` is a function-scope f32 declared BEFORE sp48 (which the ROM
-        puts at 0x48, so one declared word sits above it), and the 0.5/1.0
-        choice is an if/else assigning it, not a ternary -- the ternary
-        duplicates the D_800EAC20 store into both arms (+62).
-   The 8 that remain are two known floors, 4 words each:
-     - %hi(D_800E8AE0) before %hi(D_800EAC20) at the shared preamble.  This
-       is the SAME floor already tabulated on func_801DE60C_ovl9 below in
-       this file, which has the identical block at 4/130; everything that
-       note lists as inert is inert here too.  Flipping the outer test to
-       `!= 0` fixes the order and breaks the ROM's `bnez` polarity, exactly
-       as recorded there (measured here: 15 diffs).
-     - `speed` lands in $f0 where the ROM uses $f2.  In func_801DE60C_ovl9
-       the same value gets $f2 because a call result owns $f0 ahead of it;
-       this function has no such value.  Swept and inert: ternary (70),
-       swapping the inner arms (11), an empty do-while barrier at the seam
-       (8), an extra leading f32 declaration (10). */
-void func_800AA018(s32);
-void ohSleep(s32);
-extern f32 func_8019DA50_ovl7(void);
-extern struct EnemyEventTable D_801CB764;
-/* Ambush spawn state: play the pop-in animation (0x10049) with
- * physics frozen, gate the reveal on the spawn mode (mode 1: wait
- * until Kirby's lateral offset func_8019DA50 changes sign, then 15
- * more ticks; mode 2: wait until Kirby is within 240 units; mode 3 /
- * others: immediately), run one thawed frame, then set the walk speed
- * (halved when flag 1 is set), face the player or path direction, play
- * the reveal cue when grounded and hand off to state 3 (or despawn
- * state 4 when airborne). */
-void func_801DCE6C_ovl9(struct GObj *arg0) {
-    f32 speed;
-    s32 sp48;
-
-    D_800DDFD0[omCurrentObj->objId] = 1;
-    D_800E1B50[omCurrentObj->objId]->unk8C = &D_801C8080_ovl7;
-    func_800B33F4();
-    func_800AECC0(0.0f);
-    func_800AED20(0.0f);
-    func_800AA018(0x10049);
-    D_800EB160[omCurrentObj->objId] = 0.0f;
-    D_800E9AA0[omCurrentObj->objId].as_u32 = 0;
-    switch ((u32) D_800E7880[omCurrentObj->objId]) {
-        case 3:
-            break;
-        case 1:
-            D_800EA520[omCurrentObj->objId] = 0;
-            D_800EB320[omCurrentObj->objId] = func_8019DA50_ovl7();
-            while (D_800EA520[omCurrentObj->objId] == 0) {
-                if (D_800EB320[omCurrentObj->objId] > 0.0f) {
-                    if (func_8019DA50_ovl7() < 0.0f) {
-                        D_800EA520[omCurrentObj->objId] = 1;
-                    }
-                } else if (func_8019DA50_ovl7() > 0.0f) {
-                    D_800EA520[omCurrentObj->objId] = 1;
-                }
-                ohSleep(1);
-            }
-            ohSleep(0xF);
-            break;
-        case 2:
-            while (240.0f < ABS(func_8019DA50_ovl7())) {
-                ohSleep(1);
-            }
-            break;
-    }
-    func_800AECC0(gameTicksPerDraw);
-    func_800AED20(gameTicksPerDraw);
-    func_800AF27C();
-    func_800AECC0(0.0f);
-    func_800AED20(0.0f);
-    if (D_800E8920[omCurrentObj->objId] == 0) { D_800EAC20[omCurrentObj->objId] = 0.0f; } else { if (D_800E8AE0[omCurrentObj->objId] & 1) { speed = 0.5f;
-        } else {
-            speed = 1.0f;
-        }
-        D_800EAC20[omCurrentObj->objId] = speed;
-    }
-    if (func_8019A900_ovl7(&sp48) != 0) {
-        D_800E6A10[omCurrentObj->objId] = sp48;
-    } else {
-        D_800E6A10[omCurrentObj->objId] = func_8019B608_ovl7(0);
-    }
-    if ((u32) D_800E8920[omCurrentObj->objId] == 1) {
-        play_sound(0xA4);
-        }
-    if (D_800E8920[omCurrentObj->objId] == 0) {
-        gEntityFuncListIDArray[omCurrentObj->objId] = 4;
-    } else {
-        gEntityFuncListIDArray[omCurrentObj->objId] = 3;
-    }
-}
-#elif defined(PORT)
+#ifdef PORT
 void func_800AA018(s32);
 void ohSleep(s32);
 extern f32 func_8019DA50_ovl7(void);
@@ -324,7 +212,75 @@ void func_801DCE6C_ovl9(struct GObj *arg0) {
     }
 }
 #else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl9/ovl9_3/func_801DCE6C_ovl9.s")
+void func_800AA018(s32);
+void ohSleep(s32);
+extern f32 func_8019DA50_ovl7(void);
+extern struct EnemyEventTable D_801CB764;
+/* Ambush spawn state: play the pop-in animation (0x10049) with
+ * physics frozen, gate the reveal on the spawn mode (mode 1: wait
+ * until Kirby's lateral offset func_8019DA50 changes sign, then 15
+ * more ticks; mode 2: wait until Kirby is within 240 units; mode 3 /
+ * others: immediately), run one thawed frame, then set the walk speed
+ * (halved when flag 1 is set), face the player or path direction, play
+ * the reveal cue when grounded and hand off to state 3 (or despawn
+ * state 4 when airborne). */
+void func_801DCE6C_ovl9(struct GObj *arg0) {
+    f32 speed;
+    s32 sp48;
+
+    D_800DDFD0[omCurrentObj->objId] = 1;
+    D_800E1B50[omCurrentObj->objId]->unk8C = &D_801C8080_ovl7;
+    func_800B33F4();
+    func_800AECC0(0.0f);
+    func_800AED20(0.0f);
+    func_800AA018(0x10049);
+    D_800EB160[omCurrentObj->objId] = 0.0f;
+    D_800E9AA0[omCurrentObj->objId].as_u32 = 0;
+    switch ((u32) D_800E7880[omCurrentObj->objId]) {
+        case 3:
+            break;
+        case 1:
+            D_800EA520[omCurrentObj->objId] = 0;
+            D_800EB320[omCurrentObj->objId] = func_8019DA50_ovl7();
+            while (D_800EA520[omCurrentObj->objId] == 0) {
+                if (D_800EB320[omCurrentObj->objId] > 0.0f) {
+                    if (func_8019DA50_ovl7() < 0.0f) {
+                        D_800EA520[omCurrentObj->objId] = 1;
+                    }
+                } else if (func_8019DA50_ovl7() > 0.0f) {
+                    D_800EA520[omCurrentObj->objId] = 1;
+                }
+                ohSleep(1);
+            }
+            ohSleep(0xF);
+            break;
+        case 2:
+            while (240.0f < ABS(func_8019DA50_ovl7())) {
+                ohSleep(1);
+            }
+            break;
+    }
+    func_800AECC0(gameTicksPerDraw);
+    func_800AED20(gameTicksPerDraw);
+    func_800AF27C();
+    func_800AECC0(0.0f);
+    func_800AED20(0.0f);
+    if (D_800E8920[omCurrentObj->objId] == 0) { D_800EAC20[omCurrentObj->objId] = 0.0f; } else { D_800EAC20[omCurrentObj->objId] = speed = (D_800E8AE0[omCurrentObj->objId] & 1) ? 0.5f : 1.0f;
+    }
+    if (func_8019A900_ovl7(&sp48) != 0) {
+        D_800E6A10[omCurrentObj->objId] = sp48;
+    } else {
+        D_800E6A10[omCurrentObj->objId] = func_8019B608_ovl7(0);
+    }
+    if ((u32) D_800E8920[omCurrentObj->objId] == 1) {
+        play_sound(0xA4);
+        }
+    if (D_800E8920[omCurrentObj->objId] == 0) {
+        gEntityFuncListIDArray[omCurrentObj->objId] = 4;
+    } else {
+        gEntityFuncListIDArray[omCurrentObj->objId] = 3;
+    }
+}
 #endif
 
 void func_8019F3F0_ovl7(void);
@@ -885,10 +841,10 @@ void func_801DDF9C_ovl9(GObj *arg0) {
    always demoting the symbol the ROM ranks first -- the one first materialised
    outside the loop. func_801ED9AC_ovl9's note carries the four-function table;
    attack it there, at 7/144, not here. */
-#ifdef NON_MATCHING
 void func_801DE280_ovl9(struct GObj *arg0) {
     s32 i;
     f32 d;
+    f32 q;
 
     D_800DDFD0[omCurrentObj->objId] = 6;
     D_800E1B50[omCurrentObj->objId]->unk8C = &D_801C8080_ovl7;
@@ -907,15 +863,15 @@ void func_801DE280_ovl9(struct GObj *arg0) {
         if ((D_800E8AE0[omCurrentObj->objId] & 1) != 0) {
             d = 32.0f;
             for (i = 0x20; i != 0; i--) {
-                D_800E64D0[omCurrentObj->objId] = D_800E6A10[omCurrentObj->objId] *
-                    (i * (D_8021BDB8_ovl9[D_800E7880[omCurrentObj->objId]] * D_800EAC20[omCurrentObj->objId] / d));
+                q = D_8021BDB8_ovl9[D_800E7880[omCurrentObj->objId]] * D_800EAC20[omCurrentObj->objId] / d;
+                D_800E64D0[omCurrentObj->objId] = D_800E6A10[omCurrentObj->objId] * (i * q);
                 ohSleep(1);
             }
         } else {
             d = 16.0f;
             for (i = 0x10; i != 0; i--) {
-                D_800E64D0[omCurrentObj->objId] = D_800E6A10[omCurrentObj->objId] *
-                    (i * (D_8021BDB8_ovl9[D_800E7880[omCurrentObj->objId]] * D_800EAC20[omCurrentObj->objId] / d));
+                q = D_8021BDB8_ovl9[D_800E7880[omCurrentObj->objId]] * D_800EAC20[omCurrentObj->objId] / d;
+                D_800E64D0[omCurrentObj->objId] = D_800E6A10[omCurrentObj->objId] * (i * q);
                 ohSleep(1);
             }
         }
@@ -924,9 +880,6 @@ void func_801DE280_ovl9(struct GObj *arg0) {
     func_800B33F4();
     curObjSleepForever();
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl9/ovl9_3/func_801DE280_ovl9.s")
-#endif
 
 /* FACTORY: 126/130, %hi-materialisation-order floor. The ROM materialises
    %hi(D_800E8AE0) before %hi(D_800EAC20) at the shared preamble ahead of

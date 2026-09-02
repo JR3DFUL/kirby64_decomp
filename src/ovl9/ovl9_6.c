@@ -887,54 +887,6 @@ s32 random_soft_s32_range(s32);
 #pragma GLOBAL_ASM("asm/nonmatchings/ovl9/ovl9_6/func_801ED648_ovl9.s")
 #endif
 
-#ifdef NON_MATCHING
-/* 7/144: structurally exact. IDO swaps $s5/$s6 between D_800E9C60 (ROM $s6)
- * and D_800E77A0 (ROM $s5); every other register and all scheduling match.
- * Swept: if/continue polarity, inner do-while around the ohSleep wait, and a
- * local for the switch operand (the last two are strictly worse, 11+ diffs).
- * Re-measured this session, still exactly 7 (task tracker says 8 for this
- * file's true residue; direct verify.py on the real file gives 7 -- trusting
- * the direct measurement per protocol). Sibling func_801ECB58_ovl9 has the
- * same D_800E9C60/D_800E77A0 skeleton but an extra setProcessMain() call and
- * a richer switch body, so it is not a byte-for-byte clone to copy from; its
- * matching first-compile does not by itself explain this draft's register
- * choice.
- *
- * THE SAVED-REGISTER PRIORITY FAMILY (measured 2026-08-25 across five drafts
- * in three files; this is the cheapest instance, so start any attack here).
- * IDO hoists each global's ADDRESS into a saved register and assigns those
- * registers by a priority order. The ROM's order and this compiler's order
- * differ by one position, and only that:
- *
- *   func_801ED9AC_ovl9  (here, 7/144)   ROM s6=D_800E9C60 s5=D_800E77A0
- *                                       IDO s5=D_800E9C60 s6=D_800E77A0
- *   func_801EEC28_ovl9  (45/277)        ROM s2=omCurrentObj, IDO s1
- *   func_801DE280_ovl9  (ovl9_3, 27/227) ROM s1/s2/s3 = D_8021BDB8 /
- *                                       D_800E7880 / D_800E64D0; IDO rotates
- *                                       the ROM's TOP symbol to the bottom
- *   func_8021F174_ovl19 (helper.c, 20/144) same rotation: ROM s3=omCurrentObj
- *                                       s2=D_800E0D50 s1=D_800E8060, IDO puts
- *                                       omCurrentObj at s1 and shifts the two
- *                                       loop-only symbols up
- *   func_801EDBEC_ovl9  (48/286)        ROM s1=omCurrentObj, IDO s2 -- note
- *                                       this is the OPPOSITE direction to
- *                                       func_801EEC28_ovl9 in the same file
- *
- * What is common is the SHAPE, not the direction: a one-position permutation of
- * one priority list. The emission ORDER of the lui/addiu pairs is identical in
- * ROM and draft; only the register numbers are permuted, and the prologue's sw
- * order follows the assignment (func_801EEC28_ovl9 saves $s2 before $s1 because
- * it defines $s2 first, func_801EDBEC_ovl9 saves $s1 first). So this is a
- * priority-list difference and not a scheduling one. Where three or more
- * symbols are involved the permutation is a cyclic rotation by one and the
- * symbol that moves is the one first materialised OUTSIDE the loop; with only
- * two it is a swap and the direction goes both ways, so do not read a rule into
- * which of the pair ends up higher.
- * Ruled out here: if/continue polarity, an inner do-while around the ohSleep
- * wait, a local for the switch operand (both strictly worse), and the fact that
- * D_800E9C60 has more uses than D_800E77A0 -- which should already rank it
- * higher and does in the ROM. Nothing in the body reorders the list. Anyone
- * attacking this should attack it once, here, and fix four drafts at a time. */
 void func_801ED9AC_ovl9(struct GObj *arg0) {
     if (func_801ED018_ovl9(4)) {
         func_8019D958_ovl7((u16) omCurrentObj->objId);
@@ -954,33 +906,32 @@ void func_801ED9AC_ovl9(struct GObj *arg0) {
             D_800E5F90[omCurrentObj->objId] = D_800E5F90[0];
             D_800E6BD0[omCurrentObj->objId] = D_800E6BD0[0];
             gEntitiesNextPosXArray[omCurrentObj->objId] = gEntitiesNextPosXArray[0];
-            gEntitiesNextPosZArray[omCurrentObj->objId] = gEntitiesNextPosZArray[0];
-            switch (D_800E77A0[omCurrentObj->objId]) {
-                case 0x42:
-                case 0x5D:
-                case 0x5E:
-                case 0x5F:
-                    D_800E8E60[func_8019DD78_ovl7(0x5F, 0xD)] = 0;
-                    break;
-                case 0x4B:
-                case 0x64:
-                case 0x65:
-                case 0x66:
-                    D_800E8E60[func_8019DD78_ovl7(0x66, 0xD)] = 0;
-                    break;
-                case 0x4C:
-                case 0x68:
-                case 0x69:
-                case 0x6A:
-                    D_800E8E60[func_8019DD78_ovl7(0x6A, 0xD)] = 0;
-                    break;
+            if (1) {
+                gEntitiesNextPosZArray[omCurrentObj->objId] = gEntitiesNextPosZArray[0];
+                switch (D_800E77A0[omCurrentObj->objId]) {
+                    case 0x42:
+                    case 0x5D:
+                    case 0x5E:
+                    case 0x5F:
+                        D_800E8E60[func_8019DD78_ovl7(0x5F, 0xD)] = 0;
+                        break;
+                    case 0x4B:
+                    case 0x64:
+                    case 0x65:
+                    case 0x66:
+                        D_800E8E60[func_8019DD78_ovl7(0x66, 0xD)] = 0;
+                        break;
+                    case 0x4C:
+                    case 0x68:
+                    case 0x69:
+                    case 0x6A:
+                        D_800E8E60[func_8019DD78_ovl7(0x6A, 0xD)] = 0;
+                        break;
+                }
             }
         }
     }
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl9/ovl9_6/func_801ED9AC_ovl9.s")
-#endif
 
 extern struct EnemyKindDesc *D_8021C1E4_ovl9[];
 extern struct EnemyKindDesc *D_8021C1F0_ovl9[];
@@ -1334,21 +1285,6 @@ void func_801ECAD8_ovl9(struct GObj *);
 void func_800B72AC(s32);
 void func_800B33F4(void);
 
-#ifdef NON_MATCHING
-/* FACTORY: 7/277 (was 45/277).  The whole 38-word improvement is ONE
- * scheduling barrier (LEVERS 61/71), placed by tools/decomp/barrier_sweep.py,
- * before `ent->unk8C = ent->unk88->animTable;` -- the statement immediately
- * after the switch.  Without it IDO hoists the post-switch `lw 0x88($s0)` and
- * the `idx` reload up into the switch arms, which moves the join label and
- * rotates the registers from there to the end of the function.
- * Do not delete the empty do-while.  A second sweep from this base finds
- * nothing further (best other placement 40/277).
- * The 7 that remain: the ROM's join is `.L801EED80` (reload `idx` from its
- * 0x30 spill, re-shift, load unk88) reached only by the third case's
- * fall-through, with cases 1 and 2 branching past it to `.L801EED8C` and
- * carrying `lw $v0, 0x88($s0)` in the delay slot.  Ours merges those into one
- * block two words earlier, so the two `b` displacements are 0x18/0x0C against
- * the ROM's 0x1A/0x0E and five instructions around the join are permuted. */
 void func_801EEC28_ovl9(struct GObj *arg0) {
     struct EnemyRecord *ent;
     s32 idx;
@@ -1381,9 +1317,9 @@ void func_801EEC28_ovl9(struct GObj *arg0) {
         case 0x6A:
             ent->unk88 = D_8021C1FC_ovl9[idx];
             func_800A9760(D_8021C220_ovl9[idx]);
+        default:
             break;
     }
-    do { } while (0);
     ent->unk8C = ent->unk88->animTable;
     ent->unk94 = ent->unk88->animCue;
     D_800E0490[omCurrentObj->objId] = (f32 **) ent->unk88->unk10;
@@ -1417,9 +1353,6 @@ void func_801EEC28_ovl9(struct GObj *arg0) {
     D_800E9FE0[omCurrentObj->objId].as_s32 = 1;
     gEntityFuncListIDArray[omCurrentObj->objId] = 0;
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl9/ovl9_6/func_801EEC28_ovl9.s")
-#endif
 
 void func_801EF07C_ovl9(GObj *arg0) {
     utilFuncTableJump(D_800DDFD0[omCurrentObj->objId], 4, &D_8021C114_ovl9);
@@ -1491,16 +1424,13 @@ void func_801A0D74_ovl7();
 void func_8019F3B0_ovl7(void);
 void func_800A1F30(void *);
 
-#ifdef NON_MATCHING
-/* 42/116: residue is arg0 living in $a3 where the ROM home-slots it to
- * 0x20($sp); every other insn is the same shape one register over. */
 void func_801EF354_ovl9(GObj *arg0) {
-    GObj *g;
     struct EnemyRecord *ent;
+    GObj *g;
 
     g = D_800E9AA0[omCurrentObj->objId].as_ptr;
     ent = D_800E1B50[omCurrentObj->objId];
-    if (g != NULL) {
+    if (D_800E9AA0[omCurrentObj->objId].as_ptr != NULL) {
         ((Unk801EF354Node *) g->unk4C)->unk4 = gEntitiesNextPosXArray[omCurrentObj->objId];
         ((Unk801EF354Node *) g->unk4C)->unk8 = gEntitiesNextPosYArray[omCurrentObj->objId];
         ((Unk801EF354Node *) g->unk4C)->unkC = gEntitiesNextPosZArray[omCurrentObj->objId];
@@ -1523,9 +1453,6 @@ void func_801EF354_ovl9(GObj *arg0) {
         }
     }
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl9/ovl9_6/func_801EF354_ovl9.s")
-#endif
 
 #ifdef MIPS_TO_C
 /* FACTORY: 538/546 [was noted 8/546], frame 0x58 vs the ROM's 0x60 and a different prologue

@@ -1103,7 +1103,6 @@ void func_801E8484_ovl9(struct GObj *arg0) {
    19 combinations that include a vs32 cast -- `1U` and `vs32` are both
    byte-identical to the plain form, so no third class exists.  Loop form
    (while >0 / while != 0 / for / do-while) is inert. */
-#ifdef NON_MATCHING
 extern f32 D_8021D090_ovl9;
 extern s32 random_soft_s32_range(s32);
 void func_800AECC0(f32);
@@ -1118,16 +1117,16 @@ void func_801E85CC_ovl9(struct GObj *arg0) {
     func_800AED20(gameTicksPerDraw);
     func_800B33F4();
     *(u32 *) &D_800E8920[omCurrentObj->objId] = 1;
-    D_800E4C50[omCurrentObj->objId] = D_800E6A10[omCurrentObj->objId] * D_8021D090_ovl9;
+    D_800E4C50[omCurrentObj->objId] = D_800E6A10[omCurrentObj->objId] * -1.2217305f;
     D_800E9C60[omCurrentObj->objId] = -1;
     D_800E9E20[omCurrentObj->objId] = random_soft_s32_range(3) + 2;
     D_800E9AA0[omCurrentObj->objId].as_s32 = 0;
     func_800AA018(0x10218);
     func_800AA018(0x10217);
     func_800AF27C();
-    D_800E9AA0[omCurrentObj->objId].as_u32 = 1;
+    D_800E9AA0[omCurrentObj->objId].as_s32 = 1;
     i = random_soft_s32_range(3) + 2;
-    while (i != 0) {
+    while (i > 0) {
         play_sound(0x15D);
         func_800AA018(0x10213);
         func_800AF27C();
@@ -1139,9 +1138,6 @@ void func_801E85CC_ovl9(struct GObj *arg0) {
     func_800AF27C();
     gEntityFuncListIDArray[omCurrentObj->objId] = 0;
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl9/ovl9_5/func_801E85CC_ovl9.s")
-#endif
 extern s32 D_801C8880_ovl7[];
 extern s32 D_801C88C8[];
 void func_801A0D74_ovl7();
@@ -1198,58 +1194,7 @@ void func_801E8A38_ovl9(GObj *arg0) {
     utilFuncTableJump(D_800DDFD0[omCurrentObj->objId], 3, &D_8021C008_ovl9);
 }
 
-#ifdef MIPS_TO_C
-/* FACTORY: 24/127 [was noted 103/127] -- WRONG, corrected this session by direct verify.py: true
-   residue is 24/127. One register rotation. Control flow, schedule, frame and
-   every stack slot are the ROM's; the residue is that the ROM holds the
-   gEntitiesAngleZArray / D_800E98E0 bases in $v1 and the objId-derived index
-   in $a0 where this draft uses $a1 and $v1 -- the same CSE-neighbour
-   register-rename floor seen elsewhere in this overlay, four times over
-   (once per D_800DFBD0/array-base pair touched). Not a source-spelling
-   residue. */
-extern void func_800B6E84(struct GObj *);
-extern f32 D_8021C014_ovl9[];
-/* Wall-mounted shooter init: install the static mover, face right,
- * bank the spawn Z angle into D_800EAA60 and zero the visual angles;
- * flat placements (spawn roll 0) count as grounded.  Aim the barrel
- * bone (bone 2) to the per-mode pitch from D_8021C014, remember the
- * combined rest angle in D_800EA8A0, zero the bone's Y/Z rotation
- * and enter state 0. */
-void func_801E8A80_ovl9(struct GObj *arg0) {
-    u32 id;
-    f32 pitch;
-
-    D_800DEF90[omCurrentObj->objId] = func_800B6E84;
-    D_800E6A10[omCurrentObj->objId] = 1.0f;
-    id = omCurrentObj->objId;
-    D_800EAA60[id] = gEntitiesAngleZArray[id];
-    gEntitiesAngleZArray[omCurrentObj->objId] = 0.0f;
-    id = omCurrentObj->objId;
-    gEntitiesAngleYArray[id] = gEntitiesAngleZArray[id];
-    gEntitiesAngleXArray[omCurrentObj->objId] = gEntitiesAngleYArray[id];
-    id = omCurrentObj->objId;
-    if (D_800EAA60[id] == 0.0f) {
-        D_800E98E0[id] = 1;
-    } else {
-        D_800E98E0[id] = 0;
-    }
-    id = omCurrentObj->objId;
-    if (D_800E98E0[id] != 0) {
-        D_800E8920[id] = 1;
-    } else {
-        D_800E8920[id] = 0;
-    }
-    id = omCurrentObj->objId;
-    pitch = D_8021C014_ovl9[D_800E7880[id]];
-    D_800EA6E0[id] = pitch;
-    D_800DFBD0[omCurrentObj->objId][2]->angle.v.x = pitch;
-    id = omCurrentObj->objId;
-    D_800EA8A0[id] = D_800EAA60[id] + pitch;
-    D_800DFBD0[omCurrentObj->objId][2]->angle.v.z = 0.0f;
-    D_800DFBD0[omCurrentObj->objId][2]->angle.v.y = D_800DFBD0[omCurrentObj->objId][2]->angle.v.z;
-    gEntityFuncListIDArray[omCurrentObj->objId] = 0;
-}
-#elif defined(PORT)
+#ifdef PORT
 extern void func_800B6E84(struct GObj *);
 extern f32 D_8021C014_ovl9[];
 /* Wall-mounted shooter init: install the static mover, face right,
@@ -1293,7 +1238,36 @@ void func_801E8A80_ovl9(struct GObj *arg0) {
     gEntityFuncListIDArray[omCurrentObj->objId] = 0;
 }
 #else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl9/ovl9_5/func_801E8A80_ovl9.s")
+extern void func_800B6E84(struct GObj *);
+extern f32 D_8021C014_ovl9[];
+/* Wall-mounted shooter init: install the static mover, face right,
+ * bank the spawn Z angle into D_800EAA60 and zero the visual angles;
+ * flat placements (spawn roll 0) count as grounded.  Aim the barrel
+ * bone (bone 2) to the per-mode pitch from D_8021C014, remember the
+ * combined rest angle in D_800EA8A0, zero the bone's Y/Z rotation
+ * and enter state 0. */
+void func_801E8A80_ovl9(struct GObj *arg0) {
+    f32 pitch;
+
+    D_800DEF90[omCurrentObj->objId] = func_800B6E84;
+    D_800E6A10[omCurrentObj->objId] = 1.0f;
+    D_800EAA60[omCurrentObj->objId] = gEntitiesAngleZArray[omCurrentObj->objId];
+    gEntitiesAngleZArray[omCurrentObj->objId] = 0.0f;
+    gEntitiesAngleXArray[omCurrentObj->objId] = gEntitiesAngleYArray[omCurrentObj->objId] = gEntitiesAngleZArray[omCurrentObj->objId];
+    if (D_800EAA60[omCurrentObj->objId] == 0.0f) {
+        D_800E98E0[omCurrentObj->objId] = 1;
+    } else {
+        D_800E98E0[omCurrentObj->objId] = 0;
+    }
+    if (D_800E98E0[omCurrentObj->objId] != 0) { D_800E8920[omCurrentObj->objId] = 1; } else { D_800E8920[omCurrentObj->objId] = 0; }
+    pitch = D_8021C014_ovl9[D_800E7880[omCurrentObj->objId]];
+    D_800EA6E0[omCurrentObj->objId] = pitch;
+    D_800DFBD0[omCurrentObj->objId][2]->angle.v.x = pitch;
+    D_800EA8A0[omCurrentObj->objId] = D_800EAA60[omCurrentObj->objId] + pitch;
+    D_800DFBD0[omCurrentObj->objId][2]->angle.v.z = 0.0f;
+    D_800DFBD0[omCurrentObj->objId][2]->angle.v.y = D_800DFBD0[omCurrentObj->objId][2]->angle.v.z;
+    gEntityFuncListIDArray[omCurrentObj->objId] = 0;
+}
 #endif
 
 extern void func_800B7514(struct GObj *);
@@ -1699,17 +1673,6 @@ void func_801EA048_ovl9(struct GObj *arg0) {
     gEntityFuncListIDArray[omCurrentObj->objId] = 1;
 }
 
-#ifdef NON_MATCHING
-/* 22/90: the ROM defers the `sw $a0` parameter-home store into the delay
- * slot of the func_801EA2F8_ovl9 call (arg0's first and only use) and keeps
- * arg0 in $a0 the whole time; this draft's IDO output stores the home slot
- * immediately in the prologue (before the unrelated angle.v.x store that
- * doesn't touch $a0) and then reloads it again right before the call --
- * doing the same store twice instead of once, deferred. Re-measured this
- * session, still exactly 22. The angle.v.x statement cannot be reordered
- * around the call (source order already matches the ROM's instruction
- * order); this reads as a prologue-vs-delay-slot store-scheduling floor,
- * not a source-spelling residue. */
 void func_801EA2F8_ovl9(struct GObj *);
 void func_801EA628_ovl9();
 void func_801A0D74_ovl7();
@@ -1730,12 +1693,9 @@ void func_801EA190_ovl9(struct GObj *arg0) {
         }
         func_8019F3F0_ovl7();
     } else {
-        func_801EA628_ovl9();
+        func_801EA628_ovl9(arg0);
     }
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl9/ovl9_5/func_801EA190_ovl9.s")
-#endif
 void func_801EA2F8_ovl9(struct GObj *arg0) {
     f32 pad0;
     f32 pad1;

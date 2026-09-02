@@ -1327,60 +1327,21 @@ void func_801D52F0_ovl9(struct GObj *arg0) {
 extern f32 func_800F9828(s32, s32);
 extern f32 func_8019B608_ovl7(s32);
 
-#ifdef NON_MATCHING
-/* 21/96: a float-register cascade ($f0/$f2/$f12/$f14 pairs swapped
- * throughout the ABSF/compare tail), not a source-spelling residue.
- * Re-measured this session: the original draft assigned var_f12 in its
- * own statement before the `if`, which cost 23/96; folding it into the
- * condition as `if ((var_f12 = func_800F9828(...)) == 9999.0f)` -- the
- * exact spelling this file's matched sibling func_801D650C_ovl9 uses for
- * the same dy/var_f12/dx/dz/dist preamble (LEVERS lever 1, clone family)
- * -- took it to 21/96 and fixed the leading dy/dx/dz load order to match
- * exactly. From there: declaration order (moving var_f12 up to sit next
- * to dx/dz like the sibling) made it WORSE (25/96, reverted); ABSF()
- * macro vs the equivalent hand-written ternary is inert (same expansion);
- * reversing the `== 9999.0f` compare operand order is inert. All 21
- * remaining diffs are register renames in the ABSF(var_f12)/ABSF(dy) and
- * final `(b<=a) ? .. : ..` compare chain -- reads as a float-register
- * permutation floor (LEVERS "second variant" class).
- *
- * HARVESTED PERMUTER ZERO, RE-MEASURED AND FALSE (2026-08-25).
- * tools/decomp/perm/func_801D56D0_ovl9/output-0-1 scores 0 by dropping the
- * `b` local and inlining `ABSF(dy)` into the return.  In the real TU that is
- * 27/96, not 0: deleting the declaration takes the frame from the ROM's 0x38
- * to 0x30 and every sp offset with it (0x2C -> 0x24), which is exactly the
- * class asm-differ normalises away when it is run without --stack-diffs.
- * Keeping the declaration count at 7 (an unused `f32 b`) and inlining
- * ABSF(dy) anyway is 21/96 -- identical to this spelling -- so the inline
- * buys nothing and the readable form is kept.
- * What the residue actually is: the ROM keeps `var_f12` in $f12, the FP
- * ARGUMENT register, from `mov.s $f12, $f0` after func_800F9828 all the way
- * to the final compare; IDO puts it in $f2.  There is no home store, so it is
- * not a parameter -- it is an allocation choice, and it is what every one of
- * the 21 diffs is downstream of. */
 s32 func_801D56D0_ovl9(void) {
     f32 dx;
     f32 dz;
     f32 dy;
     f32 var_f12;
-    f32 a;
-    f32 b;
-    f32 dist;
+    s32 pad[2];
 
     dy = (gEntitiesNextPosYArray[0] + 20.0f) - gEntitiesNextPosYArray[omCurrentObj->objId];
     if ((var_f12 = func_800F9828(omCurrentObj->objId, 0)) == 9999.0f) {
         dx = gEntitiesNextPosXArray[0] - gEntitiesNextPosXArray[omCurrentObj->objId];
         dz = gEntitiesNextPosZArray[0] - gEntitiesNextPosZArray[omCurrentObj->objId];
-        dist = sqrtf((dx * dx) + (dz * dz));
-        var_f12 = dist * func_8019B608_ovl7(0);
+        var_f12 = sqrtf((dx * dx) + (dz * dz)) * func_8019B608_ovl7(0);
     }
-    a = ABSF(var_f12);
-    b = ABSF(dy);
-    return (b <= a) ? ((0 <= var_f12) ? 3 : 2) : ((0 <= dy) ? 0 : 1);
+    return (ABSF(var_f12) >= ABSF(dy)) ? ((0 <= var_f12) ? 3 : 2) : ((0 <= dy) ? 0 : 1);
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl9/ovl9_1/func_801D56D0_ovl9.s")
-#endif
 
 #ifdef MIPS_TO_C
 /* FACTORY: 339/346 [was noted 7/346], saved-register choice: the ROM keeps &omCurrentObj in $s1
