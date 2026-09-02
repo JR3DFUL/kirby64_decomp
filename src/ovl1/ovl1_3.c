@@ -144,49 +144,7 @@ s32 func_800A8310(s32 arg0) {
     return D_800D7BB4 - arg0;
 }
 
-/* FACTORY: 33/45 -- MEASURED 2026-08-25 by the annotate pass. The number is all this line claims; no
-   listing was read for it and no cause is diagnosed. */
-#ifdef NON_MATCHING
-#ifndef PORT
-// Correct structure; remaining diff is register allocation only (compiler
-// caches &D_800D7BD0[temp_v1] in a2, target keeps base + recomputes index).
-void *func_800A8358(s32 arg0) {
-    s32 temp_v1;
-    struct CacheLine *var_a1;
-    u32 lim;
-    struct CacheLine *found;
-    struct CacheLine *temp_a2;
-
-    temp_v1 = arg0 & 3;
-    arg0 = ((arg0 - temp_v1) + 0xC) & ~0xF;
-    var_a1 = D_800D7BD0[temp_v1];
-    lim = arg0 + 0x10;
-loop_1:
-    if (var_a1->unkC != 0) {
-        goto advance;
-    }
-    if (var_a1->unk8 >= lim) {
-        goto block_found;
-    }
-advance:
-    var_a1 = var_a1->unk4;
-    goto loop_1;
-block_found:
-    found = (struct CacheLine *)((u8 *)var_a1 + arg0);
-    temp_a2 = found + 1;
-    temp_a2->unk0 = var_a1;
-    temp_a2->unk4 = var_a1->unk4;
-    temp_a2->unkC = 0;
-    temp_a2->unk8 = (var_a1->unk8 - arg0) - 0x10;
-    var_a1->unk4 = temp_a2;
-    temp_a2->unk4->unk0 = temp_a2;
-    D_800D7BD0[temp_v1] = temp_a2->unk4->unk0;
-    D_800D7BBC = var_a1;
-    var_a1->unk8 = arg0;
-    var_a1->unkC = 1;
-    return (u8 *)var_a1 + 0x10;
-}
-#else
+#ifdef PORT
 /* Same function through the 16-byte PORT header (CL() widens the 32-bit
  * link slots; pointer stores narrow with a cast). */
 void *func_800A8358(s32 arg0) {
@@ -225,9 +183,40 @@ block_found:
     var_a1->unkC = 1;
     return (u8 *)var_a1 + 0x10;
 }
-#endif
 #else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl1/ovl1_3/func_800A8358.s")
+void *func_800A8358(s32 arg0) {
+    s32 temp_v1;
+    struct CacheLine *var_a1;
+    u32 var_a2;
+
+    temp_v1 = arg0 & 3;
+    var_a1 = D_800D7BD0[arg0 & 3];
+    arg0 = ((arg0 - temp_v1) + 0xC) & ~0xF;
+    var_a2 = arg0 + 0x10;
+loop_1:
+    if (var_a1->unkC != 0) {
+        goto advance;
+    }
+    if (var_a1->unk8 >= var_a2) {
+        goto block_found;
+    }
+advance:
+    var_a1 = var_a1->unk4;
+    goto loop_1;
+block_found:
+    var_a2 = (u32)var_a1 + arg0 + 0x10;
+    ((struct CacheLine *)var_a2)->unk0 = var_a1;
+    ((struct CacheLine *)var_a2)->unk4 = var_a1->unk4;
+    ((struct CacheLine *)var_a2)->unk8 = (var_a1->unk8 - arg0) - 0x10;
+    ((struct CacheLine *)var_a2)->unkC = 0;
+    var_a1->unk4 = (struct CacheLine *)var_a2;
+    ((struct CacheLine *)var_a2)->unk4->unk0 = (struct CacheLine *)var_a2;
+    D_800D7BD0[temp_v1] = ((struct CacheLine *)var_a2)->unk4->unk0;
+    D_800D7BBC = var_a1;
+    var_a1->unk8 = arg0;
+    var_a1->unkC = 1;
+    return (u8 *)var_a1 + 0x10;
+}
 #endif
 #ifdef PORT
 /* Region init through the 16-byte PORT header (see struct CacheLine): the
@@ -2809,9 +2798,7 @@ void *func_800A9AA8(u32 arg0, s32 arg1) {
     return buf;
 }
 
-/* FACTORY: 37/76 -- MEASURED 2026-08-25 by the annotate pass. The number is all this line claims; no
-   listing was read for it and no cause is diagnosed. */
-#ifdef NON_MATCHING
+#ifdef PORT
 s32 func_800A9B48(s32 arg0) {
     u32 *temp_v0;
     GObj *temp_v1;
@@ -2854,41 +2841,51 @@ s32 func_800A9B48(s32 arg0) {
     return temp_a2;
 }
 #else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl1/ovl1_3/func_800A9B48.s")
-#endif
-// Draft, 30/59: structure, frame (the two pads are load-bearing) and every
-// spill slot layout are right. Residue is the one-slot register rotation --
-// the ROM reuses $v0 for the loaded table entry and keeps the block pointer
-// in $a2/flag in $a3, where IDO reserves $v0 and shifts to $a3/$t0.
-/* FACTORY: 30/59 -- MEASURED 2026-08-25 by the annotate pass. The number is all this line claims; no
-   listing was read for it and no cause is diagnosed. */
-#ifdef NON_MATCHING
-s32 func_800A9C78(s32 arg0, s32 arg1) {
-    s32 pad0;
+s32 func_800A9B48(s32 arg0) {
+    s32 temp_a2;
+    s32 pad;
     struct AnimBlock *temp_v0;
-    s32 pad1;
+
+    temp_v0 = (struct AnimBlock *)func_800A94F4(arg0);
+    temp_a2 = temp_v0->unk4;
+    if (temp_a2 != 0) {
+        if (D_800DF850[omCurrentObj->objId] != -1) {
+            func_800A8578(D_800DF850[omCurrentObj->objId] | 2);
+        }
+        D_800DF850[omCurrentObj->objId] = (u32)temp_v0;
+        D_800E0110[omCurrentObj->objId] = arg0;
+    } else {
+        if (D_800DF690[omCurrentObj->objId].as_u32 != -1) {
+            func_800A8578(D_800DF690[omCurrentObj->objId].as_u32 | 2);
+        }
+        D_800DF690[omCurrentObj->objId].as_u32 = (u32)temp_v0;
+        D_800DFF50[omCurrentObj->objId] = arg0;
+    }
+    return temp_a2;
+}
+#endif
+s32 func_800A9C78(s32 arg0, s32 arg1) {
     s32 temp_a3;
+    s32 pad;
+    struct AnimBlock *temp_v0;
 
     temp_v0 = (struct AnimBlock *)func_800A94F4(arg0);
     temp_a3 = temp_v0->unk4;
     if (temp_a3 != 0) {
         if (D_800DF850[arg1] != -1) {
-            func_800A8578(D_800DF850[arg1] | 2, D_800DF850[arg1]);
+            func_800A8578(D_800DF850[arg1] | 2);
         }
         D_800DF850[arg1] = (u32)temp_v0;
         D_800E0110[arg1] = arg0;
     } else {
         if (D_800DF690[arg1].as_u32 != -1) {
-            func_800A8578(D_800DF690[arg1].as_u32 | 2, D_800DF690[arg1].as_u32);
+            func_800A8578(D_800DF690[arg1].as_u32 | 2);
         }
         D_800DF690[arg1].as_u32 = (u32)temp_v0;
         D_800DFF50[arg1] = arg0;
     }
     return temp_a3;
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl1/ovl1_3/func_800A9C78.s")
-#endif
 
 void func_800A9D64(s32 track) {
     if (D_800DF690[track].as_u32 != -1) {
