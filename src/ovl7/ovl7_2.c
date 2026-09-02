@@ -898,34 +898,30 @@ void func_801A04B8_ovl7(void) {
 #endif
 
 #ifdef NON_MATCHING
-// FACTORY: 22/47, all register naming -- re-confirmed 2026-08-23, identical
-// 22/47. ROM: objId $v1, ent $v0, objId*4 $a2,
-// ent->unk90 $a0, ent->unk3D $a1. IDO: objId $a1, ent $v1, objId*4 $v0,
-// unk90 $a2, unk3D $a0. The only non-naming-looking residue -- the ROM's
-// `sb $t9,0x3D($v0)` landing before `or $v0,$zero,$zero` while IDO emits them
-// in the other order -- is forced by the naming: the ROM's store uses $v0 as
-// its base so it cannot follow the zeroing of $v0. Swept: an explicit
-// `s32 id = omCurrentObj->objId` local used at every index (byte-identical
-// output to the inline form, 22/47 either way). Whole-function callee-saved
-// permutation floor from LEVERS.md's guard-on-the-second-variant list.
-// Good permuter seed.
+/* FACTORY: 11/47 words, three-temp rotation (objId/objId*4/unk3D) */
 s32 func_801A07C4_ovl7(void) {
-    struct EnemyRecord *ent = D_800E1B50[omCurrentObj->objId];
+    s32 objId = omCurrentObj->objId;
+    struct EnemyRecord *ent = D_800E1B50[objId];
+    void *unk90 = ent->unk90;
+    s32 new_var;
 
-    if (ent->unk90 == 0) {
-        return 0;
-    }
-    if (D_800E83E0[omCurrentObj->objId] != 0) {
-        if (D_800E7730[omCurrentObj->objId] == 4) {
-            assign_new_process_entry(gEntityGObjProcessArray[omCurrentObj->objId], func_801ACF84_ovl7);
+    if (1) {
+        if (unk90 == 0) {
+            return 0;
         }
-        return 1;
+        new_var = objId;
+        if (D_800E83E0[objId] != 0) {
+            if (D_800E7730[objId] == 4) {
+                assign_new_process_entry(gEntityGObjProcessArray[new_var], func_801ACF84_ovl7);
+            }
+            return 1;
+        }
+        if (ent->unk3D == 0) {
+            func_80111C4C(func_801117BC(unk90, objId));
+            return 0;
+        }
+        ent->unk3D = ent->unk3D - 1;
     }
-    if (ent->unk3D == 0) {
-        func_80111C4C(func_801117BC(ent->unk90, omCurrentObj->objId));
-        return 0;
-    }
-    ent->unk3D = ent->unk3D - 1;
     return 0;
 }
 #else

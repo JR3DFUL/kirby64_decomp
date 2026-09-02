@@ -936,51 +936,11 @@ void func_801D6C8C_ovl8(struct GObj *arg0) {
  *            the 0x3F group (floor/ceiling) just halves and reverses his X
  *            velocity and kills the Y term. */
 #ifdef MIPS_TO_C
-/* FACTORY: 41/201 words DIFFER, 2026-08-25 (was 91, and 131 before that), and
- * the INSTRUCTION COUNT IS EXACT with no missing or extra word.
- * The 90-word improvement was TWO CHARACTERS, both LEVER 90/99 zero forks, and
- * they only pay TOGETHER -- the pair is the unit, exactly as LEVER 99 says:
- *     `D_800E3210[objId] = 0.0f;` -> `= 0`        91  (alone)
- *     `gKirbyHp <= 0.0f`          -> `<= 0`       70  (alone)
- *     both                                        41
- *     both, plus `dx != 0 || dz != 0`             68  (worse -- leave those)
- * All 15 subsets of the three sites were measured; 41 is the floor of that
- * space, and two different subsets reach it (store+hp, or dxz+nothing-else).
- * zerofork_sweep.py finds the store flip on its own but reports 68, because it
- * tries singles and then ALL sites and never the pairs -- run the pairs by hand
- * on any draft it improves.
- * What is left is ONE scheduling decision and the register cascade hanging off
- * it, in the three D_8012BCA0 hit-bit blocks: the ROM fills the first block's
- * `beqz $t6` delay slot with that block's own `lui $v0, %hi(D_8012BCA0)`, this
- * draft fills it with the SECOND block's `andi $t0, 0x2`, which then lives in
- * $t5 across the whole first block and rotates every temp in all three blocks
- * ($t7/$t3/$t8/$t9/$t2/$t4/$t5 against $t9/$t7/$t1/$t2/$t3/$t8/$t4).  aligndiff
- * reduces the whole residue to one insert at 132 and one delete at 143.
- * Measured and inert, do not re-spend: an empty `do { } while (0);` barrier
- * before each of the four `if (hits ...)` statements (all four placements,
- * 41 every time); the `or` operands swapped in all three blocks
- * (`(x & 7) | (y << 3)`); `if (hits)` for `if (hits != 0)`; `(hits & N) != 0`
- * for `hits & N`; `hits` retyped u32.  Declaration ORDER is the one knob that
- * moves and every rotation is worse (43, 45, 47).
- *
- * (older) 131/201 words DIFFER -- 70 already match, instruction count exact
- * but for ONE extra `move $a0,$t0`. The ROM loads omCurrentObj->objId
- * straight into $a0 (the outgoing first argument of func_800F8728) and
- * indexes off it; IDO CSEs the same expression into $t0 and moves it into
- * place at the call. Everything else in the residue is FP/integer register
- * rotation hanging off that ($f16/$f18 vs $f10/$f16 on the two subs,
- * $t1 vs $t2 on the D_800E6150 copy).
- *
- * Fixed on the way down (151 -> 131): the state dispatch is a SWITCH, not an
- * if/else-if chain -- the ROM branches INTO each arm (`beql $v0,$zero,STATE0`
- * / `beq $v0,$at,STATE1` / `b DEFAULT`), which is IDO's sparse-switch
- * lowering; the if/else form branches away and costs 20 words.
- * Swept with no effect: giving objId a named local (that ADDS an instruction,
- * 202), `!(dx == 0 && dz == 0)` for the delta test (131, identical), and
- * declaration order for the four locals (133, worse). */
+/* FACTORY: 38/201 words, temp-register rotation in the three D_8012BCA0 bitfield stores */
 void func_801D6F1C_ovl8(struct GObj *arg0) {
     extern struct EnemyProbe D_801CE6D0_ovl7;
     extern u32 D_8012BCA0;
+    struct Bits8012BCA0 { u16 hi : 13; u16 lo : 3; };
     extern s32 D_801CA980;
     extern f32 gKirbyHp;
     s32 func_801128A4(void *);
@@ -1020,13 +980,13 @@ void func_801D6F1C_ovl8(struct GObj *arg0) {
         gEntitiesNextPosYArray[omCurrentObj->objId] = D_801CE6D0_ovl7.posY;
         if (hits != 0) {
             if (hits & 1) {
-                *(u16 *) &D_8012BCA0 = (((D_8012BCA0 >> 0x13) | 7) << 3) | (*(u16 *) &D_8012BCA0 & 7);
+                ((struct Bits8012BCA0 *) &D_8012BCA0)->hi = (D_8012BCA0 >> 0x13) | 7;
             }
             if (hits & 2) {
-                *(u16 *) &D_8012BCA0 = (((D_8012BCA0 >> 0x13) | 0x38) << 3) | (*(u16 *) &D_8012BCA0 & 7);
+                ((struct Bits8012BCA0 *) &D_8012BCA0)->hi = (D_8012BCA0 >> 0x13) | 0x38;
             }
             if (hits & 4) {
-                *(u16 *) &D_8012BCA0 = (((D_8012BCA0 >> 0x13) | 0x1C0) << 3) | (*(u16 *) &D_8012BCA0 & 7);
+                ((struct Bits8012BCA0 *) &D_8012BCA0)->hi = (D_8012BCA0 >> 0x13) | 0x1C0;
             }
         }
         flags = D_8012BCA0 >> 0x13;
@@ -1182,46 +1142,12 @@ void func_801D7240_ovl8(struct GObj *arg0) {
  * X velocity, take a point of damage and clear the two gKirbyState fields the
  * grab used. */
 #ifdef MIPS_TO_C
-/* FACTORY: 93/179 words DIFFER -- was 97/179; the instruction count is EXACT.
- * 2026-08-25: THE FRAME IS NOW RIGHT. Four reserved `s32` slots declared
- * AHEAD of every named local take the frame from 0x20 to the ROM's 0x30
- * (LEVER 78, and see the correction to this note below). 97 -> 93.
- *
- * The note this replaces said "pad locals in every position (IDO drops them --
- * they are unused, so lever 13 has nothing to push)". That is WRONG, and it is
- * the LEVER 13/78 confusion: LEVER 13 says a pad goes LAST, and last is the one
- * place an unreferenced pad reliably evaporates. Declared FIRST, all four are
- * kept and each reserves its word.
- *
- * What is left is the register cascade the old note describes, minus the frame
- * size: the ROM spills the objId to 0x18(sp) and the func_801128A4 result to
- * 0x2C(sp) across the func_800F8728 call. This draft still spills only the
- * second one, and at 0x1C -- because the four reserved slots are DECLARED
- * locals and LEVER 57 puts declarations above compiler temps, so they take
- * 0x2C..0x20 and push the temps to 0x1C/0x18. Reading the ROM's slots through
- * LEVER 57 says its source has NO stack-resident declaration here at all: six
- * compiler temps, the first (0x2C) holding `hits` and the sixth (0x18) the
- * objId. That is the shape to reach; the reserved slots buy the SIZE only,
- * and the two offset diffs at 0x2C/0x1C are the price.
- *
- * Swept with no effect: `!(dx == 0 && dz == 0)` in
- * place of `dx != 0 || dz != 0` (the ROM shares one `mtc1 $zero,$f12` between
- * the two compares; IDO materialises two, and neither spelling changes it),
- * and spelling BOTH compares against the integer `0` (LEVERS 90/99) -- 93 ->
- * 131/178, and it loses a word, so the pair does not fork on that knob here.
- * Fixed on the way down (136 -> 97): testing the EQUAL case first on
- * D_800E8920 (LEVERS lever 5), and giving the objId and the probe result
- * named locals.
- *
- * NOTE this function is PADDING-TRAPPED regardless: it is the last function
- * in its TU and its listing carries three trailing nops past `.size`, so
- * un-guarding it would shrink ovl8_4.o by 12 bytes even on a MATCH. Closing
- * it needs a `pad` subsegment in kirby64.yaml and the matching kirby.ld edit.
- * The PORT arm below is what the native link actually needs. */
+/* FACTORY: 81/179 words, temp/callee rotation; padding-trapped TU (last function, 3 trailing nops) */
 #include "Player.h"
 void func_801D75A8_ovl8(struct GObj *arg0) {
     extern struct EnemyProbe D_801CE6D0_ovl7;
     extern u32 D_8012BCA0;
+    struct Bits8012BCA0 { u16 hi : 13; u16 lo : 3; };
     extern s32 D_801CA980;
     extern f32 gKirbyHp;
     s32 func_801128A4(void *);
@@ -1262,13 +1188,13 @@ void func_801D75A8_ovl8(struct GObj *arg0) {
         gEntitiesNextPosYArray[id] = D_801CE6D0_ovl7.posY;
         if (hits != 0) {
             if (hits & 1) {
-                *(u16 *) &D_8012BCA0 = (((D_8012BCA0 >> 0x13) | 7) << 3) | (*(u16 *) &D_8012BCA0 & 7);
+                ((struct Bits8012BCA0 *) &D_8012BCA0)->hi = (D_8012BCA0 >> 0x13) | 7;
             }
             if (hits & 2) {
-                *(u16 *) &D_8012BCA0 = (((D_8012BCA0 >> 0x13) | 0x38) << 3) | (*(u16 *) &D_8012BCA0 & 7);
+                ((struct Bits8012BCA0 *) &D_8012BCA0)->hi = (D_8012BCA0 >> 0x13) | 0x38;
             }
             if (hits & 4) {
-                *(u16 *) &D_8012BCA0 = (((D_8012BCA0 >> 0x13) | 0x1C0) << 3) | (*(u16 *) &D_8012BCA0 & 7);
+                ((struct Bits8012BCA0 *) &D_8012BCA0)->hi = (D_8012BCA0 >> 0x13) | 0x1C0;
             }
         }
         if (((D_8012BCA0 >> 0x13) & 0xFFF) != 0) {

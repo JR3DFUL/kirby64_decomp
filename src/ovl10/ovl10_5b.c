@@ -693,62 +693,7 @@ void func_801F0DD0_ovl10(struct GObj *arg0) {
     func_800FF200(D_800EA520[omCurrentObj->objId]);
 }
 
-#ifdef MIPS_TO_C
-/* FACTORY: 127/149. Frame is 8 over the ROM's 0x90 and the local block sits high
- * (kirby at 0x8C vs the ROM's 0x60), which is the whole residue.
- * IMPORTANT correctness note kept in the draft: an empty slot's dist[] entry is left
- * UNINITIALISED here, exactly as the ROM leaves it -- the slot-occupied guards are
- * what keep it out of the compare chain. The PORT arm seeds those entries with
- * 65535.0f as host hardening; carrying that into the N64 draft costs 21 diffs
- * (148/149 -> 127/149 once removed) and is semantically wrong for the ROM.
- * Measured and rejected: all three declaration orders (scalars first, dist[] first,
- * both) -- identical score, so LEVERS 12/21/32 do not move this one; the aggregates
- * are all address-taken. */
-/* Roulette hit poll: distance from Kirby's dive body (D_800DE350[0] node) to
- * every live wheel item in the D_801F4D68 slot registry (contiguous s32[7]
- * run); returns the nearest slot when it is within 34 units, else 8.
- * An empty slot's dist[] entry is deliberately left uninitialised, exactly as the
- * ROM does -- the slot-occupied guards are what keep it out of the compare chain.
- * (The PORT arm seeds those entries with 65535; that is a host-side hardening and
- * must NOT be carried into the N64 draft.) */
-s32 func_801F0EC8_ovl10(GObj *arg0) {
-    Vector kirby;
-    Vector item;
-    f32 dist[7];
-    f32 best;
-    f32 dx;
-    f32 dy;
-    f32 dz;
-    s32 i;
-    s32 bestSlot;
-
-    for (i = 0; i < 7; i++) {
-        if (D_801F4D68_ovl10[i] != 0) {
-            func_800B2340(&kirby, D_800DE350[0]->data.dobj, 0);
-            func_800B2340(&item, D_800DE350[D_801F4D68_ovl10[i]]->data.dobj, D_801F4D68_ovl10[i]);
-            dx = item.x - kirby.x;
-            dy = item.y - kirby.y;
-            dz = item.z - kirby.z;
-            dist[i] = sqrtf((dx * dx) + (dy * dy) + (dz * dz));
-        }
-    }
-    bestSlot = 0;
-    if ((D_801F4D68_ovl10[1] != 0) && (dist[1] < dist[0])) {
-        bestSlot = 1;
-    }
-    if ((D_801F4D68_ovl10[2] != 0) && (dist[2] < dist[bestSlot])) {
-        bestSlot = 2;
-    }
-    best = dist[bestSlot];
-    for (i = 3; i < 7; i++) {
-        if ((D_801F4D68_ovl10[i] != 0) && (dist[i] < best)) {
-            bestSlot = i;
-            best = dist[i];
-        }
-    }
-    return (best < 34.0f) ? bestSlot : 8;
-}
-#elif defined(PORT)
+#ifdef PORT
 /* Roulette hit poll: distance from Kirby's dive body (D_800DE350[0] node) to
  * every live wheel item in the D_801F4D68 slot registry (contiguous s32[7]
  * run); returns the nearest slot when it is within 34 units, else 8.
@@ -794,7 +739,42 @@ s32 func_801F0EC8_ovl10(GObj *arg0) {
     return (best < 34.0f) ? bestSlot : 8;
 }
 #else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl10/ovl10_5b/func_801F0EC8_ovl10.s")
+/* Roulette hit poll: distance from Kirby's dive body (D_800DE350[0] node) to
+ * every live wheel item in the D_801F4D68 slot registry (contiguous s32[7]
+ * run); returns the nearest slot when it is within 34 units, else 8.
+ * An empty slot's dist[] entry is deliberately left uninitialised, exactly as the
+ * ROM does -- the slot-occupied guards are what keep it out of the compare chain.
+ * (The PORT arm seeds those entries with 65535; that is a host-side hardening and
+ * must NOT be carried into the N64 draft.) */
+s32 func_801F0EC8_ovl10(GObj *arg0) {
+    f32 dist[7];
+    s32 slot;
+    s32 bestSlot;
+    Vector kirby;
+    Vector item;
+    s32 i;
+    f32 best;
+
+    for (i = 0; i < 7; i++) {
+        if (D_801F4D68_ovl10[i] != 0) {
+            func_800B2340(&kirby, D_800DE350[0]->data.dobj, 0);
+            slot = D_801F4D68_ovl10[i];
+            func_800B2340(&item, D_800DE350[slot]->data.dobj, slot);
+            dist[i] = sqrtf(((item.x - kirby.x) * (item.x - kirby.x)) + ((item.y - kirby.y) * (item.y - kirby.y)) + ((item.z - kirby.z) * (item.z - kirby.z)));
+        }
+    }
+    bestSlot = 0;
+    for (i = 1; i < 7; i++) {
+        if ((D_801F4D68_ovl10[i] != 0) && (dist[i] < dist[bestSlot])) {
+            bestSlot = i;
+        }
+    }
+    best = dist[bestSlot];
+    if (best < 34.0f) {
+        return bestSlot;
+    }
+    return 8;
+}
 #endif
 
 extern u8 D_800D6C10;
@@ -825,102 +805,7 @@ s32 func_801F111C_ovl10(void) {
  * (D_800E9C60[0]) it just idles the camera forever.
  * 0x42C80000 / 0x40000000 passed to the f32 camera params are float bits:
  * 100.0f and 2.0f. */
-#ifdef MIPS_TO_C
-/* File scope WITHIN the guard, not inside the function body. It used to be
-   `#include` d in the body, and that is why this draft had never compiled:
-   include/unk_structs/D_800D79D8.h has no include guard, so an in-body
-   include DEFINES struct UnkStruct800D79D8 at BLOCK scope -- a different type
-   from the file-scope incomplete tag that `struct UnkStruct800D79D8
-   *func_800A6F40(u16);` introduces at the top of this file. The call's result
-   therefore had no members and every `->unk3C` was an error. Included here it
-   completes the file-scope tag, and it still survives un-guarding because it
-   sits before the #elif. */
-#include "unk_structs/D_800D79D8.h"
-/* FACTORY: 21/171, residue -- re-confirmed 2026-08-23, identical 21/171, and
- * CONFIRMED AGAIN 2026-08-25 by measure_seeds, which had reported this draft
- * UNSCORABLE the whole time (the block-scope include above). Both earlier
- * measurements were right; neither was reproducible.
- * Length, frame (0x20), saved registers and the
- * whole call order are the ROM's.  What is left is a one-instruction
- * scheduling slip in the scale block: the ROM issues the D_801F4C94 load
- * before `ent->unk80 = NULL` and hoists func_800AF7A0's 0x2C argument up
- * into that window, and every word from 30 to 50 is shifted by that one
- * slot.  Three real fixes over the PORT arm, all read off the listing:
- *   - `ent = D_800E1B50[objId]` comes FIRST, before the D_801F4D60 store.
- *     The ROM reads omCurrentObj->objId three times here and shares the
- *     FIRST read between the D_801F4D60 store and the D_800E1B50 index,
- *     then re-reads for each later store.  With the PORT arm's order the
- *     shared read lands on the wrong pair and IDO CSEs one read away:
- *     that single statement move is worth 118 words (139/171 -> 21/171).
- *   - 1.3f is not a literal.  This TU does not own its rodata, so the
- *     constant is the named extern D_801F4C94_ovl10; writing 1.3f makes
- *     IDO emit a private .rodata word, which verify.py cannot see because
- *     it masks LO16 -- worth 3 words and invisible to the gate.
- *   - the declarations this draft needs are in-body and every copy is
- *     spelled exactly as the PORT block's, which is what IDO requires.
- * The prototypes are NOT the blocker this file was parked on: measured,
- * hoisting an identical set to file scope compiles byte-identically.
- * Re-swept 2026-08-23: moving `gEntitiesScaleXArray[objId] =
- * D_801F4C94_ovl10;` to before `ent->unk80 = NULL;` (matching the ROM's
- * apparent load-before-store order literally) is much WORSE (125/171) --
- * this is IDO's own scheduler decision, not a source-order lever. Good
- * permuter seed. */
-/* barrier_sweep.py (LEVER 71) 2026-08-25: all 26 statement placements tried, none beats the base 21/171. */
-void func_801F11A8_ovl10(GObj *arg0) {
-    extern u32 D_801F4670_ovl10[];
-    extern f32 D_801F4C94_ovl10;
-    extern u32 D_801F4D60_ovl10;
-    extern f32 D_801F4D88_ovl10[];
-
-    struct EnemyRecord *ent;
-    s32 i;
-    s32 t;
-
-    ent = D_800E1B50[omCurrentObj->objId];
-    D_801F4D60_ovl10 = omCurrentObj->objId;
-    D_800DF150[omCurrentObj->objId] = func_801F1454_ovl10;
-    D_800DEF90[omCurrentObj->objId] = func_800B4954;
-    func_800FF1CC(ent->unk80);
-    ent->unk80 = NULL;
-    gEntitiesScaleXArray[omCurrentObj->objId] = D_801F4C94_ovl10;
-    gEntitiesScaleYArray[omCurrentObj->objId] = 1.0f;
-    gEntitiesScaleZArray[omCurrentObj->objId] = D_801F4C94_ovl10;
-    gEntitiesNextPosYArray[omCurrentObj->objId] = 0.0f;
-    func_800AF7A0(0x2C);
-    for (i = 0; i < 3; i++) {
-        t = request_track_general(0x29, 0x1E, 0x50);
-        D_800E98E0[t] = i;
-        D_800E9AA0[t].as_s32 = i + 1;
-    }
-    omGMoveObjDL(arg0, arg0->dl_link, 0x14);
-    func_800FA414(1);
-    func_800B2F54(0x10, D_801F4670_ovl10, 100.0f);
-    func_800A71A0(0x10);
-    D_801F4D88_ovl10[0] = func_800A6F40(0x10)->unk3C;
-    D_801F4D88_ovl10[1] = func_800A6F40(0x10)->unk40;
-    D_801F4D88_ovl10[2] = func_800A6F40(0x10)->unk44;
-    func_800B2F54(0x10, D_801F4670_ovl10, 0.0f);
-    func_800B3070(0x10, 2.0f);
-    func_800A71A0(0x10);
-    ohSleep(1);
-    for (i = 6; i < 0xD; i++) {
-        if ((i != 0xC) || (func_801F111C_ovl10() == 0)) {
-            D_800E98E0[request_track_general(0x29, 0x1E, 0x50)] = i;
-        }
-    }
-    for (i = 0; i != 0x23; i++) {
-        func_800A71A0(0x10);
-        ohSleep(1);
-    }
-    while (D_800E9C60[0] != 5) {
-        ohSleep(1);
-    }
-    while (1) {
-        func_800A71A0(0x10);
-        ohSleep(1);
-    }
-}
-#elif defined(PORT)
+#ifdef PORT
 #include "unk_structs/D_800D79D8.h"
 extern u32 D_801F4670_ovl10[];
 
@@ -985,7 +870,59 @@ void func_801F11A8_ovl10(GObj *arg0) {
     }
 }
 #else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl10/ovl10_5b/func_801F11A8_ovl10.s")
+void func_801F11A8_ovl10(GObj *arg0) {
+    extern u32 D_801F4670_ovl10[];
+    extern u32 D_801F4D60_ovl10;
+    extern f32 D_801F4D88_ovl10[];
+
+    struct EnemyRecord *ent;
+    s32 i;
+    s32 t;
+
+    ent = D_800E1B50[omCurrentObj->objId];
+    D_801F4D60_ovl10 = omCurrentObj->objId;
+    D_800DF150[omCurrentObj->objId] = func_801F1454_ovl10;
+    D_800DEF90[omCurrentObj->objId] = func_800B4954;
+    func_800FF1CC(ent->unk80);
+    ent->unk80 = NULL;
+    gEntitiesScaleXArray[omCurrentObj->objId] = 1.3f;
+    gEntitiesScaleYArray[omCurrentObj->objId] = 1.0f;
+    gEntitiesScaleZArray[omCurrentObj->objId] = 1.3f;
+    gEntitiesNextPosYArray[omCurrentObj->objId] = 0.0f;
+    func_800AF7A0(0x2C);
+    for (i = 0; i < 3; i++) {
+        t = request_track_general(0x29, 0x1E, 0x50);
+        D_800E98E0[t] = i;
+        D_800E9AA0[t].as_s32 = i + 1;
+    }
+    omGMoveObjDL(arg0, arg0->dl_link, 0x14);
+    func_800FA414(1);
+    func_800B2F54(0x10, D_801F4670_ovl10, 100.0f);
+    func_800A71A0(0x10);
+    D_801F4D88_ovl10[0] = ((f32 *) func_800A6F40(0x10))[15];
+    D_801F4D88_ovl10[1] = ((f32 *) func_800A6F40(0x10))[16];
+    D_801F4D88_ovl10[2] = ((f32 *) func_800A6F40(0x10))[17];
+    func_800B2F54(0x10, D_801F4670_ovl10, 0.0f);
+    func_800B3070(0x10, 2.0f);
+    func_800A71A0(0x10);
+    ohSleep(1);
+    for (i = 6; i < 0xD; i++) {
+        if ((i != 0xC) || (func_801F111C_ovl10() == 0)) {
+            D_800E98E0[request_track_general(0x29, 0x1E, 0x50)] = i;
+        }
+    }
+    for (i = 0; i != 0x23; i++) {
+        func_800A71A0(0x10);
+        ohSleep(1);
+    }
+    while (D_800E9C60[0] != 5) {
+        ohSleep(1);
+    }
+    while (1) {
+        func_800A71A0(0x10);
+        ohSleep(1);
+    }
+}
 #endif
 
 /* 1/64.  Was 11/64 with the three constants as `extern f32`; this TU's rodata
@@ -1045,46 +982,7 @@ void func_801F1454_ovl10(struct GObj *arg0)
   }
 
 }
-#ifdef MIPS_TO_C
-/* FACTORY: 198/199. This draft also OWNS the N64-side prototype for func_800A9864:
- * ovl10_5b.c keeps that prototype in the PORT-only block at the top of the file, so
- * nothing declares it in the N64 build, and IDO allows exactly one block-scope copy
- * per TU. If a later draft in this file needs it too (func_801F1A24 does), the fix is
- * to move those prototypes to real file scope rather than duplicating them. */
-
-/* Snaps this track's position and angles onto mount node 1/2/3 of the
- * D_801F4D60 wheel object, picked by arg1 (0..2); other values are a no-op.
- * D_800DFBD0 rows are native DObj** on the PC build. */
-void func_801F1554_ovl10(GObj *arg0, s32 arg1) {
-    extern u32 D_801F4D60_ovl10;
-
-    Vector pos;
-    Vector ang;
-    struct DObj *node;
-
-    switch (arg1) {
-    case 0:
-        node = D_800DFBD0[D_801F4D60_ovl10][1];
-        break;
-    case 1:
-        node = D_800DFBD0[D_801F4D60_ovl10][2];
-        break;
-    case 2:
-        node = D_800DFBD0[D_801F4D60_ovl10][3];
-        break;
-    default:
-        return;
-    }
-    func_800B2340(&pos, node, D_801F4D60_ovl10);
-    gEntitiesNextPosXArray[omCurrentObj->objId] = pos.x;
-    gEntitiesNextPosYArray[omCurrentObj->objId] = pos.y;
-    gEntitiesNextPosZArray[omCurrentObj->objId] = pos.z;
-    func_800B26D8(&ang, node, D_801F4D60_ovl10);
-    gEntitiesAngleXArray[omCurrentObj->objId] = ang.x;
-    gEntitiesAngleYArray[omCurrentObj->objId] = ang.y;
-    gEntitiesAngleZArray[omCurrentObj->objId] = ang.z;
-}
-#elif defined(PORT)
+#ifdef PORT
 extern u32 D_801F4D60_ovl10;
 
 /* Snaps this track's position and angles onto mount node 1/2/3 of the
@@ -1118,7 +1016,46 @@ void func_801F1554_ovl10(GObj *arg0, s32 arg1) {
     gEntitiesAngleZArray[omCurrentObj->objId] = ang.z;
 }
 #else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl10/ovl10_5b/func_801F1554_ovl10.s")
+/* Snaps this track's position and angles onto mount node 1/2/3 of the
+ * D_801F4D60 wheel object, picked by arg1 (0..2); other values are a no-op. */
+void func_801F1554_ovl10(GObj *arg0, s32 arg1) {
+    extern u32 D_801F4D60_ovl10;
+    Vector pos;
+    Vector ang;
+
+    switch (arg1) {
+    case 0:
+        func_800B2340(&pos, D_800DFBD0[D_801F4D60_ovl10][1], D_801F4D60_ovl10);
+        gEntitiesNextPosXArray[omCurrentObj->objId] = pos.x;
+        gEntitiesNextPosYArray[omCurrentObj->objId] = pos.y;
+        gEntitiesNextPosZArray[omCurrentObj->objId] = pos.z;
+        func_800B26D8(&ang, D_800DFBD0[D_801F4D60_ovl10][1], D_801F4D60_ovl10);
+        gEntitiesAngleXArray[omCurrentObj->objId] = ang.x;
+        gEntitiesAngleYArray[omCurrentObj->objId] = ang.y;
+        gEntitiesAngleZArray[omCurrentObj->objId] = ang.z;
+        break;
+    case 1:
+        func_800B2340(&pos, D_800DFBD0[D_801F4D60_ovl10][2], D_801F4D60_ovl10);
+        gEntitiesNextPosXArray[omCurrentObj->objId] = pos.x;
+        gEntitiesNextPosYArray[omCurrentObj->objId] = pos.y;
+        gEntitiesNextPosZArray[omCurrentObj->objId] = pos.z;
+        func_800B26D8(&ang, D_800DFBD0[D_801F4D60_ovl10][2], D_801F4D60_ovl10);
+        gEntitiesAngleXArray[omCurrentObj->objId] = ang.x;
+        gEntitiesAngleYArray[omCurrentObj->objId] = ang.y;
+        gEntitiesAngleZArray[omCurrentObj->objId] = ang.z;
+        break;
+    case 2:
+        func_800B2340(&pos, D_800DFBD0[D_801F4D60_ovl10][3], D_801F4D60_ovl10);
+        gEntitiesNextPosXArray[omCurrentObj->objId] = pos.x;
+        gEntitiesNextPosYArray[omCurrentObj->objId] = pos.y;
+        gEntitiesNextPosZArray[omCurrentObj->objId] = pos.z;
+        func_800B26D8(&ang, D_800DFBD0[D_801F4D60_ovl10][3], D_801F4D60_ovl10);
+        gEntitiesAngleXArray[omCurrentObj->objId] = ang.x;
+        gEntitiesAngleYArray[omCurrentObj->objId] = ang.y;
+        gEntitiesAngleZArray[omCurrentObj->objId] = ang.z;
+        break;
+    }
+}
 #endif
 
 extern s32 D_800D6B98;
@@ -1173,81 +1110,7 @@ s32 func_801F19DC_ovl10(s32 arg0, s32 arg1) {
     return D_800D6BE0[arg0 * 6 + arg1] & 3;
 }
 
-#ifdef MIPS_TO_C
-/* Wheel-item setup for the walking prizes (arg2 = 1 waddle dee, 2 adeleine,
- * 3 king dedede; other kinds skip the model swap): stops the track's music
- * cue when the prize kind is locked out (func_801F1934), loads the model +
- * path table, spawns the escort track (state 3/4/5), plays one of the two
- * D_801F4818[arg2] anim pairs at random, scales to 0.2, snaps onto wheel
- * mount arg1, and attaches the sparkle particle.
- *
- * FACTORY: 157/160, residue.  Length, frame (0x38), the compare-chain
- * switch and the whole call order are the ROM's; the residue is one
- * register-class decision.  The ROM promotes arg2 into $s0 for the whole
- * function (`or $s0, $a2, $zero` in the prologue, `sll $t7/$t4/$t1, $s0, 2`
- * recomputed into a fresh temp in each compare's delay slot); this draft
- * gets the same four slls but IDO assigns the index a callee-saved register
- * too, so it saves one register more than the ROM and everything downstream
- * is relabelled.  Writing arg2 straight through instead of via `kind` loses
- * the promotion entirely and costs a word (156/161) -- worse as a seed.
- * Two real fixes over the PORT arm: `second` is not a local (the ROM
- * re-reads D_801F4818[...+1] for the test and the call, lever 10), and
- * D_800EA520 takes the pointer without the PORT arm's (uintptr_t) hop.
- *
- * THE PROTOTYPES BELOW ARE IN-BODY ON PURPOSE, and that is not a
- * workaround: measured, an identical body with these same declarations
- * hoisted to file scope compiles to BYTE-IDENTICAL code (both 156/161 on
- * the pre-`kind` draft).  IDO accepts unlimited duplicate block-scope
- * prototypes; what it rejects is two copies in the TU that DISAGREE, and
- * an omitted one, because the implicit int a bare call creates then
- * collides with this file's later file-scope copy.  Keep every copy
- * spelled exactly as the file-scope ones. */
-void func_801F1A24_ovl10(GObj *arg0, s32 arg1, s32 arg2) {
-    extern u32 D_801F48F4_ovl10[];
-    extern u32 D_801F4818_ovl10[];
-    extern u32 D_801F4884_ovl10[];
-    extern u32 D_801F48BC_ovl10[];
-    extern u32 D_801F48D8_ovl10[];
-    s32 kind;
-    s32 r;
-    void *particle;
-
-    kind = arg2;
-    if (func_801F1934_ovl10(kind) == 0) {
-        func_800B1900(omCurrentObj->objId);
-    }
-    switch (kind) {
-    case 1:
-        func_800A9864(D_801F48F4_ovl10[kind], 0x2C, 0x10);
-        D_800E0490[omCurrentObj->objId] = (f32 **) D_801F4884_ovl10;
-        D_800E98E0[request_track_general(0x29, 0x1E, 0x50)] = 3;
-        break;
-    case 2:
-        func_800A9864(D_801F48F4_ovl10[kind], 0x2C, 0x10);
-        D_800E0490[omCurrentObj->objId] = (f32 **) D_801F48D8_ovl10;
-        D_800E98E0[request_track_general(0x29, 0x1E, 0x50)] = 4;
-        break;
-    case 3:
-        func_800A9864(D_801F48F4_ovl10[kind], 0x2C, 0x10);
-        D_800E0490[omCurrentObj->objId] = (f32 **) D_801F48BC_ovl10;
-        D_800E98E0[request_track_general(0x29, 0x1E, 0x50)] = 5;
-        break;
-    }
-    r = random_soft_s32_range(2);
-    func_800AA018(D_801F4818_ovl10[(kind * 4) + (r * 2)]);
-    if (D_801F4818_ovl10[(kind * 4) + (r * 2) + 1] != 0) {
-        func_800AA018(D_801F4818_ovl10[(kind * 4) + (r * 2) + 1]);
-    }
-    gEntitiesScaleXArray[omCurrentObj->objId] = 0.2f;
-    gEntitiesScaleYArray[omCurrentObj->objId] = 0.2f;
-    gEntitiesScaleZArray[omCurrentObj->objId] = 0.2f;
-    func_801F1554_ovl10(arg0, arg1);
-    particle = func_800FF144();
-    D_800EA520[omCurrentObj->objId] = (s32) particle;
-    func_801F0014_ovl10(particle);
-    curObjSleepForever();
-}
-#elif defined(PORT)
+#ifdef PORT
 extern u32 D_801F48F4_ovl10[];
 extern u32 D_801F4818_ovl10[];
 extern u32 D_801F4884_ovl10[];
@@ -1301,7 +1164,57 @@ void func_801F1A24_ovl10(GObj *arg0, s32 arg1, s32 arg2) {
     curObjSleepForever();
 }
 #else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl10/ovl10_5b/func_801F1A24_ovl10.s")
+/* Wheel-item setup for the walking prizes (arg2 = 1 waddle dee, 2 adeleine,
+ * 3 king dedede; other kinds skip the model swap): stops the track's music
+ * cue when the prize kind is locked out (func_801F1934), loads the model +
+ * path table, spawns the escort track (state 3/4/5), plays one of the two
+ * D_801F4818[arg2] anim pairs at random, scales to 0.2, snaps onto wheel
+ * mount arg1, and attaches the sparkle particle. */
+void func_801F1A24_ovl10(GObj *arg0, s32 arg1, s32 arg2) {
+    extern u32 D_801F48F4_ovl10[];
+    extern u32 D_801F4818_ovl10[][2][2];
+    extern u32 D_801F4884_ovl10[];
+    extern u32 D_801F48BC_ovl10[];
+    extern u32 D_801F48D8_ovl10[];
+    s32 second;
+    s32 r;
+    void *particle;
+
+    if (func_801F1934_ovl10(arg2) == 0) {
+        func_800B1900(omCurrentObj->objId);
+    }
+    switch (arg2) {
+    case 1:
+        func_800A9864(D_801F48F4_ovl10[arg2], 0x2C, 0x10);
+        D_800E0490[omCurrentObj->objId] = (f32 **) D_801F4884_ovl10;
+        D_800E98E0[request_track_general(0x29, 0x1E, 0x50)] = 3;
+        break;
+    case 2:
+        func_800A9864(D_801F48F4_ovl10[arg2], 0x2C, 0x10);
+        D_800E0490[omCurrentObj->objId] = (f32 **) D_801F48D8_ovl10;
+        D_800E98E0[request_track_general(0x29, 0x1E, 0x50)] = 4;
+        break;
+    case 3:
+        func_800A9864(D_801F48F4_ovl10[arg2], 0x2C, 0x10);
+        D_800E0490[omCurrentObj->objId] = (f32 **) D_801F48BC_ovl10;
+        D_800E98E0[request_track_general(0x29, 0x1E, 0x50)] = 5;
+        break;
+    }
+    r = random_soft_s32_range(2);
+    func_800AA018(D_801F4818_ovl10[arg2][r][0]);
+    second = D_801F4818_ovl10[arg2][r][1];
+    if (second != 0) {
+        func_800AA018(second);
+    }
+    gEntitiesScaleXArray[omCurrentObj->objId] = 0.2f;
+    gEntitiesScaleYArray[omCurrentObj->objId] = 0.2f;
+    gEntitiesScaleZArray[omCurrentObj->objId] = 0.2f;
+    func_801F1554_ovl10(arg0, arg1);
+    particle = func_800FF144();
+    D_800EA520[omCurrentObj->objId] = (s32) particle;
+    func_801F0014_ovl10(particle);
+    curObjSleepForever();
+}
 #endif
 
 /* D_801F4CA8_ovl10 = 0.2f : now emitted by this TU */
