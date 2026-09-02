@@ -397,7 +397,6 @@ s32 func_80170584_ovl5(s32 arg0, s32 arg1) {
     return 1;
 }
 
-#ifdef NON_MATCHING
 /* 48/75: the loop body is instruction-for-instruction correct, but $s0 and $s1
    are swapped -- the ROM puts the loop counter in $s0 and the strength-reduced
    D_8018E478_ovl5 pointer in $s1, this C gets the opposite -- and the early
@@ -409,15 +408,17 @@ s32 func_80170584_ovl5(s32 arg0, s32 arg1) {
 s32 func_8017068C_ovl5(s32 arg0, s32 arg1) {
     s32 i;
     s32 temp;
+    s32 j;
 
     for (i = arg1; i >= 0; i--) {
         if (D_8018E478_ovl5[arg0][i] == 0) {
             break;
         }
-        if (func_8016FF88_ovl5(func_80172B10_ovl5(arg0, i)) != 0) {
-            temp = D_800EA520[D_8018E478_ovl5[arg0][i]];
+        j = i;
+        if (func_8016FF88_ovl5(func_80172B10_ovl5(arg0, j)) != 0) {
+            temp = D_800EA520[D_8018E478_ovl5[arg0][j]];
             if (temp != 0x29A) {
-                if (arg1 == D_800E9E20[temp] + i) {
+                if (arg1 == D_800E9E20[temp] + j) {
                     if (D_800EA1A0[temp] == 0) {
                         return temp;
                     }
@@ -427,9 +428,6 @@ s32 func_8017068C_ovl5(s32 arg0, s32 arg1) {
     }
     return 0x29A;
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl5/ovl5_5/func_8017068C_ovl5.s")
-#endif
 
 s32 func_801707B0_ovl5(s32 arg0) {
     Vector2 sp18;
@@ -1245,22 +1243,15 @@ u16 func_80171E6C_ovl5(GObj *arg0) {
    `*(s32 *)((u8 *)D_8018ECA8_ovl5 + off)`, lever 11's shape) -- it reaches
    n=2 but grows t to 4, frame 0x30, and loses the `addu $t2, $v0, $t1`
    operand order as well (5/61). */
-#ifdef NON_MATCHING
 void func_801720D8_ovl5(s32 arg0) {
-    s32 pad;
-    Unk801875F0 *p;
     s32 temp = D_8018ECA8_ovl5[arg0];
 
     play_sound(0xBA);
     D_800E9FE0[omCurrentObj->objId].as_s32 = 1;
     D_800E9C60[omCurrentObj->objId] = D_800E9FE0[omCurrentObj->objId].as_s32;
     D_8018E998_ovl5[arg0]++;
-    p = &D_801875F0_ovl5[temp];
-    D_800E98E0[omCurrentObj->objId] = (random_soft_s32_range(p->unk4) + p->unk0) * 0.5f;
+    D_800E98E0[omCurrentObj->objId] = (random_soft_s32_range((D_801875F0_ovl5 + temp)->unk4) + (D_801875F0_ovl5 + temp)->unk0) * 0.5f;
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl5/ovl5_5/func_801720D8_ovl5.s")
-#endif
 /* FACTORY: 2/88, frame only (0x28 vs the ROM's 0x20). Every other word,
    including all four stack offsets and the `addu $t7, $v0, $t0` operand order,
    is the ROM's -- so this is one `addiu $sp` immediate at each end.
@@ -1302,30 +1293,22 @@ void func_801720D8_ovl5(s32 arg0) {
    are both prototyped at the top of this TU.
    The permuter owns the remaining 8 bytes. */
 /* FACTORY: 2/88, frame only. */
-#ifdef NON_MATCHING
 void func_801721CC_ovl5(s32 arg0) {
-    s32 *q;
-    Unk801875F0 *p;
     s32 temp = D_8018ECA8_ovl5[arg0];
 
-    q = &D_8018E998_ovl5[arg0];
-    if (*q == 0x50) {
+    if (D_8018E998_ovl5[arg0] == 0x50) {
         play_sound(0xBA);
         D_800E9FE0[omCurrentObj->objId].as_s32 = 1;
         D_800E9C60[omCurrentObj->objId] = D_800E9FE0[omCurrentObj->objId].as_s32;
-        (*q)++;
+        D_8018E998_ovl5[arg0]++;
     } else {
         play_sound(0xBA);
         D_800E9FE0[omCurrentObj->objId].as_s32 = 2;
         D_800E9C60[omCurrentObj->objId] = D_800E9FE0[omCurrentObj->objId].as_s32;
-        *q += 2;
+        D_8018E998_ovl5[arg0] += 2;
     }
-    p = &D_801875F0_ovl5[temp];
-    D_800E98E0[omCurrentObj->objId] = (random_soft_s32_range(p->unk4) + p->unk0) * 0.5f;
+    D_800E98E0[omCurrentObj->objId] = (random_soft_s32_range((D_801875F0_ovl5 + temp)->unk4) + (D_801875F0_ovl5 + temp)->unk0) * 0.5f;
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl5/ovl5_5/func_801721CC_ovl5.s")
-#endif
 #if defined(MIPS_TO_C) || defined(PORT)
 /* The CPU racer's move chooser, run once per turn for racer `arg0`. It reads
  * the two board squares ahead of D_8018E998_ovl5[arg0] (clamped to 0x51),
@@ -2278,7 +2261,6 @@ void func_80173EBC_ovl5(GObj *arg0) {
     D_800E2410[omCurrentObj->objId] = D_8018EB48_ovl5[D_800E98E0[omCurrentObj->objId]];
 }
 
-#ifdef NON_MATCHING
 /* FACTORY: 21 of 185 words DIFFER (the old header read "164/185", which is
    the same measurement written the other way round; re-measured 2026-08-25). Length, frame and
    control flow are exact. Two known floors: (a) the value reloaded
@@ -2289,13 +2271,12 @@ void func_80173EBC_ovl5(GObj *arg0) {
    D_8018E458_ovl5 index chain, the same window that blocks
    func_8017462C_ovl5. Not swept further: both residues are on the
    LEVERS floor list. */
-extern s32 D_80187CDC_ovl5;
-extern s32 D_80187CE0_ovl5[];
-extern s32 D_80187CE4_ovl5;
-void func_80174328_ovl5(GObj *);
-
 void func_80174044_ovl5(GObj *arg0, s32 arg1) {
-    Vector2 sp28;
+    extern s32 D_80187CDC_ovl5;
+    extern s32 D_80187CE0_ovl5[];
+    extern s32 D_80187CE4_ovl5;
+    void func_80174328_ovl5(GObj *);
+    struct IVec2 { s32 x; s32 y; } sp28;
 
     D_800E98E0[omCurrentObj->objId] = arg1;
     D_800DF150[omCurrentObj->objId] = func_80174328_ovl5;
@@ -2307,21 +2288,19 @@ void func_80174044_ovl5(GObj *arg0, s32 arg1) {
     }
     if (D_8018ECD8_ovl5 == 3) {
         gEntitiesNextPosXArray[omCurrentObj->objId] = D_80187C94_ovl5[arg1];
-        gEntitiesNextPosYArray[omCurrentObj->objId] = 0.0f;
-        gEntitiesNextPosZArray[omCurrentObj->objId] = gEntitiesNextPosZArray[D_8018E458_ovl5[arg1]];
+        gEntitiesNextPosYArray[omCurrentObj->objId] = 0.0f; gEntitiesNextPosZArray[omCurrentObj->objId] = gEntitiesNextPosZArray[D_8018E458_ovl5[arg1]];
     } else {
         gEntitiesNextPosXArray[omCurrentObj->objId] = D_80187C94_ovl5[arg1];
-        gEntitiesNextPosYArray[omCurrentObj->objId] = 75.0f;
-        gEntitiesNextPosZArray[omCurrentObj->objId] = gEntitiesNextPosZArray[D_8018E458_ovl5[arg1]];
+        gEntitiesNextPosYArray[omCurrentObj->objId] = 75.0f; gEntitiesNextPosZArray[omCurrentObj->objId] = gEntitiesNextPosZArray[D_8018E458_ovl5[arg1]];
     }
-    func_8016FF60_ovl5(&sp28, arg1);
-    if (*(s32 *) &sp28 == 1) {
+    func_8016FF60_ovl5((Vector2 *) &sp28, arg1);
+    if (sp28.x == 1) {
         gEntitiesScaleXArray[omCurrentObj->objId] = 1.5f;
         gEntitiesScaleYArray[omCurrentObj->objId] = 1.5f;
         gEntitiesScaleZArray[omCurrentObj->objId] = 1.5f;
     }
-    func_8016FF60_ovl5(&sp28, arg1);
-    switch (*(s32 *) &sp28) {
+    func_8016FF60_ovl5((Vector2 *) &sp28, arg1);
+    switch (sp28.x) {
         case 0:
         case 2:
             play_sound(0xFC);
@@ -2339,9 +2318,6 @@ void func_80174044_ovl5(GObj *arg0, s32 arg1) {
     func_800AF27C();
     func_800B1900(omCurrentObj->objId);
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl5/ovl5_5/func_80174044_ovl5.s")
-#endif
 
 
 void func_80174328_ovl5(GObj *arg0) {
@@ -2378,54 +2354,7 @@ void func_80174328_ovl5(GObj *arg0) {
  * which a conversion writes out as `void func_80174624_ovl5(void) {}` after
  * this one, the way ovl5_2.c does for func_80160A70_ovl5. Not a padding trap
  * and not what blocks this site: measured with the stub, still 172 of 176. */
-#ifdef MIPS_TO_C
-void func_80174368_ovl5(GObj *arg0, s32 arg1) {
-    extern s32 D_80187CE8_ovl5;
-    extern s32 D_80187CEC_ovl5;
-    extern s32 D_80187CF0_ovl5;
-    Vector2 sp28;
-
-    D_800E98E0[omCurrentObj->objId] = arg1;
-    D_800DF150[omCurrentObj->objId] = func_80174328_ovl5;
-    setProcessMain(gEntityGObjProcessArray5[omCurrentObj->objId], func_801773C4_ovl5);
-    func_800A9864(D_80187CE8_ovl5, 0x1869F, 0x10);
-    func_800AA018(D_80187CEC_ovl5);
-    if (D_80187CF0_ovl5 != 0) {
-        func_800AA018(D_80187CF0_ovl5);
-    }
-    if (D_8018ECD8_ovl5 == 3) {
-        gEntitiesNextPosXArray[omCurrentObj->objId] = D_80187C94_ovl5[arg1];
-        gEntitiesNextPosYArray[omCurrentObj->objId] = 0.0f;
-        gEntitiesNextPosZArray[omCurrentObj->objId] = gEntitiesNextPosZArray[D_8018E458_ovl5[arg1]];
-    } else {
-        gEntitiesNextPosXArray[omCurrentObj->objId] = D_80187C94_ovl5[arg1];
-        gEntitiesNextPosYArray[omCurrentObj->objId] = 75.0f;
-        gEntitiesNextPosZArray[omCurrentObj->objId] = gEntitiesNextPosZArray[D_8018E458_ovl5[arg1]];
-    }
-    func_8016FF60_ovl5(&sp28, arg1);
-    if (*(s32 *) &sp28 == 1) {
-        gEntitiesScaleXArray[omCurrentObj->objId] = 1.5f;
-        gEntitiesScaleYArray[omCurrentObj->objId] = 1.5f;
-        gEntitiesScaleZArray[omCurrentObj->objId] = 1.5f;
-    }
-    func_8016FF60_ovl5(&sp28, arg1);
-    switch (*(s32 *) &sp28) {
-        case 0:
-            break;
-        case 1:
-            gEntitiesScaleXArray[omCurrentObj->objId] = 1.5f;
-            gEntitiesScaleYArray[omCurrentObj->objId] = 1.5f;
-            gEntitiesScaleZArray[omCurrentObj->objId] = 1.5f;
-            break;
-        case 2:
-            break;
-        case 3:
-            break;
-    }
-    func_800AF27C();
-    func_800B1900((u16) omCurrentObj->objId);
-}
-#elif defined(PORT)
+#ifdef PORT
 /* Splash/dust effect at the racer of lane arg1: plays the effect model and
  * a one-shot animation at the racer's z (water level on stage 3, y=75
  * otherwise), doubles its scale for character kind 1, waits the animation
@@ -2469,10 +2398,55 @@ void func_80174368_ovl5(GObj *arg0, s32 arg1) {
     func_800B1900((u16) omCurrentObj->objId);
 }
 #else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl5/ovl5_5/func_80174368_ovl5.s")
+void func_80174368_ovl5(GObj *arg0, s32 arg1) {
+    extern s32 D_80187CE8_ovl5;
+    extern s32 D_80187CEC_ovl5;
+    extern s32 D_80187CF0_ovl5;
+    struct IVec2 { s32 x; s32 y; } sp28;
+
+    D_800E98E0[omCurrentObj->objId] = arg1;
+    D_800DF150[omCurrentObj->objId] = func_80174328_ovl5;
+    setProcessMain(gEntityGObjProcessArray5[omCurrentObj->objId], func_801773C4_ovl5);
+    func_800A9864(D_80187CE8_ovl5, 0x1869F, 0x10);
+    func_800AA018(D_80187CEC_ovl5);
+    if (D_80187CF0_ovl5 != 0) {
+        func_800AA018(D_80187CF0_ovl5);
+    }
+    if (D_8018ECD8_ovl5 == 3) {
+        gEntitiesNextPosXArray[omCurrentObj->objId] = D_80187C94_ovl5[arg1];
+        gEntitiesNextPosYArray[omCurrentObj->objId] = 0.0f; gEntitiesNextPosZArray[omCurrentObj->objId] = gEntitiesNextPosZArray[D_8018E458_ovl5[arg1]];
+    } else {
+        gEntitiesNextPosXArray[omCurrentObj->objId] = D_80187C94_ovl5[arg1];
+        gEntitiesNextPosYArray[omCurrentObj->objId] = 75.0f; gEntitiesNextPosZArray[omCurrentObj->objId] = gEntitiesNextPosZArray[D_8018E458_ovl5[arg1]];
+    }
+    func_8016FF60_ovl5((Vector2 *) &sp28, arg1);
+    if (sp28.x == 1) {
+        gEntitiesScaleXArray[omCurrentObj->objId] = 1.5f;
+        gEntitiesScaleYArray[omCurrentObj->objId] = 1.5f;
+        gEntitiesScaleZArray[omCurrentObj->objId] = 1.5f;
+    }
+    func_8016FF60_ovl5((Vector2 *) &sp28, arg1);
+    switch (sp28.x) {
+        case 0:
+            break;
+        case 1:
+            gEntitiesScaleXArray[omCurrentObj->objId] = 1.5f;
+            gEntitiesScaleYArray[omCurrentObj->objId] = 1.5f;
+            gEntitiesScaleZArray[omCurrentObj->objId] = 1.5f;
+            break;
+        case 2:
+            break;
+        case 3:
+            break;
+    }
+    func_800AF27C();
+    func_800B1900((u16) omCurrentObj->objId);
+}
+
+void func_80174624_ovl5(void) {
+}
 #endif
 
-#ifdef NON_MATCHING
 /* FACTORY: 4/140 (4 words DIFFER -- measured with measure_seeds.py, which is
    the authority; the old note said 136/140 in the matched-count convention).
    Two one-slot scheduling
@@ -2491,14 +2465,13 @@ void func_80174368_ovl5(GObj *arg0, s32 arg1) {
    byte-identical. The no-braces lever that closed func_800B8E00 in
    save_file.c this pass acts on a LOOP body's schedule, not on `if`s, and
    this residue is in straight-line code before the `while (1)` anyway. */
-extern s32 D_80187CC8_ovl5;
-extern s32 D_80187CCC_ovl5;
-extern s32 D_80187CD0_ovl5;
-extern s32 D_80187CD4_ovl5[];
-void func_8017485C_ovl5(GObj *);
-void func_800AF27C(void);
-
 void func_8017462C_ovl5(GObj *arg0, s32 arg1, s32 arg2) {
+    extern s32 D_80187CC8_ovl5;
+    extern s32 D_80187CCC_ovl5;
+    extern s32 D_80187CD0_ovl5;
+    extern s32 D_80187CD4_ovl5[];
+    void func_8017485C_ovl5(GObj *);
+
     D_800E98E0[omCurrentObj->objId] = arg1;
     D_800E9AA0[omCurrentObj->objId].as_s32 = arg2;
     D_800E9C60[omCurrentObj->objId] = 0;
@@ -2511,8 +2484,7 @@ void func_8017462C_ovl5(GObj *arg0, s32 arg1, s32 arg2) {
     }
     omGMoveObjDL(arg0, arg0->dl_link, 0xA);
     gEntitiesNextPosXArray[omCurrentObj->objId] = D_80187C94_ovl5[arg1];
-    gEntitiesNextPosYArray[omCurrentObj->objId] = 130.0f;
-    gEntitiesNextPosZArray[omCurrentObj->objId] = gEntitiesNextPosZArray[D_8018E478_ovl5[arg1][arg2]];
+    gEntitiesNextPosYArray[omCurrentObj->objId] = 130.0f; gEntitiesNextPosZArray[omCurrentObj->objId] = gEntitiesNextPosZArray[D_8018E478_ovl5[arg1][arg2]];
     while (1) {
         if (D_800E9C60[omCurrentObj->objId] != 0) {
             func_800AA018(D_80187CD4_ovl5[0]);
@@ -2528,9 +2500,6 @@ void func_8017462C_ovl5(GObj *arg0, s32 arg1, s32 arg2) {
         ohSleep(1);
     }
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl5/ovl5_5/func_8017462C_ovl5.s")
-#endif
 
 
 void func_8017485C_ovl5(GObj *arg0) {

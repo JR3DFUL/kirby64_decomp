@@ -904,26 +904,11 @@ void func_8019A7A8_ovl7(Unused GObj *gobj) {
 }
 
 #ifdef NON_MATCHING
-// 17/69. Residue is in two places and neither is register naming.
-// (1) insn 14: the ROM compares `c.eq.s $f4,$f0` (fs = the 9999.0f literal,
-//     ft = originOffset); IDO emits `c.eq.s $f0,$f4` for BOTH source orders --
-//     `9999.0f == temp_f0` and `temp_f0 == 9999.0f` compile byte-identically,
-//     so IDO canonicalises the operands of a commutative FP compare and source
-//     order cannot reach this one.
-// (2) the tail: the ROM writes the two `if`s un-rotated (`bc1f` + `nop` +
-//     `b` + a delay-slot assignment) where IDO folds them into `bc1fl`.
-//     Replacing the draft's `goto block_6` with a plain `return var_v1;` gets
-//     the ROM's two-separate-returns block layout but costs more than it buys
-//     (22/69): IDO then constant-propagates `var_v1 == 0` into
-//     `move $v0,$zero`, while the ROM keeps the live `or $v0,$v1,$zero`.
-//     So the ROM's `var_v1` is not provably 0 at that return in its source
-//     shape, and the goto form -- which shares the return -- is still the
-//     lower count. Keep the goto.
+/* FACTORY: 1/70, c.eq.s operand order (ROM has the 9999.0f literal as fs) */
 s32 func_8019A7E8_ovl7(f32 arg0) {
     Vector sp34;
     Vector sp28;
     f32 temp_f0 = D_800E6F50[omCurrentObj->objId].originOffset;
-    s32 var_v1;
 
     if (9999.0f == temp_f0) {
         sp34.x = gEntitiesNextPosXArray[0];
@@ -933,20 +918,9 @@ s32 func_8019A7E8_ovl7(f32 arg0) {
         sp28.y = gEntitiesNextPosYArray[omCurrentObj->objId];
         sp28.z = gEntitiesNextPosZArray[omCurrentObj->objId];
         temp_f0 = utilVec3Dist(&sp34, &sp28);
-        var_v1 = 0;
-        if (temp_f0 < (arg0 * arg0)) {
-            return 1;
-        } else {
-            goto block_6;
-        }
+        return (temp_f0 < (arg0 * arg0)) ? 1 : 0;
     }
-    var_v1 = 0;
-    if (temp_f0 < arg0) {
-        var_v1 = 1;
-    } else {
-    }
-block_6:
-    return var_v1;
+    return (temp_f0 < arg0) ? 1 : 0;
 }
 #else
 #pragma GLOBAL_ASM("asm/nonmatchings/ovl7/enelib/func_8019A7E8_ovl7.s")
