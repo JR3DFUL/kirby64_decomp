@@ -2866,8 +2866,7 @@ void func_800FC53C(void) {
     cam->perspMtx.persp.far = D_801291B0.far;
 }
 
-#ifdef MIPS_TO_C
-/* FACTORY: MATCH (118/118), needs symbol D_800D7B50 (0x800D7B50, D_800D7B38+0x18 in ovl1.bss.s) to link */
+#ifndef PORT
 void func_800FC62C(GObj *arg0) {
     Camera *cam = D_800D799C->data.cam;
     f32 tf0;
@@ -2907,7 +2906,7 @@ void func_800FC62C(GObj *arg0) {
         D_800D7B20.unkC.z = cam->viewMtx.lookAt.eye.z;
     }
 }
-#elif defined(PORT)
+#else
 /* Camera animation + drift step (draft above; m2c typed the payload as a
  * DObj, but the asm offsets 0x3C..0x50 are Camera.viewMtx.lookAt.eye/.at
  * and 0x74 is Camera.timeRemaining -- decoded from the raw asm). Copies
@@ -2955,8 +2954,6 @@ void func_800FC62C(GObj *arg0) {
         D_800D7B20.unkC.z = cam->viewMtx.lookAt.at.z;
     }
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl2/ovl2_3/func_800FC62C.s")
 #endif
 
 extern u32 D_800D708C;

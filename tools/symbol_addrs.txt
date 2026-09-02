@@ -1166,3 +1166,4 @@ D_801E5D60_ovl13 = 0x801E5D60; // segment:ovl13 force_migration:True
 // rejects it and func_801B3EC8_ovl7 (still a #pragma) loses it. Caught only by
 // comparing the built object's .rodata against the ROM -- no splat warning.
 D_801CE328_ovl7 = 0x801CE328; // segment:ovl7 force_migration:True
+D_800D7B50=0x800D7B50; // size:0x18
