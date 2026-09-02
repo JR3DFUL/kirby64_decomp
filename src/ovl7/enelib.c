@@ -342,47 +342,32 @@ void func_80198DBC_ovl7(void) {
     }
 }
 
-#ifdef NON_MATCHING
-// NEAR MISS (33/156, equal insn count, all semantic ops identical): remaining
-// diffs are pure register-allocation: target puts the case-6/tail u16 val web
-// in $v0 (ours lands in $v1 + one extra move after the tail lhu), and after the
-// func_801C06FC_ovl7 call target re-reads omCurrentObj with a folded lui+lw
-// (fresh single-use web) while ours re-materializes the shared addiu base web.
-// Tried: val type variants (s32/u32/s16/s8/u8/int), separate tail var,
-// assignment-in-condition, register hint, all five-local declaration orders,
-// expression-only case 6, idx reassignment.
 void func_80199084_ovl7(void) {
-    u32 idx;
-    u32 kind;
     u32 snd;
     s32 mode;
-    u16 val;
 
-    idx = omCurrentObj->objId;
-    kind = D_800E7730[idx];
-    switch (kind) {
+    switch (D_800E7730[omCurrentObj->objId]) {
         case 0:
             mode = 0x23;
-            snd = D_801C2E84_ovl7[D_800E77A0[idx]];
+            snd = D_801C2E84_ovl7[D_800E77A0[omCurrentObj->objId]];
             break;
         case 1:
             mode = 0x23;
-            snd = D_801F33FC[D_800E77A0[idx]];
+            snd = D_801F33FC[D_800E77A0[omCurrentObj->objId]];
             break;
         case 2:
             mode = 0x23;
-            snd = D_801D789C[D_800E77A0[idx]];
+            snd = D_801D789C[D_800E77A0[omCurrentObj->objId]];
             break;
         case 3:
             mode = 0x27;
-            snd = D_801C3030_ovl7[D_800E77A0[idx]];
+            snd = D_801C3030_ovl7[D_800E77A0[omCurrentObj->objId]];
             break;
         case 6:
-            val = D_800E77A0[idx];
-            snd = D_801C3068_ovl7[val];
-            if (val == 0) {
+            snd = D_801C3068_ovl7[D_800E77A0[omCurrentObj->objId]];
+            if (D_800E77A0[omCurrentObj->objId] == 0) {
                 mode = 0x27;
-            } else if ((val >= 0x24) && (val < 0x2C)) {
+            } else if ((D_800E77A0[omCurrentObj->objId] >= 0x24) && (D_800E77A0[omCurrentObj->objId] < 0x2C)) {
                 mode = 0x2B;
             } else {
                 mode = 0x23;
@@ -400,23 +385,16 @@ void func_80199084_ovl7(void) {
         D_800DE350[omCurrentObj->objId]->data.dobj->pos.v.x = gEntitiesNextPosXArray[omCurrentObj->objId];
         D_800DE350[omCurrentObj->objId]->data.dobj->pos.v.y = gEntitiesNextPosYArray[omCurrentObj->objId];
         D_800DE350[omCurrentObj->objId]->data.dobj->pos.v.z = gEntitiesNextPosZArray[omCurrentObj->objId];
-        idx = omCurrentObj->objId;
-        kind = D_800E7730[idx];
     }
-    if (kind == 6) {
-        val = D_800E77A0[idx];
-        if ((val > 0) && (val < 8)) {
+    if (D_800E7730[omCurrentObj->objId] == 6) {
+        if ((D_800E77A0[omCurrentObj->objId] > 0) && (D_800E77A0[omCurrentObj->objId] < 8)) {
             func_801C06FC_ovl7();
-            val = D_800E77A0[omCurrentObj->objId];
         }
-        if ((val >= 8) && (val < 0x24)) {
+        if ((D_800E77A0[omCurrentObj->objId] >= 8) && (D_800E77A0[omCurrentObj->objId] < 0x24)) {
             func_801C1E08_ovl7();
         }
     }
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl7/enelib/func_80199084_ovl7.s")
-#endif
 void func_801992F0_ovl7(void) {
     switch (D_800E7730[omCurrentObj->objId]) {
         case 0:
@@ -936,19 +914,15 @@ s32 func_8019A900_ovl7(struct TrackPosition *arg0) {
     return 1;
 }
 
-// m2c draft, measured 36/72 diffs
-#ifdef NON_MATCHING
 s32 func_8019A9AC_ovl7(f32 arg0, f32 arg1) {
     struct TrackPosition sp30;
-    s32 sp28;
+    f32 var_f12;
+    s32 flags;
     f32 temp_f0;
     f32 temp_f2;
     f32 var_f0;
-    f32 var_f12;
-    s32 var_v1;
 
-    var_f12 = arg0;
-    var_v1 = 0;
+    flags = 0;
     if (arg0 != -1.0f) {
         temp_f0 = *gEntitiesNextPosYArray + 20.0f;
         temp_f2 = gEntitiesNextPosYArray[omCurrentObj->objId];
@@ -958,15 +932,12 @@ s32 func_8019A9AC_ovl7(f32 arg0, f32 arg1) {
             var_f12 = temp_f0 - temp_f2;
         }
         if (var_f12 <= (arg0 * 0.5f)) {
-            goto block_6;
+            flags = 1;
         }
     } else {
-block_6:
-        var_v1 = 1;
+        flags = 1;
     }
     if (arg1 != -1.0f) {
-        sp28 = var_v1;
-        var_v1 = sp28;
         if (func_8019A900_ovl7(&sp30) != 0) {
             if (sp30.unk4 < 0.0f) {
                 var_f0 = -sp30.unk4;
@@ -974,18 +945,14 @@ block_6:
                 var_f0 = sp30.unk4;
             }
             if (var_f0 <= (arg1 * 0.5f)) {
-                goto block_14;
+                flags |= 2;
             }
         }
     } else {
-block_14:
-        var_v1 |= 2;
+        flags |= 2;
     }
-    return var_v1;
+    return flags;
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl7/enelib/func_8019A9AC_ovl7.s")
-#endif
 /* FACTORY: 21/100, from 89/100, and the first 73 words are now exact.
    Three things did it, in order of size:
 
@@ -2294,41 +2261,10 @@ void func_8019D2FC_ovl7(f32 arg0, u8 arg1) {
     }
 }
 
-/* FACTORY: 24/244 (was 230/249 -- the old draft was m2c raw, with 24
-   declarations against a ROM frame of 0x18, i.e. ZERO locals).  Re-derived
-   from the listing 2026-08-25; four defects, none of them register-shaped:
-     1. `arg1` is a `u8` PARAMETER, not an `s32` masked at each use.  The
-        prologue's `sw $a1, 0x1C($sp)` + `andi $a1, $a1, 0xFF` is IDO's
-        promoted-u8 parameter sequence (LEVER 15); writing `arg1 & 0xFF` at
-        the two use sites instead makes IDO reload the home slot and mask
-        again at each one.  Worth 210 words on its own.
-        NOTE: every declaration of this symbol elsewhere says `(f32, s32)`
-        (ovl9_10.c, ovl10_3.c, ovl10_3b.c), and the call sites pass 6/8/15,
-        so the `u8` here is a real type correction that those declarations
-        have not caught up with.  Retyping them is a separate TU-wide job.
-     2. `D_800E1B50[omCurrentObj->objId]` is ONE local (`rec`), read once at
-        the top and held in $a2 for the whole body -- and it costs no frame,
-        because an initialised-at-declaration pointer gets no home slot
-        (LEVER 57's corollary).  `omCurrentObj->objId` itself is read INLINE
-        at every site: the ROM reloads it after each store through $a2 and
-        never reloads $a2, which is only consistent with that split.
-     3. IDO emits the full UNSIGNED int->float sequence (`bgez` + the
-        0x4F800000 fixup) for BOTH `rec->unk3C` and `arg1` even though both
-        are u8.  Do not "fix" that by casting; plain `(u8)` operands produce
-        it, and the integer compare in the third arm is still a signed `slt`.
-     4. the second arm's test is `rec->unk3C == (arg1 * 0.5f)`, memory load
-        on the left (LEVER 14); the reversed spelling costs exactly 2.
-   The 24 that remain are ONE two-register permutation and nothing else:
-   the ROM puts &omCurrentObj in $a3 and &D_800E6690 in $t0, IDO the other
-   way round, and the later reuse of that register for &D_800E6A10 follows
-   it in both.  Instruction count and frame are exact.  Swept and inert:
-   splitting `rec`'s declaration from its initialiser (24), and adding an
-   unused third parameter to free $a3 (242 -- it moves the whole ABI). */
-#ifdef NON_MATCHING
 void func_8019D4D0_ovl7(f32 arg0, u8 arg1) {
     EnemyRecord *rec = D_800E1B50[omCurrentObj->objId];
 
-    if (rec->unk3C != 0) {
+    if (rec->unk3C) {
         if (rec->unk3C == 1) {
             rec->unk20 = D_800E64D0[omCurrentObj->objId];
             rec->unk24 = D_800E6690[omCurrentObj->objId];
@@ -2368,9 +2304,6 @@ void func_8019D4D0_ovl7(f32 arg0, u8 arg1) {
         rec->unk3C += 1;
     }
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl7/enelib/func_8019D4D0_ovl7.s")
-#endif
 #ifdef NON_MATCHING
 // 20/46 diffs: body is right; ROM frame is 0x28 with the arg home slot
 // stored (sw $a0, 0x28($sp)) and temps at 0x20/0x24. K&R form, u16 param

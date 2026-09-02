@@ -213,6 +213,7 @@ struct Ovl7_2_AnimInfoA {
     u8 filler10[0xC];
 };
 
+/* FACTORY: 33/223 words after a one-word prologue shift ($a2 = &omCurrentObj not held from entry) plus constant 1 register-shared */
 s32 func_8019F650_ovl7(void) {
     s32 func_80110B00(void *);
     s32 func_80110FD4(void *);
@@ -223,8 +224,20 @@ s32 func_8019F650_ovl7(void) {
     void func_801A7000_ovl7(struct GObj *);
     void func_801A3E80_ovl7(struct GObj *);
     extern s32 D_800E83E0[], D_800E8220[], D_800E0D50[];
+    struct Ovl7_2_CarriedA {
+        u8 filler0[0x3A];
+        s8 unk3A;
+        u8 filler3B[3];
+        u8 unk3E;
+        u8 unk3F;
+        u8 unk40;
+        u8 filler41[2];
+        u8 unk43;
+        u8 filler44[0x50];
+        s32 unk94;
+    };
     s32 pad;
-    struct EnemyRecord *ent = D_800E1B50[omCurrentObj->objId];
+    struct Ovl7_2_CarriedA *ent = (struct Ovl7_2_CarriedA *) D_800E1B50[omCurrentObj->objId];
     struct Ovl7_2_AnimInfoA sp24;
 
     if (func_80110B00(&sp24) != 0) {
@@ -250,7 +263,7 @@ s32 func_8019F650_ovl7(void) {
         ent->unk43 = 0;
         ent->unk3A = -1;
     }
-    switch (D_800E83E0[omCurrentObj->objId]) {
+    switch ((u32) D_800E83E0[omCurrentObj->objId]) {
     case 1:
         if (func_801A0244_ovl7(sp24.unkC) != -1) {
             D_800E83E0[omCurrentObj->objId] = 0x12;

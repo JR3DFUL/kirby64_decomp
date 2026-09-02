@@ -3189,11 +3189,13 @@ void func_80227F90_ovl19(GObj *arg0) {
     func_800AED20(gameTicksPerDraw);
     D_800DF150[omCurrentObj->objId] = func_802283A8_ovl19;
     D_8022FAB0_ovl19 = func_800FF144();
-    if (D_8022FAB0_ovl19 != NULL) {
-        D_8022FAB0_ovl19->unk10 = 24.0f;
-        D_8022FAB0_ovl19->unk14 = 20.0f;
-        D_8022FAB0_ovl19->unk18 = -240.0f;
-        D_8022FAB0_ovl19->unk21 = 1;
+    if (1) {
+        if (D_8022FAB0_ovl19 != NULL) {
+            D_8022FAB0_ovl19->unk10 = 24.0f;
+            D_8022FAB0_ovl19->unk14 = 20.0f;
+            D_8022FAB0_ovl19->unk18 = -240.0f;
+            D_8022FAB0_ovl19->unk21 = 1;
+        }
     }
     D_8012E7D7 = 1;
     D_800E6690[omCurrentObj->objId] = 0.0f;
@@ -3217,24 +3219,24 @@ void func_80227F90_ovl19(GObj *arg0) {
     D_800E5F90[omCurrentObj->objId] = 0;
     D_800E6D90[omCurrentObj->objId] = 0.035f;
     D_800E6BD0[omCurrentObj->objId] = D_800E6D90[omCurrentObj->objId];
-    D_800E64D0[omCurrentObj->objId] = 0.0f;
-    D_800E6690[omCurrentObj->objId] = 0.0f;
-    D_800E6850[omCurrentObj->objId] = 0.0f;
-    gEntitiesNextPosYArray[omCurrentObj->objId] = 0.0f;
-    D_800EC2E0[track1].as_u32 = D_8022F560_ovl19[0].unk8;
-    D_800EC4A0[track1] = D_8022F560_ovl19[0].unkC;
-    D_800EC2E0[track2].as_u32 = D_8022F560_ovl19[0].unk10;
+    D_800E64D0[omCurrentObj->objId] = 0;
+    D_800E6690[omCurrentObj->objId] = 0;
+    D_800E6850[omCurrentObj->objId] = 0;
+    gEntitiesNextPosYArray[omCurrentObj->objId] = 0;
     gKirbyState.unk3C = 0;
-    D_800EC4A0[track2] = D_8022F560_ovl19[0].unk14;
-    func_800AA018(D_8022F560_ovl19[0].unk0);
+    D_800EC2E0[track1].as_u32 = D_8022F560_ovl19[gKirbyState.unk3C].unk8;
+    D_800EC4A0[track1] = D_8022F560_ovl19[gKirbyState.unk3C].unkC;
+    D_800EC2E0[track2].as_u32 = D_8022F560_ovl19[gKirbyState.unk3C].unk10;
+    D_800EC4A0[track2] = D_8022F560_ovl19[gKirbyState.unk3C].unk14;
+    func_800AA018(D_8022F560_ovl19[gKirbyState.unk3C].unk0);
     while (D_800E98E0[omCurrentObj->objId] == 0) {
         ohSleep(1);
     }
     ohSleep(1);
-    func_800B1900(*(u16 *)((u8 *)&track1 + 2));
-    func_800B1900(*(u16 *)((u8 *)&track2 + 2));
+    func_800B1900(track1);
+    func_800B1900(track2);
     func_800FF1CC(D_8022FAB0_ovl19);
-    func_800B1900(*(u16 *)((u8 *)omCurrentObj + 2));
+    func_800B1900(omCurrentObj->objId);
 }
 #elif defined(PORT)
 /* PORT: behavioral port from
@@ -3346,32 +3348,15 @@ void func_802284EC_ovl19(GObj *arg0) {
     }
 }
 
-#ifdef NON_MATCHING
-/* 112/186: the instruction COUNT is exact and the body is fully decoded (every
-   store, constant, call and argument verified against the listing).  The whole
-   residual diff cascades from one register-allocation choice: the ROM puts
-   &omCurrentObj in $s1 and &D_8022FAB0_ovl19 in $s0, we get them the other way
-   round, and every later temp rotates with them.  Measured stages, so the next
-   lane does not repeat them:
-     - without the func_800A7F74 prototype in scope the three f32 arguments are
-       K&R-promoted to DOUBLE, which alone costs 16 bytes of outgoing-arg frame
-       (0x38 vs 0x28) and 4 instructions.  The block-scope prototype below is
-       load-bearing.
-     - `D_8022FAB0_ovl19->unk10 = 20.0f; D_8022FAB0_ovl19->unk14 = 20.0f;`
-       forks the constant into TWO mtc1 where the ROM shares one $f0; routing
-       only the FIRST store through the local (`tmp->unk10`) shares it and took
-       159 -> 112.  A chained `unk14 = unk10 = 20.0f` instead emits a lwc1
-       read-back and does not help.
-   Still to try: forcing the $s0/$s1 order (guide's one-slot rotation entry). */
 void func_8022858C_ovl19(GObj *arg0) {
     struct UnkStruct8022FAB0 *tmp;
 
     D_800E6A10[omCurrentObj->objId] = 1.0f;
     D_800DEF90[omCurrentObj->objId] = func_800B4954;
     D_8022FAB0_ovl19 = tmp = func_800FF144();
-    if (tmp != NULL) {
-        tmp->unk10 = 20.0f;
-        D_8022FAB0_ovl19->unk14 = 20.0f;
+    if (D_8022FAB0_ovl19 != NULL) {
+        tmp->unk10 = 20.0;
+        D_8022FAB0_ovl19->unk14 = 20.0;
         D_8022FAB0_ovl19->unk18 = -240.0f;
         D_8022FAB0_ovl19->unk21 = 1;
     }
@@ -3400,104 +3385,12 @@ void func_8022858C_ovl19(GObj *arg0) {
     func_800FF1CC(D_8022FAB0_ovl19);
     func_800B1900(omCurrentObj->objId);
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl19/ovl19_2/func_8022858C_ovl19.s")
-#endif
 
 void func_80228874_ovl19(GObj *arg0) {
     func_800FF200(D_8022FAB0_ovl19);
 }
 
-#ifdef MIPS_TO_C
-/* FACTORY: 53/234 instructions match (181 diffs), was 20/234. Derived from
- * the ASM (not the PORT arm), fixing one real bug: the two/three
- * func_800B1900 kills read their argument as a HALF-WORD off the spilled-s32
- * stack slot (track1 at +2, track2 at +2, omCurrentObj->objId's low 16 bits
- * at +2) -- not the full 32-bit values the PORT arm passes. All struct-field
- * reads/writes, constants (0x13/0x3C/0x4A, 38.1, funclist ids) and the
- * sleep/wait shape check out.
- * SAVED-REGISTER FLOOR DISPROVEN (was recorded as "4 saved regs vs the ROM's
- * 3, no source spelling reaches it"). The 4th saved register was IDO hoisting
- * %hi/%lo of D_8022F578_ovl19 -- the base of the two-element cursor array --
- * because the draft indexed it with the CONSTANTS 0 and 1. Two changes fix
- * it, worth 214 -> 181 diffs and an exactly matching prologue/epilogue:
- *   1. The ROM does NOT fold a constant index: it emits idx*4 - idx << 3
- *      (sizeof == 24) with the index in a REGISTER, and that register is the
- *      same value stored to gKirbyState.unk3C right beside it. So the index
- *      is a variable -- `phase` here -- shared with the unk3C store, and the
- *      two blocks are phase = 0 and phase = 1.
- *   2. Even with a variable index IDO still CSE'd the base into $s2. The
- *      ovl2.c lever kills it: `(T *) (u32) &sym[i]` forces a local lui/addiu
- *      pair instead of a hoisted base, exactly as the ROM has it (a fresh
- *      lui/addiu $t6 in each of the two blocks).
- * Residue is temp-register labelling from index 24 on, plus one layout
- * difference: the ROM spills &D_800EC2E0[track1] and &D_800EC4A0[track1] to
- * 0x28/0x2C across the wait loop and puts track1/track2 at 0x34/0x30, while
- * this draft recomputes those addresses and puts track1/track2 at 0x30/0x2C
- * (frame 0x38 and total word count 234 match either way). Reordering the
- * local declarations moves it the wrong way (183) and deleting `rec`
- * entirely changes nothing (181) -- neither local takes a stack slot. Prime
- * permuter target; sibling of func_80227F90_ovl19, same family, and the
- * same variable-index + (u32)& pair is worth trying on any ovl19 function
- * that walks a small const-indexed struct table. */
-void func_8022889C_ovl19(GObj *arg0) {
-    extern struct Ovl19_2Struct D_8022F578_ovl19[];
-    struct Ovl19_2Struct *rec;
-    s32 phase;
-    s32 track1;
-    s32 track2;
-
-    D_800E98E0[omCurrentObj->objId] = 0;
-    func_800AECC0(gameTicksPerDraw);
-    func_800AED20(gameTicksPerDraw);
-    D_800DF150[omCurrentObj->objId] = func_80228C44_ovl19;
-    D_800E6A10[omCurrentObj->objId] = 1.0f;
-    D_800DEF90[omCurrentObj->objId] = func_800B4954;
-    gEntitiesNextPosYArray[omCurrentObj->objId] = 38.1f;
-    gEntitiesScaleXArray[omCurrentObj->objId] = 0.2f;
-    gEntitiesScaleYArray[omCurrentObj->objId] = 0.2f;
-    gEntitiesScaleZArray[omCurrentObj->objId] = 0.2f;
-    func_800A9864(0x20066, 0x20, 0x10);
-    track1 = request_track_general(0x13, 0x3C, 0x4A);
-    D_800E98E0[track1] = 0;
-    gEntityFuncListIDArray[track1] = 1;
-    D_800E8220[track1] = 2;
-    track2 = request_track_general(0x13, 0x3C, 0x4A);
-    gEntityFuncListIDArray[track2] = 0;
-    D_800E8220[track2] = 2;
-    D_800E9AA0[omCurrentObj->objId] = (struct EntityThing800E9AA0 *)(uintptr_t)track2;
-    D_800E5F90[omCurrentObj->objId] = 0;
-    D_800E6D90[omCurrentObj->objId] = 0.0f;
-    D_800E6BD0[omCurrentObj->objId] = D_800E6D90[omCurrentObj->objId];
-    D_800E64D0[omCurrentObj->objId] = 0.0f;
-    D_800E6690[omCurrentObj->objId] = 0.0f;
-    D_800E6850[omCurrentObj->objId] = 0.0f;
-    phase = 0;
-    rec = (struct Ovl19_2Struct *) (u32) &D_8022F578_ovl19[phase];
-    D_800EC2E0[track1].as_u32 = rec->unk8;
-    D_800EC4A0[track1] = rec->unkC;
-    D_800EC2E0[track2].as_u32 = rec->unk10;
-    D_800EC4A0[track2] = rec->unk14;
-    gKirbyState.unk3C = phase;
-    func_800AA018(rec->unk0);
-    while (D_800E98E0[omCurrentObj->objId] != 2) {
-        ohSleep(1);
-    }
-    phase = 1;
-    gKirbyState.unk3C = phase;
-    rec = (struct Ovl19_2Struct *) (u32) &D_8022F578_ovl19[phase];
-    D_800EC2E0[track1].as_u32 = rec->unk8;
-    D_800EC4A0[track1] = rec->unkC;
-    D_800EC2E0[track2].as_u32 = rec->unk10;
-    D_800EC4A0[track2] = rec->unk14;
-    func_800AA154(rec->unk0); /* blocks until the anim ends */
-    D_8012E7FC[2] = 2;
-    ohSleep(2);
-    func_800B1900(*(u16 *)((u8 *)&track1 + 2));
-    func_800B1900(*(u16 *)((u8 *)&track2 + 2));
-    func_800B1900(*(u16 *)((u8 *)omCurrentObj + 2));
-}
-#elif defined(PORT)
+#ifdef PORT
 /* PORT: behavioral port from
  * asm/nonmatchings/ovl19/ovl19_2/func_8022889C_ovl19.s -- the swimming
  * leg's outro cutscene coroutine (sibling of func_80227F90_ovl19).
@@ -3562,7 +3455,57 @@ void func_8022889C_ovl19(GObj *arg0) {
     func_800B1900(omCurrentObj->objId);
 }
 #else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl19/ovl19_2/func_8022889C_ovl19.s")
+void func_8022889C_ovl19(GObj *arg0) {
+    extern struct Ovl19_2Struct D_8022F578_ovl19[];
+    s32 track1;
+    s32 track2;
+
+    D_800E98E0[omCurrentObj->objId] = 0;
+    func_800AECC0(gameTicksPerDraw);
+    func_800AED20(gameTicksPerDraw);
+    D_800DF150[omCurrentObj->objId] = func_80228C44_ovl19;
+    D_800E6A10[omCurrentObj->objId] = 1.0f;
+    D_800DEF90[omCurrentObj->objId] = func_800B4954;
+    gEntitiesNextPosYArray[omCurrentObj->objId] = 38.1f;
+    gEntitiesScaleXArray[omCurrentObj->objId] = 0.2f;
+    gEntitiesScaleYArray[omCurrentObj->objId] = 0.2f;
+    gEntitiesScaleZArray[omCurrentObj->objId] = 0.2f;
+    func_800A9864(0x20066, 0x20, 0x10);
+    track1 = request_track_general(0x13, 0x3C, 0x4A);
+    D_800E98E0[track1] = 0;
+    gEntityFuncListIDArray[track1] = 1;
+    ((u32 *) D_800E8220)[track1] = 2;
+    track2 = request_track_general(0x13, 0x3C, 0x4A);
+    gEntityFuncListIDArray[track2] = 0;
+    ((u32 *) D_800E8220)[track2] = 2;
+    D_800E9AA0[omCurrentObj->objId] = (struct EntityThing800E9AA0 *)(uintptr_t)track2;
+    D_800E5F90[omCurrentObj->objId] = 0;
+    D_800E6D90[omCurrentObj->objId] = 0.0f;
+    D_800E6BD0[omCurrentObj->objId] = D_800E6D90[omCurrentObj->objId];
+    D_800E64D0[omCurrentObj->objId] = 0.0f;
+    D_800E6690[omCurrentObj->objId] = 0.0f;
+    D_800E6850[omCurrentObj->objId] = 0.0f;
+    gKirbyState.unk3C = 0;
+    D_800EC2E0[track1].as_u32 = D_8022F578_ovl19[gKirbyState.unk3C].unk8;
+    D_800EC4A0[track1] = D_8022F578_ovl19[gKirbyState.unk3C].unkC;
+    D_800EC2E0[track2].as_u32 = D_8022F578_ovl19[gKirbyState.unk3C].unk10;
+    D_800EC4A0[track2] = D_8022F578_ovl19[gKirbyState.unk3C].unk14;
+    func_800AA018(D_8022F578_ovl19[gKirbyState.unk3C].unk0);
+    while (D_800E98E0[omCurrentObj->objId] != 2) {
+        ohSleep(1);
+    }
+    gKirbyState.unk3C = 1;
+    D_800EC2E0[track1].as_u32 = D_8022F578_ovl19[gKirbyState.unk3C].unk8;
+    D_800EC4A0[track1] = D_8022F578_ovl19[gKirbyState.unk3C].unkC;
+    D_800EC2E0[track2].as_u32 = D_8022F578_ovl19[gKirbyState.unk3C].unk10;
+    D_800EC4A0[track2] = D_8022F578_ovl19[gKirbyState.unk3C].unk14;
+    func_800AA154(D_8022F578_ovl19[gKirbyState.unk3C].unk0); /* blocks until the anim ends */
+    D_8012E7FC[2] = 2;
+    ohSleep(2);
+    func_800B1900(track1);
+    func_800B1900(track2);
+    func_800B1900(omCurrentObj->objId);
+}
 #endif
 
 /* Per-frame main for the boss's grabbed-Kirby states, driven by
@@ -3578,77 +3521,7 @@ void func_8022889C_ovl19(GObj *arg0) {
  *                  mirror the position into gKirbyState.unk144..14C and kick
  *                  func_80121A04; above that, park D_800EA6E0[objId].
  * Every arm re-reads omCurrentObj->objId, as the listing does. */
-#ifdef MIPS_TO_C
-/* FACTORY: 92/171 [was noted 93/171] words DIFFER as measure_seeds.py reports it -- 92 real,
- * the 93rd being the D_8022F968_ovl19 rodata word verify.py cannot resolve
- * on an out-of-tree copy. So 78 of 171 already match. Structure,
- * instruction count and frame (0x38, sp2C at 0x2C) are right; the residue is
- * ONE instruction and the cascade it drags through every later branch offset.
- *
- * The ROM materialises the literal 1 THREE times in this function: $a2 for
- * the `case 1` compare (reused for the gKirbyState.unk44 store), $t8 for
- * case 0's `gKirbyState.unk17 = 1`, and $t4 for case 1's D_800E8AE0 store.
- * IDO here CSEs that third one back onto the compare constant, so the draft
- * is exactly one `addiu $t4,$zero,1` short, and the hoisted pair lands
- * swapped ($a1 = 1 / $a2 = &D_800E98E0 where the ROM has $a1 = &D_800E98E0 /
- * $a2 = 1) -- the neighbouring-register CSE floor in LEVERS.md.
- *
- * Swept with no effect (all 93/171 on an out-of-tree copy, which adds one
- * spurious D_8022F968_ovl19 rodata word verify.py cannot resolve off-path):
- * every ordering of case 1's four statements, `1U` on either store, and
- * reversing the case-1 compare. Worse: moving the unk44 store after the
- * D_800E98E0 store (97), and if/else-if instead of switch, with and without
- * a state temp (152 both). */
-void func_80228C44_ovl19(GObj *arg0) {
-    /* In-body, not at file scope: both arms are invisible to the N64 build
-     * and a file-scope declaration would re-type this TU's other calls. */
-    void func_80121A04(void);
-    Vector sp2C;
-
-    gEntitiesAngleYArray[omCurrentObj->objId] = D_800E17D0[omCurrentObj->objId];
-    switch (D_800E98E0[omCurrentObj->objId]) {
-    case 0:
-        if ((D_800E5F90[0] == 0xA) && (gKirbyState.unk17 == 0)) {
-            D_800E6D90[omCurrentObj->objId] = 0.0f;
-            D_800E6BD0[omCurrentObj->objId] = D_800E6D90[omCurrentObj->objId];
-            D_800E6850[omCurrentObj->objId] = 0.0f;
-            D_800E64D0[omCurrentObj->objId] = D_800E6690[omCurrentObj->objId] =
-                D_800E6850[omCurrentObj->objId];
-            D_800E0D50[0] = omCurrentObj->objId;
-            gKirbyState.unk17 = 1;
-            gKirbyState.abilityState = 0x4C;
-        }
-        break;
-    case 1:
-        if (0.3650000095f < D_800E6BD0[0]) {
-            gKirbyState.unk44 = 1;
-            D_800E98E0[omCurrentObj->objId] = 2;
-            D_800E8AE0[omCurrentObj->objId] = 1;
-            D_800EA6E0[omCurrentObj->objId] = D_800EA6E0[0];
-        }
-        break;
-    case 2:
-        func_800B2340(&sp2C, D_800DFBD0[(s32) (uintptr_t) D_800E9AA0[omCurrentObj->objId]][1], 0xFFFF);
-        /* +0x20 is `u8 unk20` of the record ovl2_5.c calls struct
-         * Ovl2Particle; unk_structs/D_8012E944.h stops one field short of it,
-         * so it is reached by byte offset rather than by extending a header
-         * six other overlays include. */
-        *((u8 *) D_8012E944 + 0x20) = 0;
-        D_8012E944->unk4 = sp2C.x;
-        D_8012E944->unk8 = gEntitiesNextPosYArray[omCurrentObj->objId];
-        D_8012E944->unkC = sp2C.z;
-        if (sp2C.y < 40.0f) {
-            gKirbyState.unk144 = sp2C.x;
-            gKirbyState.unk148 = D_800EA6E0[omCurrentObj->objId];
-            gKirbyState.unk14C = sp2C.z;
-            func_80121A04();
-        } else {
-            D_800EA6E0[omCurrentObj->objId] = 0.0f;
-        }
-        break;
-    }
-}
-#elif defined(PORT)
+#ifdef PORT
 void func_80228C44_ovl19(GObj *arg0) {
     /* In-body, not at file scope: both arms are invisible to the N64 build
      * and a file-scope declaration would re-type this TU's other calls. */
@@ -3695,7 +3568,55 @@ void func_80228C44_ovl19(GObj *arg0) {
     }
 }
 #else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl19/ovl19_2/func_80228C44_ovl19.s")
+void func_80228C44_ovl19(GObj *arg0) {
+    /* In-body, not at file scope: both arms are invisible to the N64 build
+     * and a file-scope declaration would re-type this TU's other calls. */
+    void func_80121A04(void);
+    Vector sp2C;
+
+    gEntitiesAngleYArray[omCurrentObj->objId] = D_800E17D0[omCurrentObj->objId];
+    switch (D_800E98E0[omCurrentObj->objId]) {
+    case 0:
+        if ((D_800E5F90[0] == 0xA) && (gKirbyState.unk17 == 0)) {
+            D_800E6D90[omCurrentObj->objId] = 0.0f;
+            D_800E6BD0[omCurrentObj->objId] = D_800E6D90[omCurrentObj->objId];
+            D_800E6850[omCurrentObj->objId] = 0.0f;
+            D_800E64D0[omCurrentObj->objId] = D_800E6690[omCurrentObj->objId] =
+                D_800E6850[omCurrentObj->objId];
+            D_800E0D50[0] = omCurrentObj->objId;
+            gKirbyState.unk17 = 1;
+            gKirbyState.abilityState = 0x4C;
+        }
+        break;
+    case 1:
+        if (0.3650000095f < D_800E6BD0[0]) {
+            gKirbyState.unk44 = 1;
+            D_800E98E0[omCurrentObj->objId] = 2;
+            ((u32 *) D_800E8AE0)[omCurrentObj->objId] = 1;
+            D_800EA6E0[omCurrentObj->objId] = D_800EA6E0[0];
+        }
+        break;
+    case 2:
+        func_800B2340(&sp2C, D_800DFBD0[(s32) (uintptr_t) D_800E9AA0[omCurrentObj->objId]][1], 0xFFFF);
+        /* +0x20 is `u8 unk20` of the record ovl2_5.c calls struct
+         * Ovl2Particle; unk_structs/D_8012E944.h stops one field short of it,
+         * so it is reached by byte offset rather than by extending a header
+         * six other overlays include. */
+        *((u8 *) D_8012E944 + 0x20) = 0;
+        D_8012E944->unk4 = sp2C.x;
+        D_8012E944->unk8 = gEntitiesNextPosYArray[omCurrentObj->objId];
+        D_8012E944->unkC = sp2C.z;
+        if (sp2C.y < 40.0f) {
+            gKirbyState.unk144 = sp2C.x;
+            gKirbyState.unk148 = D_800EA6E0[omCurrentObj->objId];
+            gKirbyState.unk14C = sp2C.z;
+            func_80121A04();
+        } else {
+            D_800EA6E0[omCurrentObj->objId] = 0.0f;
+        }
+        break;
+    }
+}
 #endif
 
 void func_80228EF4_ovl19(GObj *arg0) {

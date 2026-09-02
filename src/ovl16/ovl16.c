@@ -697,73 +697,17 @@ block_59:
 #endif
 
 #ifdef NON_MATCHING
-/* FACTORY: 204/243, and the note below was reading a WRONG SIGNATURE.
- * 2026-08-25, second pass: this function is not `void`.  Every one of its six
- * exits is `b .L801DC6D0_ovl16` after `lw $v1, %lo(D_800E83E0)($v1)`, and the
- * shared epilogue is `or $v0, $v1, $zero; jr $ra` -- it RETURNS
- * `D_800E83E0[omCurrentObj->objId]`, exactly like its clone
- * func_801DBBCC_ovl16 forty lines above, whose m2c draft ends `return *var_t3;`.
- * Item (b) of the old note ("eight words this draft does not have at all") was
- * the return value, misread as a structural gap.  Both declarations
- * (src/ovl16/ovl16.c:122 and src/ovl16/ovl16_2.c:144) and all eleven call sites
- * discard the result, which is why the wrong type survived; it is also a PORT
- * bug, since the port compiles this arm.
- *   s32 head + a `return D_800E83E0[omCurrentObj->objId];` in each of the six
- *   arms                                        204 -> 214, frame 0x58 -> 0x60
- *   ...plus deleting `temp_v1` (the switch value, written inline)
- *                                               214 -> 204, FRAME EXACT 0x58
- * So the score is flat and the draft is now the right shape underneath it:
- * correct return type, correct frame, 239 words against the ROM's 243.
- * Measured and rejected on the way, so nobody re-spends them:
- *   - a `struct UnkStruct800D7098 *ctx = &D_800D7098;` local, used for every
- *     field: EXACTLY INERT (204 either way, frame unchanged).  IDO folds a
- *     constant-initialised pointer straight back into %lo, whether it is
- *     initialised at the declaration or assigned in the body.
- *   - LEVER 35's cast, `(struct UnkStruct800D7098 *)(u32)&D_800D7098`, DOES
- *     force the register form -- and applied at every site it is worse:
- *     206/249, shape 40 runs against 34, frame 0x60.  The ROM materialises the
- *     address EIGHT times for TEN source references (once after each `jal`,
- *     since $a2 is caller-saved), so a per-use cast overshoots by two
- *     materialisations and four words.  The remaining job is to find the source
- *     shape that shares those two, not to force more of them.
- *   - deleting temp_v1_2/temp_v1_3 as well takes the frame back UP to 0x60
- *     (LEVER 57: inlining `(s8) sp2C->unk3A` twice buys two compiler temps that
- *     cancel the two declarations), so temp_v1 is the only one to remove.
- * What the old note got right, kept verbatim below.
- *
- * m2c draft, for the PORT only. 204/243, and unlike the rest of its class this
-   one does NOT come apart on LEVER 108's cleanup -- measured 2026-08-25, so
-   nobody re-spends it.
-     - Deleting the seven temp_ declarations and writing every subscript
-       omCurrentObj->objId is 204 -> 212, because the declaration COUNT carries
-       the frame (LEVER 54): 0x58 -> 0x50 and every sp offset with it.  Two
-       reserved `s32` slots put the frame back and the score back to exactly
-       204, i.e. the cleanup is byte-neutral here.
-     - `sp2C->unk3A = -1;` for m2c's `-1U` is inert (unk3A is u8, so the store
-       is 0xFF either way and the `li 255` vs `addiu -1` is positional).
-   THE REAL RESIDUE IS STRUCTURAL and aligndiff (LEVER 104) names it:
-     a) the ROM holds `&D_800D7098` in $a2 through the whole dispatch --
-        `lui`+`addiu` twice more inside the arms -- where this draft reaches
-        every field through its own `lui %hi / lw %lo`.  LEVER 85's rule
-        (count the %hi/%lo pairs against the base registers) says the source
-        references that symbol more than once per block.
-     b) the ROM reads `D_800E83E0[omCurrentObj->objId]` into $v1 in a block of
-        its own ending `b .L801DC6D0_ovl16`, eight words this draft does not
-        have at all.
-   That is a re-derivation of the dispatch, not a lever. */
+/* FACTORY: 201/243, frame exact; residue is &D_800D7098 held in $a2 across the whole dispatch where IDO folds it into %lo */
 s32 func_801DC314_ovl16(s32 arg0, s32 arg1, s32 arg2) {
     struct Ovl16AnimInfo sp38;
+    u8 sp30[8];
     EnemyRecord *sp2C;
-    s32 temp_v0_2;
-    s32 temp_v0_3;
-    s8 temp_v1_2;
-    s8 temp_v1_3;
     struct Ovl16AnimObj *temp_v0;
-    u32 temp_a0;
+    s32 temp_v0_2;
+    s8 temp_v1_2;
 
-    temp_a0 = omCurrentObj->objId;
-    sp2C = D_800E1B50[temp_a0];
-    func_80111550(temp_a0);
+    sp2C = D_800E1B50[omCurrentObj->objId];
+    func_80111550(omCurrentObj->objId);
     temp_v0 = func_80111C88(sp2C->unk8C, omCurrentObj->objId);
     if (temp_v0 != NULL) {
         if (arg0 != 0) {
@@ -786,7 +730,7 @@ s32 func_801DC314_ovl16(s32 arg0, s32 arg1, s32 arg2) {
         } else {
             D_800E83E0[omCurrentObj->objId] = 0;
             sp2C->unk43 = 0;
-            sp2C->unk3A = -1U;
+            sp2C->unk3A = -1;
         }
         D_800D7098.unk28 = 0;
         return D_800E83E0[omCurrentObj->objId];
@@ -799,7 +743,7 @@ s32 func_801DC314_ovl16(s32 arg0, s32 arg1, s32 arg2) {
             return D_800E83E0[omCurrentObj->objId];
         case 8:
         case 18:
-            assign_new_process_entry(gEntityGObjProcessArray[(s8) sp2C->unk3A], func_801AC11C_ovl7, &D_800D7098);
+            assign_new_process_entry(gEntityGObjProcessArray[(s8) sp2C->unk3A], func_801AC11C_ovl7);
             /* fallthrough */
         case 9:
             if (D_800D7098.unk28 == 0) {
@@ -824,13 +768,13 @@ s32 func_801DC314_ovl16(s32 arg0, s32 arg1, s32 arg2) {
             if (D_800D7098.unk28 == 0) {
                 D_800D7098.unk28 = 1;
                 play_sound(0x1B6);
-                temp_v0_3 = func_8019E0A4_ovl7(5, 8);
-                if (temp_v0_3 != -1) {
-                    temp_v1_3 = (s8) sp2C->unk3A;
-                    if (temp_v1_3 <= 0) {
-                        D_800E98E0[temp_v0_3] = 0;
+                temp_v0_2 = func_8019E0A4_ovl7(5, 8);
+                if (temp_v0_2 != -1) {
+                    temp_v1_2 = (s8) sp2C->unk3A;
+                    if (temp_v1_2 <= 0) {
+                        D_800E98E0[temp_v0_2] = 0;
                     } else {
-                        D_800E98E0[temp_v0_3] = (s32) temp_v1_3;
+                        D_800E98E0[temp_v0_2] = (s32) temp_v1_2;
                     }
                 }
             }
@@ -841,7 +785,7 @@ s32 func_801DC314_ovl16(s32 arg0, s32 arg1, s32 arg2) {
     }
     D_800E83E0[omCurrentObj->objId] = 0;
     sp2C->unk43 = 0;
-    sp2C->unk3A = -1U;
+    sp2C->unk3A = -1;
     D_800D7098.unk28 = 0;
     return D_800E83E0[omCurrentObj->objId];
 }
@@ -3837,77 +3781,7 @@ void func_801E4754_ovl16(s32 arg0) {
 #pragma GLOBAL_ASM("asm/nonmatchings/ovl16/ovl16/func_801E4754_ovl16.s")
 #endif
 
-#ifdef MIPS_TO_C
-/* FACTORY: 225/233, and 12 instructions SHORT -- this one has a real structural
- * lead, not just register noise. The ROM evaluates D_801F0120_ovl16[4] TWICE: once
- * at listing index 200 (`lw $t8, 0x10($v0)` / `bgtz`) to pick the unk8C anim list,
- * and again at index 222 (`bgtz $t5`) for the dispatch test, with no call in
- * between. IDO CSEs the two into one load here, which is exactly the missing 12
- * words; LEVERS 10's read-inline does not help because both uses ARE already
- * written inline. Whoever picks this up next: find the spelling that forces the
- * second load (that is the whole gap), then the rest is register naming.
- * Also solved and kept: the else-arm store must be the DOUBLE literal `0.0`, not
- * `0.0f` -- that stops IDO sharing the store's zero with the `!= 0.0f` compare and
- * reproduces the ROM's `beql` + duplicated `mtc1 $zero, $f14` (230 -> 225, LEVERS 7).
- * Measured and rejected: caching omCurrentObj in a local (grows the frame past the
- * ROM's 0x18, which has NO stack locals at all), and reversing the float compare. */
-/* Phase-0x12 ram-attack drive tick: lean the body ([1].angle.z) with the
- * horizontal speed while charging (D_800E9FE0 set), clamp x to the +/-200
- * lane, and while ramming (D_800E9E20) clamp the leading edge instead of the
- * shared bounds helper; then the usual phase-4 anim/step dispatch. */
-void func_801E538C_ovl16(s32 arg0) {
-    struct DObj *d;
-
-    if ((D_800E9FE0[omCurrentObj->objId].as_u32 != 0) && (D_800E3050[omCurrentObj->objId] != 0.0f)) {
-        D_800EA6E0[omCurrentObj->objId] = -0.028571427f;
-    } else {
-        D_800EA6E0[omCurrentObj->objId] = 0.0;
-    }
-    d = D_800DFBD0[omCurrentObj->objId][1];
-    d->angle.v.z += D_800E3050[omCurrentObj->objId] * D_800EA6E0[omCurrentObj->objId];
-    while (d->angle.v.z > 6.2831855f) {
-        d->angle.v.z -= 6.2831855f;
-    }
-    while (d->angle.v.z < -6.2831855f) {
-        d->angle.v.z += 6.2831855f;
-    }
-    if (gEntitiesNextPosXArray[omCurrentObj->objId] < -200.0f) {
-        gEntitiesNextPosXArray[omCurrentObj->objId] = -200.0f;
-    }
-    if (gEntitiesNextPosXArray[omCurrentObj->objId] > 200.0f) {
-        gEntitiesNextPosXArray[omCurrentObj->objId] = 200.0f;
-    }
-    D_800E8920[omCurrentObj->objId] = 0;
-    if (D_800E9E20[omCurrentObj->objId] != 0) {
-        if (D_800E3050[omCurrentObj->objId] < 0.0f) {
-            if (gEntitiesNextPosXArray[omCurrentObj->objId] < -200.0f) {
-                gEntitiesNextPosXArray[omCurrentObj->objId] = -200.0f;
-            }
-        } else if (gEntitiesNextPosXArray[omCurrentObj->objId] > 200.0f) {
-            gEntitiesNextPosXArray[omCurrentObj->objId] = 200.0f;
-        }
-        if (D_800E3210[omCurrentObj->objId] < 0.0f) {
-            if (gEntitiesNextPosYArray[omCurrentObj->objId] < 20.0f) {
-                gEntitiesNextPosYArray[omCurrentObj->objId] = 20.0f;
-            }
-        } else if (gEntitiesNextPosYArray[omCurrentObj->objId] > 260.0f) {
-            gEntitiesNextPosYArray[omCurrentObj->objId] = 260.0f;
-        }
-    } else {
-        func_801DB400_ovl16();
-    }
-    if (D_801F0120_ovl16[4] <= 0) {
-        D_800E1B50[omCurrentObj->objId]->unk8C = &D_801D9948;
-    } else {
-        D_800E1B50[omCurrentObj->objId]->unk8C = &D_801D9900;
-    }
-    if ((D_800D7098.unk18 != 0) || (D_801F0120_ovl16[4] <= 0)) {
-        func_801DC314_ovl16(0, 0, 0);
-    } else {
-        func_801DB698_ovl16(0);
-    }
-}
-#elif defined(PORT)
+#ifdef PORT
 /* Phase-0x12 ram-attack drive tick: lean the body ([1].angle.z) with the
  * horizontal speed while charging (D_800E9FE0 set), clamp x to the +/-200
  * lane, and while ramming (D_800E9E20) clamp the leading edge instead of the
@@ -3965,7 +3839,63 @@ void func_801E538C_ovl16(s32 arg0) {
     }
 }
 #else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl16/ovl16/func_801E538C_ovl16.s")
+/* Phase-0x12 ram-attack drive tick: lean the body ([1].angle.z) with the
+ * horizontal speed while charging (D_800E9FE0 set), clamp x to the +/-200
+ * lane, and while ramming (D_800E9E20) clamp the leading edge instead of the
+ * shared bounds helper; then the usual phase-4 anim/step dispatch. */
+void func_801E538C_ovl16(s32 arg0) {
+    if (D_800E9FE0[omCurrentObj->objId].as_u32 != 0) {
+        if (D_800E3050[omCurrentObj->objId] != 0.0f) {
+            D_800EA6E0[omCurrentObj->objId] = -0.028571427f;
+        } else {
+            D_800EA6E0[omCurrentObj->objId] = 0.0f;
+        }
+    } else {
+        D_800EA6E0[omCurrentObj->objId] = 0.0f;
+    }
+    D_800DFBD0[omCurrentObj->objId][1]->angle.v.z += D_800E3050[omCurrentObj->objId] * D_800EA6E0[omCurrentObj->objId];
+    while (D_800DFBD0[omCurrentObj->objId][1]->angle.v.z > 6.283185482f) {
+        D_800DFBD0[omCurrentObj->objId][1]->angle.v.z -= 6.283185482f;
+    }
+    while (D_800DFBD0[omCurrentObj->objId][1]->angle.v.z < -6.283185482f) {
+        D_800DFBD0[omCurrentObj->objId][1]->angle.v.z += 6.283185482f;
+    }
+    if (gEntitiesNextPosXArray[omCurrentObj->objId] < -200.0f) {
+        gEntitiesNextPosXArray[omCurrentObj->objId] = -200.0f;
+    }
+    if (gEntitiesNextPosXArray[omCurrentObj->objId] > 200.0f) {
+        gEntitiesNextPosXArray[omCurrentObj->objId] = 200.0f;
+    }
+    D_800E8920[omCurrentObj->objId] = 0;
+    if (D_800E9E20[omCurrentObj->objId] != 0) {
+        if (D_800E3050[omCurrentObj->objId] < 0.0f) {
+            if (gEntitiesNextPosXArray[omCurrentObj->objId] < -200.0f) {
+                gEntitiesNextPosXArray[omCurrentObj->objId] = -200.0f;
+            }
+        } else if (gEntitiesNextPosXArray[omCurrentObj->objId] > 200.0f) {
+            gEntitiesNextPosXArray[omCurrentObj->objId] = 200.0f;
+        }
+        if (D_800E3210[omCurrentObj->objId] < 0.0f) {
+            if (gEntitiesNextPosYArray[omCurrentObj->objId] < 20.0f) {
+                gEntitiesNextPosYArray[omCurrentObj->objId] = 20.0f;
+            }
+        } else if (gEntitiesNextPosYArray[omCurrentObj->objId] > 260.0f) {
+            gEntitiesNextPosYArray[omCurrentObj->objId] = 260.0f;
+        }
+    } else {
+        func_801DB400_ovl16();
+    }
+    if (D_801F0120_ovl16[4] <= 0) {
+        D_800E1B50[omCurrentObj->objId]->unk8C = &D_801D9948;
+    } else {
+        D_800E1B50[omCurrentObj->objId]->unk8C = &D_801D9900;
+    }
+    if ((D_800D7098.unk18 != 0) || (D_801F0120_ovl16[4] <= 0)) {
+        func_801DC314_ovl16(0, 0, 0);
+    } else {
+        func_801DB698_ovl16(0);
+    }
+}
 #endif
 
 void func_801E5734_ovl16(s32 arg0) {

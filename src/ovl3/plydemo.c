@@ -92,58 +92,52 @@ void func_800F98EC(s32, f32);
 void func_8011E234(void);
 
 #ifdef MIPS_TO_C
-/* FACTORY: DIFF 320/336 insns; short=33 long=0.
- * Draft derived from the host arm with its shims/LP64-isms removed; close the instruction COUNT before touching registers. */
-
+/* FACTORY: 215/337 words, constant 2 not register-shared into $a3 plus one bne operand order */
 void func_80156050_ovl3(s32 arg0) {
     extern u8 D_800D6E20[];
-    s32 id = omCurrentObj->objId;
 
     func_8011CF58();
-    D_800DDFD0[id] = 0x43;
+    D_800DDFD0[omCurrentObj->objId] = 0x43;
     if (func_800F8560() == 0xA) {
         D_800D6E20[D_800BE508] = 1;
     }
-    gKirbyState.numberInhaling = 0;
+    gKirbyState.isInhaling = gKirbyState.isInhalingBlock = gKirbyState.numberInhaling = 0;
     gKirbyState.unk68 = 1;
-    gKirbyState.isInhalingBlock = 0;
-    gKirbyState.isInhaling = 0;
     switch (gKirbyState.unkB) {
         case 1:
-            D_800E8920[id] = 0;
-            if (D_800E8AE0[id] & 6) {
+            D_800E8920[omCurrentObj->objId] = 0;
+            if (D_800E8AE0[omCurrentObj->objId] & 6) {
                 gKirbyState.unk2C = 0xF;
-                D_800E3750[id] = 0.25f;
-                D_800E3C90[id] = 10.0f;
+                D_800E3750[omCurrentObj->objId] = 0.25f;
+                D_800E3C90[omCurrentObj->objId] = 10.0f;
             } else {
                 gKirbyState.unk2C = 0xA;
-                D_800E3750[id] = 0.25f;
-                D_800E3C90[id] = 18.0f;
+                D_800E3750[omCurrentObj->objId] = 0.25f;
+                D_800E3C90[omCurrentObj->objId] = 18.0f;
             }
             break;
         case 2:
-            D_800E8920[id] = 0;
-            if (D_800E8AE0[id] & 6) {
+            D_800E8920[omCurrentObj->objId] = 0;
+            if (D_800E8AE0[omCurrentObj->objId] & 6) {
                 gKirbyState.unk2C = 0xF;
-                D_800E3750[id] = -0.4f;
-                D_800E3C90[id] = 10.0f;
+                D_800E3750[omCurrentObj->objId] = -0.4f;
+                D_800E3C90[omCurrentObj->objId] = 10.0f;
             } else {
                 gKirbyState.unk2C = 0xA;
-                D_800E3750[id] = -0.980665f;
-                D_800E3C90[id] = 18.0f;
+                D_800E3750[omCurrentObj->objId] = -0.980665f;
+                D_800E3C90[omCurrentObj->objId] = 18.0f;
             }
             break;
-        case 3:
         case 4:
-            if (gKirbyState.unkB == 3) {
-                if ((D_800E6A10[id] == 1.0f) && !(gKirbyState.isTurning & 1)) {
-                    gKirbyState.isTurning |= 1;
-                }
-            } else {
-                if ((D_800E6A10[id] == -1.0f) && !(gKirbyState.isTurning & 1)) {
-                    gKirbyState.isTurning |= 1;
-                }
+            if ((D_800E6A10[omCurrentObj->objId] == -1.0f) && !(gKirbyState.isTurning & 1)) {
+                gKirbyState.isTurning |= 1;
             }
+            goto block_3;
+        case 3:
+            if ((D_800E6A10[omCurrentObj->objId] == 1.0f) && !(gKirbyState.isTurning & 1)) {
+                gKirbyState.isTurning |= 1;
+            }
+        block_3:
             if (func_800AA888(D_80196D48_ovl3[gKirbyState.unk4]) == 0) {
                 func_80122F08(D_80196D48_ovl3[gKirbyState.unk4]);
                 gKirbyState.unk154 = 2;
@@ -1775,84 +1769,7 @@ void func_8015A31C_ovl3(s32 arg0) {
     }
 }
 
-#ifdef MIPS_TO_C
-/* FACTORY: 267/312 [was noted 265/312] and 30 instructions short. Register naming ($v0 vs $v1 on the held
- * object pointer) plus a count gap; close the count first. */
-
-void func_8015A44C_ovl3(s32 arg0) {
-    s32 id;
-
-    gKirbyState.unk30 = 0;
-    D_800DDFD0[omCurrentObj->objId] = 0x45;
-    func_80157C5C_ovl3(arg0);
-    D_800DF310[omCurrentObj->objId] = NULL;
-    gEntitiesAngleXArray[omCurrentObj->objId] = 0.0f;
-    D_800D6F10 = 0;
-    gKirbyState.isTurning = 0;
-    gKirbyState.unk7 = 0;
-    gKirbyState.isInhaling = 0;
-    D_800E8060[omCurrentObj->objId] = -1;
-    gKirbyState.unk4 = 0;
-    gKirbyState.unkD = -3;
-    func_8011E234();
-    gKirbyState.unk7C = 0.0f;
-    gKirbyState.unk78 = -D_800E6A10[omCurrentObj->objId];
-    gKirbyState.unk80 = 0.0f;
-    func_800AECC0(gameTicksPerDraw);
-    func_800AED20(gameTicksPerDraw);
-    id = omCurrentObj->objId;
-    if (D_800E8AE0[id] & 6) {
-        D_800EA6E0[id] = 0.2617994f;
-        D_800E6690[id] = 0.0f;
-        D_800E64D0[id] = 0.0f;
-        D_800E6850[id] = 65535.0f;
-        D_800E3750[id] = -0.4f;
-        D_800E3C90[id] = 1.0f;
-        if (gKirbyState.previousAction == 0x1B) {
-            func_800AA78C(0x20089, 0x20007, 6.0f);
-        }
-        func_801230E8(0x20089, 0x2008A, 0);
-        while (gKirbyState.unk14 == 1) {
-            ohSleep(1);
-        }
-        id = omCurrentObj->objId;
-        D_800E3750[id] = 0.0f;
-        D_800E3210[id] = 0.0f;
-        D_800E3C90[id] = 65535.0f;
-        func_800AA78C(0x200A7, 0x20007, 6.0f);
-        func_801230E8(0x200A7, 0x200A8, 1);
-        func_801230E8(0x200A9, 0x200AA, 0);
-    } else {
-        D_800EA6E0[id] = 0.3926991f;
-        D_800E6690[id] = 0.0f;
-        D_800E64D0[id] = 0.0f;
-        D_800E6850[id] = 65535.0f;
-        if (D_800E8920[id] == 0) {
-            D_800E3750[id] = -0.980665f;
-            D_800E3C90[id] = 16.0f;
-            func_800AA78C(0x20089, 0x20007, 3.0f);
-            func_801230E8(0x20089, 0x2008A, 0);
-            while (D_800E8920[omCurrentObj->objId] == 0) {
-                ohSleep(1);
-            }
-        }
-        func_80122B40();
-        func_801230E8(0x200B5, 0x200B6, 1);
-        if (gKirbyState.unk14 != 2) {
-            func_801230E8(0x2009B, 0x2009C, 0);
-            while (gKirbyState.unk14 == 1) {
-                ohSleep(1);
-            }
-        }
-        func_800AA78C(0x200A3, 0x20007, 6.0f);
-        func_801230E8(0x200A3, 0x200A4, 1);
-        func_801230E8(0x200A5, 0x200A6, 0);
-    }
-    D_800E9720[omCurrentObj->objId] = 0x1E;
-    gKirbyState.unk30 += 1;
-    curObjSleepForever();
-}
-#elif defined(PORT)
+#ifdef PORT
 /* PORT: level-entry drop-in coroutine (via m2c). Seats the player fresh
  * (no track callback, zeroed turn/inhale state, camera reset via
  * func_8011E234, tick rates from gameTicksPerDraw), then lands: in water,
@@ -1934,7 +1851,74 @@ void func_8015A44C_ovl3(s32 arg0) {
     curObjSleepForever();
 }
 #else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl3/plydemo/func_8015A44C_ovl3.s")
+void func_8015A44C_ovl3(s32 arg0) {
+    gKirbyState.unk30 = 0;
+    D_800DDFD0[omCurrentObj->objId] = 0x45;
+    func_80157C5C_ovl3(arg0);
+    D_800DF310[omCurrentObj->objId] = NULL;
+    gEntitiesAngleXArray[omCurrentObj->objId] = 0.0f;
+    D_800D6F10 = 0;
+    gKirbyState.isTurning = 0;
+    gKirbyState.unk7 = 0;
+    gKirbyState.isInhaling = 0;
+    D_800E8060[omCurrentObj->objId] = -1;
+    gKirbyState.unk4 = 0;
+    gKirbyState.unkD = -3;
+    func_8011E234();
+    gKirbyState.unk78 = -D_800E6A10[omCurrentObj->objId];
+    gKirbyState.unk80 = gKirbyState.unk7C = 0.0f;
+    func_800AECC0(gameTicksPerDraw);
+    func_800AED20(gameTicksPerDraw);
+    if (D_800E8AE0[omCurrentObj->objId] & 6) {
+        D_800EA6E0[omCurrentObj->objId] = 0.2617994f;
+        D_800E6690[omCurrentObj->objId] = 0.0f;
+        D_800E64D0[omCurrentObj->objId] = D_800E6690[omCurrentObj->objId];
+        D_800E6850[omCurrentObj->objId] = 65535.0f;
+        D_800E3750[omCurrentObj->objId] = -0.4f;
+        D_800E3C90[omCurrentObj->objId] = 1.0f;
+        if (gKirbyState.previousAction == 0x1B) {
+            func_800AA78C(0x20089, 0x20007, 6.0f);
+        }
+        func_801230E8(0x20089, 0x2008A, 0);
+        while (gKirbyState.unk14 == 1) {
+            ohSleep(1);
+        }
+        D_800E3750[omCurrentObj->objId] = 0.0f;
+        D_800E3210[omCurrentObj->objId] = D_800E3750[omCurrentObj->objId];
+        D_800E3C90[omCurrentObj->objId] = 65535.0f;
+        func_800AA78C(0x200A7, 0x20007, 6.0f);
+        func_801230E8(0x200A7, 0x200A8, 1);
+        func_801230E8(0x200A9, 0x200AA, 0);
+    } else {
+        D_800EA6E0[omCurrentObj->objId] = 0.3926991f;
+        D_800E6690[omCurrentObj->objId] = 0.0f;
+        D_800E64D0[omCurrentObj->objId] = D_800E6690[omCurrentObj->objId];
+        D_800E6850[omCurrentObj->objId] = 65535.0f;
+        if (D_800E8920[omCurrentObj->objId] == 0) {
+            D_800E3750[omCurrentObj->objId] = -0.980665f;
+            D_800E3C90[omCurrentObj->objId] = 16.0f;
+            func_800AA78C(0x20089, 0x20007, 3.0f);
+            func_801230E8(0x20089, 0x2008A, 0);
+            while (D_800E8920[omCurrentObj->objId] == 0) {
+                ohSleep(1);
+            }
+        }
+        func_80122B40();
+        func_801230E8(0x200B5, 0x200B6, 1);
+        if (gKirbyState.unk14 != 2) {
+            func_801230E8(0x2009B, 0x2009C, 0);
+            while (gKirbyState.unk14 == 1) {
+                ohSleep(1);
+            }
+        }
+        func_800AA78C(0x200A3, 0x20007, 6.0f);
+        func_801230E8(0x200A3, 0x200A4, 1);
+        func_801230E8(0x200A5, 0x200A6, 0);
+    }
+    D_800E9720[omCurrentObj->objId] = 0x1E;
+    gKirbyState.unk30 += 1;
+    curObjSleepForever();
+}
 #endif
 
 void func_8015A92C_ovl3(s32 arg0) {
@@ -1951,8 +1935,6 @@ void func_8015A92C_ovl3(s32 arg0) {
     func_80120CCC(D_800EA6E0[omCurrentObj->objId], 1.5707964f);
 }
 
-#ifdef NON_MATCHING
-/* 101/172. */
 s32 func_8015A9F8_ovl3(void) {
     s32 ret;
 
@@ -1978,8 +1960,8 @@ s32 func_8015A9F8_ovl3(void) {
         case 3:
         case 4:
             if ((gKirbyState.action != 0x1A)
-             && ((gKirbyState.abilityInUse == 0) || (gKirbyState.abilityInUse == 0x12))
-             && ((gKirbyState.action == 0x1B) || (D_800E8920[omCurrentObj->objId] != 0))) {
+                && ((gKirbyState.abilityInUse == 0) || (gKirbyState.abilityInUse == 0x12))
+                && ((gKirbyState.action == 0x1B) || (D_800E8920[omCurrentObj->objId] != 0))) {
                 D_800E3750[omCurrentObj->objId] = 0.0f;
                 D_800E3210[omCurrentObj->objId] = D_800E3750[omCurrentObj->objId];
                 D_800E3C90[omCurrentObj->objId] = 65535.0f;
@@ -1987,23 +1969,24 @@ s32 func_8015A9F8_ovl3(void) {
                 set_kirby_action_1(0x46, 0x1D);
                 return 1;
             }
-            return 0;
+            break;
         default:
             if (gKirbyState.abilityState == 0) {
-                return 0;
+                break;
             }
             if (gKirbyState.action == 0x1C) {
-                return 0;
+                break;
             }
             if ((gKirbyState.abilityInUse != 0) && (gKirbyState.abilityInUse != 0x12)) {
                 return 0;
             }
             if (gKirbyState.action == 0x1A) {
-                return 0;
+                break;
             }
             ret = 0;
             if (func_800F8560() == 2) {
                 ret = 1;
+                do { } while (0);
             } else if (D_800E8920[omCurrentObj->objId] != 0) {
                 D_800E3750[omCurrentObj->objId] = 0.0f;
                 D_800E3210[omCurrentObj->objId] = D_800E3750[omCurrentObj->objId];
@@ -2011,13 +1994,11 @@ s32 func_8015A9F8_ovl3(void) {
                 ret = 1;
             }
             if (ret == 0) {
-                return 0;
+                break;
             }
             set_kirby_action_1(gKirbyState.abilityState, 0x1C);
             return 1;
     }
+    return 0;
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl3/plydemo/func_8015A9F8_ovl3.s")
-#endif
 
