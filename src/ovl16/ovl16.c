@@ -1064,29 +1064,6 @@ void func_801DCA84_ovl16(s32 arg0) {
     curObjSleepForever();
 }
 
-#ifdef NON_MATCHING
-// 67/116 -> 32/116. The six hand-written stores were WRONG: D_801F0144/0148
-// are D_801F0140[1]/[2] and D_801F0124/0128 are D_801F0120[1]/[2], so the
-// whole thing is ONE loop `for (i = 0; i < 7; i++)`. IDO constant-folds the
-// first three iterations (giving the ROM's separate `addiu` per store, which
-// is why they looked un-CSE-able) and 4x-unrolls i=3..6 with `i` live in $v1 --
-// exactly the ROM's shape. Residue is now a pure ONE-SLOT TEMP ROTATION over
-// 16 instructions (ROM t5/t6/t7, ours t4/t5/t6). Swept with no effect: return
-// type flips on all five callees, an extra dead local, do/while, `!=7`.
-// What IS settled and should be kept:
-//   * D_801F0144/0124/0148/0128_ovl16 are their OWN bss symbols (see
-//     asm/data/ovl16/ovl16.bss.s); spelling them as D_801F0140_ovl16[1] etc.
-//     makes IDO materialise the array base instead of the ROM's folded
-//     `lui $at` + `sw %lo(sym)($at)` (80 -> 67 with the separate symbols).
-//   * D_800D7098.unk4 is u32 and .unk8 is s32, so a plain `-1` to both forks
-//     the constant; `*(s32 *) &D_800D7098.unk4 = -1;` shares it (103 -> 83).
-//   * `ent` must be an explicit local -- the inline form puts &omCurrentObj in
-//     $v0 where the ROM has $v1 (80 -> 67).
-extern s32 D_801F0124_ovl16;
-extern s32 D_801F0128_ovl16;
-extern s32 D_801F0144_ovl16;
-extern s32 D_801F0148_ovl16;
-
 void func_801DCBF8_ovl16(s32 arg0) {
     struct EnemyRecord *ent;
     s32 i;
@@ -1095,8 +1072,7 @@ void func_801DCBF8_ovl16(s32 arg0) {
     ent->unk80->unk10 = 40.0f;
     D_800DEF90[omCurrentObj->objId] = func_800B7560;
     func_800B33F4();
-    D_800D7098.unk8 = -1;
-    *(s32 *) &D_800D7098.unk4 = -1;
+    *(s32 *) &D_800D7098.unk4 = D_800D7098.unk8 = -1;
     D_800D7098.unkC = 7;
     D_800D7098.unk18 = 0;
     D_800D7118.unk3C = -1;
@@ -1106,17 +1082,10 @@ void func_801DCBF8_ovl16(s32 arg0) {
     func_800AA018(0x104DC);
     for (i = 0; i < 7; i++) {
         D_801F0140_ovl16[i] = i;
-        if (i == 6) {
-            D_801F0120_ovl16[i] = 2;
-        } else {
-            D_801F0120_ovl16[i] = 3;
-        }
+        if (i == 6) { D_801F0120_ovl16[i] = 2; } else { D_801F0120_ovl16[i] = 3; }
     }
     gEntityFuncListIDArray[omCurrentObj->objId] = 0;
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl16/ovl16/func_801DCBF8_ovl16.s")
-#endif
 void func_801DCDC8_ovl16(s32 arg0) {
     struct EnemyRecord *sp5C;
     s32 temp;
@@ -2324,63 +2293,7 @@ void func_801E17E0_ovl16(s32 arg0) {
     }
 }
 
-#ifdef MIPS_TO_C
-/* FACTORY: 201/216, register naming ($v0 vs $v1 on the held omCurrentObj) plus the
- * global-address FORM: the ROM materialises `&D_800E3750` with lui+addiu into a held
- * register and stores at 0(reg), where IDO folds the %lo into the store displacement.
- * Measured and rejected: hoisting the array base into a local `f32 *` -- IDO folds it
- * straight back, so the form is a register-allocation state, not a spelling. */
-/* Phase-7 entry: halt all motion, then if a punch is in flight (heading
- * D_800EA6E0 nonzero) collect a bitmask of the four fist DObjs still extended
- * past +/-10 units, command the retract (heading = -10), wait for the mask to
- * be cleared by the per-limb watchers, and play the per-round (D_800D7098.unk8)
- * recover anims. */
-void func_801E18BC_ovl16(s32 arg0) {
-    D_800DDFD0[omCurrentObj->objId] = 7;
-    D_800E3750[omCurrentObj->objId] = 0.0f;
-    D_800E3590[omCurrentObj->objId] = 0.0f;
-    D_800E3210[omCurrentObj->objId] = 0.0f;
-    D_800E3050[omCurrentObj->objId] = 0.0f;
-    D_800E3C90[omCurrentObj->objId] = 65535.0f;
-    D_800E3AD0[omCurrentObj->objId] = D_800E3C90[omCurrentObj->objId];
-    D_800E9E20[omCurrentObj->objId] = 0;
-    if (D_800EA6E0[omCurrentObj->objId] != 0.0f) {
-        if (D_800DFBD0[omCurrentObj->objId][5]->pos.v.y > 10.0f) {
-            D_800E9E20[omCurrentObj->objId] |= 1;
-        }
-        if (D_800DFBD0[omCurrentObj->objId][7]->pos.v.x > 10.0f) {
-            D_800E9E20[omCurrentObj->objId] |= 8;
-        }
-        if (D_800DFBD0[omCurrentObj->objId][9]->pos.v.y < -10.0f) {
-            D_800E9E20[omCurrentObj->objId] |= 2;
-        }
-        if (D_800DFBD0[omCurrentObj->objId][3]->pos.v.x < -10.0f) {
-            D_800E9E20[omCurrentObj->objId] |= 4;
-        }
-        D_800EA6E0[omCurrentObj->objId] = -10.0f;
-        play_sound(0x1AA);
-        while (D_800E9E20[omCurrentObj->objId] != 0) {
-            ohSleep(1);
-        }
-        switch (D_800D7098.unk8) {
-        case 0:
-            func_800AA018(0x1047D);
-            func_800AA154(0x1047C);
-            break;
-        case 1:
-            func_800AA018(0x10477);
-            func_800AA154(0x10476);
-            break;
-        case 2:
-            func_800AA018(0x10483);
-            func_800AA154(0x10482);
-            break;
-        }
-        D_800EA6E0[omCurrentObj->objId] = 0.0f;
-    }
-    gEntityFuncListIDArray[omCurrentObj->objId] = 7;
-}
-#elif defined(PORT)
+#ifdef PORT
 /* Phase-7 entry: halt all motion, then if a punch is in flight (heading
  * D_800EA6E0 nonzero) collect a bitmask of the four fist DObjs still extended
  * past +/-10 units, command the retract (heading = -10), wait for the mask to
@@ -2432,7 +2345,56 @@ void func_801E18BC_ovl16(s32 arg0) {
     gEntityFuncListIDArray[omCurrentObj->objId] = 7;
 }
 #else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl16/ovl16/func_801E18BC_ovl16.s")
+/* Phase-7 entry: halt all motion, then if a punch is in flight (heading
+ * D_800EA6E0 nonzero) collect a bitmask of the four fist DObjs still extended
+ * past +/-10 units, command the retract (heading = -10), wait for the mask to
+ * be cleared by the per-limb watchers, and play the per-round (D_800D7098.unk8)
+ * recover anims. */
+void func_801E18BC_ovl16(s32 arg0) {
+    D_800DDFD0[omCurrentObj->objId] = 7;
+    D_800E3750[omCurrentObj->objId] = 0.0f;
+    D_800E3050[omCurrentObj->objId] = D_800E3210[omCurrentObj->objId] = D_800E3590[omCurrentObj->objId] = D_800E3750[omCurrentObj->objId];
+    D_800E3C90[omCurrentObj->objId] = 65535.0f;
+    D_800E3AD0[omCurrentObj->objId] = D_800E3C90[omCurrentObj->objId];
+    if (D_800EA6E0[omCurrentObj->objId] != 0.0f) {
+        D_800E9E20[omCurrentObj->objId] = 0;
+        if (D_800DFBD0[omCurrentObj->objId][5]->pos.v.y > 10.0f) {
+            D_800E9E20[omCurrentObj->objId] |= 1;
+        }
+        if (D_800DFBD0[omCurrentObj->objId][7]->pos.v.x > 10.0f) {
+            D_800E9E20[omCurrentObj->objId] |= 8;
+        }
+        if (D_800DFBD0[omCurrentObj->objId][9]->pos.v.y < -10.0f) {
+            D_800E9E20[omCurrentObj->objId] |= 2;
+        }
+        if (D_800DFBD0[omCurrentObj->objId][3]->pos.v.x < -10.0f) {
+            D_800E9E20[omCurrentObj->objId] |= 4;
+        }
+        D_800EA6E0[omCurrentObj->objId] = -10.0f;
+        play_sound(0x1AA);
+        while (D_800E9E20[omCurrentObj->objId] != 0) {
+            ohSleep(1);
+        }
+        switch (D_800D7098.unk8) {
+        case 0:
+            func_800AA018(0x1047D);
+            func_800AA154(0x1047C);
+            break;
+        case 1:
+            func_800AA018(0x10477);
+            func_800AA154(0x10476);
+            break;
+        case 2:
+            func_800AA018(0x10483);
+            func_800AA154(0x10482);
+            break;
+        }
+        D_800EA6E0[omCurrentObj->objId] = 0.0f;
+    } else {
+        D_800E9E20[omCurrentObj->objId] = 0;
+    }
+    gEntityFuncListIDArray[omCurrentObj->objId] = 7;
+}
 #endif
 
 void func_801E1C1C_ovl16(s32 arg0) {
@@ -3342,10 +3304,7 @@ void func_801E4148_ovl16(s32 arg0) {
 }
 
 #ifdef MIPS_TO_C
-/* FACTORY: 172/210 [was noted 173/210], only 6 instructions short -- the smallest count gap of the
- * shortfall group, so the cheapest place to identify the repeated load IDO is
- * merging (see func_801E538C's note). Sibling of func_801E3CF0; the host helper
- * pc_ovl16_anim_stretch is func_801DC990_ovl16(a, b) on N64. */
+/* FACTORY: DIFF 5/210, sc lands in $f0 where the ROM has $f2, plus the c.eq.s operand order */
 /* Pillar-attack settle tick (after func_801E4148 released the limbs): same
  * squash-back loop as func_801E3CF0, plus a one-shot creak SFX gated on
  * D_800EA360, ending in the plain phase anim instead of the choice pair. */
@@ -3355,39 +3314,35 @@ void func_801E4350_ovl16(s32 arg0) {
     struct DObj *b;
     u8 *limb;
     s32 i;
+    s32 pat;
     f32 lim;
+    f32 alim;
     f32 ext;
     f32 grow;
     f32 shrink;
-    f32 sc;
 
-    limb = (u8 *) &D_801EF97C_ovl16 + ((s32 *) D_800E9AA0)[omCurrentObj->objId] * 8;
+    pat = ((s32 *) D_800E9AA0)[omCurrentObj->objId];
+    limb = (u8 *) &D_801EF97C_ovl16 + pat * 8;
     for (i = 0; i < 8; i++) {
         a = D_800DFBD0[omCurrentObj->objId][D_801EF93C_ovl16[limb[i]]];
         b = D_800DFBD0[omCurrentObj->objId][(&D_801EF95C_ovl16)[limb[i]]];
-        lim = D_801F01B0_ovl16[i];
-        if (lim != -9999.0f) {
-            if (lim < 0.0f) {
-                lim = -lim;
-            }
-            ext = a->pos.v.y;
-            if (ext < 0.0f) {
-                ext = -ext;
-            }
-            ext *= 0.8f;
+        shrink = 260.0f;
+        if (-9999.0f != (lim = D_801F01B0_ovl16[i])) {
+            ext = ABS(a->pos.v.y);
+            alim = ABS(lim);
             if (ext > 260.0f) {
-                ext = 260.0f;
-            } else if (ext <= lim) {
-                ext = lim;
+                ext = shrink;
+            } else if (ext <= alim) {
+                ext = alim;
             }
-            if (lim < ext) {
+            if (alim < ext) {
                 if (D_800EA360[omCurrentObj->objId] == 0) {
                     play_sound(0x1AD);
                     D_800EA360[omCurrentObj->objId] = 1;
                 }
-                sc = ext / 260.0f;
-                grow = sc * 0.6f;
-                shrink = sc * 0.8f;
+                lim = ext / shrink;
+                grow = lim * 0.6f;
+                shrink = lim * 0.8f;
                 if (grow > 0.6f) {
                     grow = 0.6f;
                 }
@@ -3407,7 +3362,7 @@ void func_801E4350_ovl16(s32 arg0) {
                 D_800E1B50[omCurrentObj->objId]->unk8C = &D_801D98B8;
                 func_801DC990_ovl16(a, b);
             } else {
-                a->pos.v.y = -lim;
+                a->pos.v.y = -alim;
                 b->scale.v.x = 1.0f;
                 b->scale.v.z = 1.0f;
                 a->scale.v.x = 1.0f;
@@ -4784,43 +4739,6 @@ void func_801E7A38_ovl16(s32 arg0) {
     curObjSleepForever();
 }
 
-/* FACTORY: 16/196 [was 129/197].  Un-guarded non-matching draft committed by
- * mistake in f563f41; it made ovl16's .text 32 bytes too long and broke the ROM
- * at HEAD.  Guarded NON_MATCHING: it compiles, so the PC port still executes
- * it, while the ROM assembles the listing below.
- *
- * NOT AN ABSF CANDIDATE, despite absf_sweep listing it (2 compares, 2 negs).
- * The two compares are the 6.283185482f wrap loops and the two `neg.s` are
- * `-sp38.x` and `-D_800EA8A0[]`; there is no macro here.  Two real defects,
- * both found by reading the sp offsets:
- *
- *  1) DECLARATION ORDER, worth 129 -> 124 (LEVER 12/13).  The ROM's frame is
- *     sp44 at 0x44, sp38 at 0x38, dx at 0x34, dy at 0x30 -- the Vectors ABOVE
- *     the scalars.  Later declarations take the lower addresses, so the
- *     Vectors have to be declared FIRST; with `f32 dx; f32 dy;` at the top
- *     every local sat 8 bytes low and the whole body read as diffs.
- *
- *  2) `dx = sp38.x = expr` RELOADS; `sp38.x = dx = expr` does not.  Worth
- *     124 -> 16 and an exact instruction count.  The ROM computes the
- *     difference once and stores the same register to 0x38 and 0x34; the
- *     m2c form assigns through the member and then re-READS it
- *     (`swc1 0x38 / lwc1 0x38 / swc1 0x34`), two extra words per site and a
- *     register rotation through everything after.  Both spellings store the
- *     two slots in the same order, so this is not lever 2's evaluation-order
- *     family -- it is which lvalue the value is IN when the second store
- *     happens.
- *
- * THE REMAINING 16 are one instruction in the wrong place: `sp38.z = 0.0f`'s
- * `swc1 $f16, 0x40($sp)` sits at index 71 where the ROM has it at 82, after
- * the sp38.x/dx pair, and the $f8-for-$f16 rename at index 68 follows from it.
- * The zero itself is materialised at exactly the ROM's index 68.  Swept and
- * negative: barrier_sweep.py (LEVERS 71) tries 15 placements against this
- * base and lands on none -- the placement between sp38.x and sp38.z, which is
- * the one that should stop the hoist, scores 18.  Spelling the constant as the
- * double `0.0` to fork IDO's shared FP zero (LEVER 7) is byte-inert, 16 either
- * way.  This is a scheduler tie-break on an independent store, which is the
- * class LEVERS says the permuter reaches and source spelling does not. */
-#ifdef NON_MATCHING
 void func_801E7BD0_ovl16(struct GObj *arg0) {
     Vector sp44;
     Vector sp38;
@@ -4838,8 +4756,8 @@ void func_801E7BD0_ovl16(struct GObj *arg0) {
     sp44.z = 0.0f;
     lbvector_Normalize(&sp44);
     sp38.x = dx = gEntitiesNextPosXArray[omCurrentObj->objId] - gEntitiesPosXArray[omCurrentObj->objId];
-    sp38.z = 0.0f;
     sp38.y = dy = gEntitiesNextPosYArray[omCurrentObj->objId] - gEntitiesPosYArray[omCurrentObj->objId];
+    sp38.z = 0.0f;
     lbvector_Normalize(&sp38);
     func_800195D8(&sp38, &sp44);
     D_800EA6E0[omCurrentObj->objId] = atan2f(-sp38.x, sp38.y);
@@ -4855,9 +4773,8 @@ void func_801E7BD0_ovl16(struct GObj *arg0) {
     ohSleep(5);
     func_801AC11C_ovl7((s32) arg0);
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl16/ovl16/func_801E7BD0_ovl16.s")
-#endif
+
+/* Last function of this translation unit: the seven nops its listing carries
 
 /* Last function of this translation unit: the seven nops its listing carries
  * after `.size` are the linker aligning the NEXT object (src/ovl16/ovl16_2.c)
