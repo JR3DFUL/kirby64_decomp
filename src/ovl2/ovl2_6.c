@@ -273,6 +273,10 @@ block_20:
  * uses. Mode/color setup and TLUT handling mirror that function exactly.
  * Block access is by raw PC offsets (+0x48, 0x70 stride), the same layout
  * PC_SPOBJ_FLIP below documents against include/SPObj.h's asserts. */
+void pc_sky_debug(int, const f32 *, f32, f32, f32, f32, int, int, f32, f32,
+                  unsigned, int, int, const void *, const u16 *);
+void pc_sky_cam_debug(const f32 *, const f32 *, const f32 *, f32, f32, f32, f32);
+
 void func_80100790(struct GObj *gobj) {
     extern Gfx *gDisplayListHeads[];
     s32 func_800ACE1C(u8, u16 *);
@@ -290,6 +294,12 @@ void func_80100790(struct GObj *gobj) {
         f32 x1 = (out & 4) ? rect[4] : x0 + spanW;
         f32 y1 = (out & 8) ? rect[5] : y0 + spanH;
 
+        pc_sky_debug(gobj->objId, rect, x0, y0, x1, y1, sp->width, sp->height,
+                     sp->unk28, sp->unk2C, out,
+                     ((uObjBg *) ((u8 *) sp + 0x48))->s.imageFmt,
+                     (rect[4] < x0 || rect[5] < y0 || x1 < rect[2] || y1 < rect[3]),
+                     (const void *) (uintptr_t) ((uObjBg *) ((u8 *) sp + 0x48))->s.imagePtr,
+                     (const u16 *) ((u8 *) sp + 0x48 + sizeof(uObjBg)));
         if (rect[4] < x0 || rect[5] < y0 || x1 < rect[2] || y1 < rect[3]) {
             sp = (struct UnkStruct800AC954 *) (uintptr_t) sp->unk8;
             continue;
@@ -312,15 +322,25 @@ void func_80100790(struct GObj *gobj) {
             u16 *tlut = (u16 *) ((u8 *) bg + sizeof(uObjBg));
             s32 loadedTlut;
             Gfx *g;
+            /* The part of the layer the rect cut off on the top/left is
+             * skipped in the image, not squeezed into the frame: the
+             * emitter starts its texture walk at the layer origin
+             * (sp->xOffset/yOffset), so a layer whose top sits above the
+             * rect shows its lower rows. u10.5 texels. */
+            f32 skipX = (x0 - sp->xOffset) / sp->unk28;
+            f32 skipY = (y0 - sp->yOffset) / sp->unk2C;
 
             bg->s.frameX = (s16) (s32) (x0 * 4.0f) & ~3;
             bg->s.frameY = (s16) (s32) (y0 * 4.0f) & ~3;
             bg->s.frameW = (u16) (s32) ((x1 - x0) * 4.0f);
             bg->s.frameH = (u16) (s32) ((y1 - y0) * 4.0f);
-            bg->s.scaleW = 1 << 10;
-            bg->s.scaleH = 1 << 10;
-            bg->s.imageX = 0;
-            bg->s.imageY = 0;
+            /* u5.10 texels per pixel, 1024/scale + 0.5 as func_800FF9B4
+             * computes its dsdx (asm 800FFCB4); unk28/unk2C are pixels per
+             * texel. */
+            bg->s.scaleW = (u16) (s32) (1024.0f / sp->unk28 + 0.5f);
+            bg->s.scaleH = (u16) (s32) (1024.0f / sp->unk2C + 0.5f);
+            bg->s.imageX = (u16) (s32) (skipX * 32.0f);
+            bg->s.imageY = (u16) (s32) (skipY * 32.0f);
 
             gDPPipeSync(gDisplayListHeads[0]++);
             func_800FF71C(sp, 0, (u8) out);
@@ -777,6 +797,9 @@ f32 func_80100EE4(s32 arg0) {
                 ((b20[2] - b20[5]) * (b20[2] - b20[5])));
     pitchFrac = atan2f(b20[1] - b20[4], mag) /
                 ((cam->perspMtx.persp.fovy * 3.141592741f) / 180.0f);
+    pc_sky_cam_debug(b20, &cam->viewMtx.lookAt.at.x, &cam->viewMtx.lookAt.eye.x,
+                     yawFrac, pitchFrac, cam->perspMtx.persp.fovy,
+                     cam->perspMtx.persp.aspect);
     for (i = 0; i < D_8012B9B0; i++) {
         struct UNK_D_8012BBF8 *slot = &D_8012BBF8[i];
         SPObj *sprite = (SPObj *) slot->unk0;
