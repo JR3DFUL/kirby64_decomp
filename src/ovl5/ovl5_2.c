@@ -3079,6 +3079,8 @@ void func_80161B4C_ovl5(GObj *gobj, s32 arg1) {
  * can be eaten by up to three racers (func_80161A54/func_8016097C), and on
  * the ground it either splashes (shark path) or shrinks away. */
 void func_80161B4C_ovl5(GObj *gobj, s32 arg1) {
+    extern s32 D_8018E21C_ovl5;
+    void func_800A9760(void *);
     extern u32 D_80186820_ovl5[];
     extern u32 D_80186870_ovl5[];
     extern u32 D_8018687C_ovl5[];
