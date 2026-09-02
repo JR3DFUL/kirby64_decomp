@@ -1363,6 +1363,7 @@ extern f32 D_801975D0_ovl3;
 extern f32 D_801975D4_ovl3;
 
 #ifdef NON_MATCHING
+/* FACTORY: 103/216, callee-saved order + constant 1 not hoisted into $s7 */
 /* 205/215: same instruction COUNT and same shape, but the ROM hoists three
    loop-invariants this C does not -- the constant 1 into $s7 and
    D_801975D0_ovl3 / 0.0f into $f22 / $f24 -- so the frame is 0x10 smaller
@@ -1383,9 +1384,9 @@ void func_8017B068_ovl3(GObj *arg0) {
     D_800EA8A0[omCurrentObj->objId] = 0.0f;
     D_800EA6E0[omCurrentObj->objId] = D_800EA8A0[omCurrentObj->objId];
     if (D_800E8AE0[omCurrentObj->objId] & 6) {
-        D_800EAC20[omCurrentObj->objId] = D_801975C8_ovl3;
+        D_800EAC20[omCurrentObj->objId] = 0.15707964f;
     } else {
-        D_800EAC20[omCurrentObj->objId] = D_801975CC_ovl3;
+        D_800EAC20[omCurrentObj->objId] = 0.31415927f;
     }
     func_80122F08(0x2000D);
     gKirbyState.unk154 = 2;
@@ -1393,10 +1394,7 @@ void func_8017B068_ovl3(GObj *arg0) {
     gKirbyState.unk50 = func_800A8234(2, 1, 0x32);
     func_8011DC04(0xBC);
     func_800AA018(0x20192);
-    while (1) {
-        if (gKirbyState.unk17 != 0) {
-            break;
-        }
+    while (gKirbyState.unk17 == 0) {
         if (gKirbyState.unk44 == 0) {
             if (!(gKirbyController.buttonHeld & 0x4000)) {
                 gKirbyState.unk44 = 1;
@@ -1409,14 +1407,14 @@ void func_8017B068_ovl3(GObj *arg0) {
             temp = D_800EA6E0[omCurrentObj->objId];
         } else {
             temp = D_800EA6E0[omCurrentObj->objId];
-            if ((temp <= D_801975D4_ovl3) && (D_801975D4_ovl3 <= D_800EA8A0[omCurrentObj->objId])) {
+            if ((temp <= 3.1415927f) && (3.1415927f <= D_800EA8A0[omCurrentObj->objId])) {
                 break;
             }
         }
         D_800EA8A0[omCurrentObj->objId] = temp;
         D_800EA6E0[omCurrentObj->objId] = D_800EA6E0[omCurrentObj->objId] - D_800EAC20[omCurrentObj->objId];
         if (D_800EA6E0[omCurrentObj->objId] < 0.0f) {
-            D_800EA6E0[omCurrentObj->objId] = D_800EA6E0[omCurrentObj->objId] + D_801975D0_ovl3;
+            D_800EA6E0[omCurrentObj->objId] = D_800EA6E0[omCurrentObj->objId] + 6.2831855f;
         }
         D_800DFBD0[omCurrentObj->objId][1]->scale.v.x = D_800EA6E0[omCurrentObj->objId];
         ohSleep(1);
@@ -2178,6 +2176,7 @@ void func_8017C418_ovl3(s32 arg0) {
 #endif
 
 #ifdef MIPS_TO_C
+/* FACTORY: 205/282, one-word shift in case 4 + switch value in $v0 not $v1 */
 /* MEASURED FOR THE FIRST TIME 2026-08-25. The note this replaces was
  * written while this file DID NOT COMPILE with the draft un-guarded, so
  * its number came from somewhere other than verify.py. See the block
@@ -2294,6 +2293,10 @@ void func_8017CAF8_ovl3(s32 arg0) {
                 gKirbyState.unk44 = 4;
             }
             break;
+        case 0:
+        case 1:
+        case 2:
+        case 3:
         default:
             break;
     }
@@ -2435,6 +2438,7 @@ void func_8017CAF8_ovl3(s32 arg0) {
 
 
 #ifdef MIPS_TO_C
+/* FACTORY: 93/310, countdown boolean materialised + D_800E9720 constant order */
 /* FACTORY: 281/308 [was noted 27/308], whole-function callee-saved permutation (same floor class documented across this cluster). Body already met the quality bar as drafted (ANSI prototypes, real control flow/naming, the goto done: label is a shared cleanup path, not a ladder) so it seals verbatim. Queued for the permuter. */
    DIAGNOSIS CONTRADICTED BY THE MEASUREMENT, 2026-08-25. The line above calls
    this a register/permutation floor; 281 of 308 words differ (91%). A
@@ -2479,8 +2483,6 @@ void func_8017CF60_ovl3(s32 arg0) {
      * functions in this TU call them without a prototype, and gnu90 folds
      * those to int(). */
     s32 id;
-    s32 pre;
-    f32 spd;
 
     gKirbyState.unk30 = 0;
     gKirbyState.unk4C = 0;
@@ -2488,34 +2490,24 @@ void func_8017CF60_ovl3(s32 arg0) {
     D_800EA6E0[omCurrentObj->objId] = 0.0f;
     func_8011CF58();
     gKirbyState.abilityInUse = gKirbyState.ability;
-    id = omCurrentObj->objId;
-    D_800DDFD0[id] = 0x28;
-    D_800E0490[id] = D_801928D8_ovl3;
+    D_800DDFD0[omCurrentObj->objId] = 0x28;
+    D_800E0490[omCurrentObj->objId] = D_801928D8_ovl3;
     gKirbyState.unk15C = (u32) (uintptr_t) D_80190580_ovl3;
     gKirbyState.unk44 = 0;
     func_8011DC04(0xAA);
     func_80122F08(0x20013);
     gKirbyState.unk154 = 2;
-    id = omCurrentObj->objId;
-    D_800E3750[id] = 0.0f;
-    D_800E3210[id] = D_800E3750[id];
-    D_800E3C90[id] = 65535.0f;
-    id = omCurrentObj->objId;
-    D_800E6690[id] = D_800E6A10[id] * 0.5f;
-    id = omCurrentObj->objId;
-    if (!(D_800E8AE0[id] & 6)) {
-        spd = 10.0f;
-    } else {
-        spd = 5.0f;
-    }
-    D_800E6850[id] = spd;
+    D_800E3750[omCurrentObj->objId] = 0;
+    D_800E3210[omCurrentObj->objId] = D_800E3750[omCurrentObj->objId];
+    D_800E3C90[omCurrentObj->objId] = 65535.0f;
+    D_800E6690[omCurrentObj->objId] = D_800E6A10[omCurrentObj->objId] * 0.5f;
+    D_800E6850[omCurrentObj->objId] = ABSF(((D_800E8AE0[omCurrentObj->objId] & 6) == 0) ? 10.0f : 5.0f);
     func_800AA018(0x201B8);
     while (func_800AF230() == 0) {
         if (gKirbyState.unk17 != 0) {
-            id = omCurrentObj->objId;
-            D_800E6690[id] = 0.0f;
-            D_800E64D0[id] = D_800E6690[id];
-            D_800E6850[id] = 65535.0f;
+            D_800E6690[omCurrentObj->objId] = 0.0f;
+            D_800E64D0[omCurrentObj->objId] = D_800E6690[omCurrentObj->objId];
+            D_800E6850[omCurrentObj->objId] = 65535.0f;
             goto done;
         }
         ohSleep(1);
@@ -2524,10 +2516,9 @@ void func_8017CF60_ovl3(s32 arg0) {
     func_800AA018(0x201B9);
     while (func_800AF230() == 0) {
         if (gKirbyState.unk17 != 0) {
-            id = omCurrentObj->objId;
-            D_800E6690[id] = 0.0f;
-            D_800E64D0[id] = D_800E6690[id];
-            D_800E6850[id] = 65535.0f;
+            D_800E6690[omCurrentObj->objId] = 0.0f;
+            D_800E64D0[omCurrentObj->objId] = D_800E6690[omCurrentObj->objId];
+            D_800E6850[omCurrentObj->objId] = 65535.0f;
             goto done;
         }
         ohSleep(1);
@@ -2538,20 +2529,14 @@ void func_8017CF60_ovl3(s32 arg0) {
     } else {
         D_800E9720[id] = 0xF;
     }
-    pre = D_800E9720[id];
-    D_800E9720[id] = pre - 1;
-    while (pre != 0) {
+    while (D_800E9720[omCurrentObj->objId]-- != 0) {
         if (gKirbyState.unk17 != 0) {
-            id = omCurrentObj->objId;
-            D_800E6690[id] = 0.0f;
-            D_800E64D0[id] = D_800E6690[id];
-            D_800E6850[id] = 65535.0f;
+            D_800E6690[omCurrentObj->objId] = 0.0f;
+            D_800E64D0[omCurrentObj->objId] = D_800E6690[omCurrentObj->objId];
+            D_800E6850[omCurrentObj->objId] = 65535.0f;
             break;
         }
         ohSleep(1);
-        id = omCurrentObj->objId;
-        pre = D_800E9720[id];
-        D_800E9720[id] = pre - 1;
     }
 done:
     gKirbyState.unk44 = -1;
@@ -2560,9 +2545,8 @@ done:
     func_8011E0E8();
     gKirbyState.abilityInUse = 0;
     func_80120A28();
-    id = omCurrentObj->objId;
-    if (!(D_800E8AE0[id] & 6)) {
-        D_800E6690[id] *= 3.0f;
+    if (!(D_800E8AE0[omCurrentObj->objId] & 6)) {
+        D_800E6690[omCurrentObj->objId] *= 3.0f;
     }
     func_8011D614();
     func_801230E8(0x20188, 0x20189, 1);
@@ -3536,6 +3520,7 @@ void func_8017E54C_ovl3(s32 arg0) {
 #endif
 
 #ifdef NON_MATCHING
+/* FACTORY: 4/244, tail &gKirbyState base-fold residue only */
 /* FACTORY: 8/244, register/scheduling floor -- re-measured 2026-08-24, down
    from 12/244. Cluster (3) of the old note CLOSED: writing
    `D_80198830_ovl3.unkA = 0xF;` BEFORE the `unk8 - 1` store (the two fields
@@ -3612,13 +3597,7 @@ void func_8017EA0C_ovl3(s32 arg0) {
     } else {
         D_800D7238 = D_801976BC_ovl3;
     }
-    if ((D_800E8AE0[omCurrentObj->objId] & 6) == 0) {
-        D_800E3210[omCurrentObj->objId] = D_80196D98_ovl3[D_80198830_ovl3.unk8];
-    } else {
-        D_800E3210[omCurrentObj->objId] = D_80196D98_ovl3[D_80198830_ovl3.unk8] * 0.5f;
-    }
-    D_800E3750[omCurrentObj->objId] = D_800D7238;
-    D_800E3C90[omCurrentObj->objId] = ABSF(((D_800E8AE0[omCurrentObj->objId] & 6) == 0) ? 16.0f : 8.0f);
+    if ((D_800E8AE0[omCurrentObj->objId] & 6) == 0) { D_800E3210[omCurrentObj->objId] = D_80196D98_ovl3[D_80198830_ovl3.unk8]; } else { D_800E3210[omCurrentObj->objId] = D_80196D98_ovl3[D_80198830_ovl3.unk8] * 0.5f; } D_800E3750[omCurrentObj->objId] = D_800D7238; D_800E3C90[omCurrentObj->objId] = ABSF(((D_800E8AE0[omCurrentObj->objId] & 6) == 0) ? 16.0f : 8.0f);
     if (D_80198830_ovl3.unk8 == 3) {
         func_800BB468(0xB, 0xA);
     } else if (D_80198830_ovl3.unk8 == 2) {
@@ -6818,6 +6797,7 @@ extern s32 D_800D71F8;
    omCurrentObj's value in $a1 and &D_800E9560 in $a0 (and omCurrentObj's
    address in $s3 with &D_800E9AA0 in $s2); IDO swaps both pairs. */
 #ifdef NON_MATCHING
+/* FACTORY: 18/143, $s2/$s3 callee-saved pair swap */
 void func_801831EC_ovl3(s32 arg0, s32 arg1, f32 arg2) {
     s32 temp;
     s32 rnd;
@@ -6834,8 +6814,7 @@ void func_801831EC_ovl3(s32 arg0, s32 arg1, f32 arg2) {
                 break;
             case 1:
                 do {
-                    rnd = random_soft_s32_range(8);
-                    D_800D71F8 = rnd;
+                    rnd = (D_800D71F8 = random_soft_s32_range(8));
                 } while (rnd == D_800E9C60[omCurrentObj->objId]);
                 D_800E9AA0[omCurrentObj->objId].as_s32 = rnd;
                 D_800E9AA0[temp].as_s32 = D_800E9AA0[omCurrentObj->objId].as_s32;
@@ -7115,6 +7094,7 @@ void func_801835AC_ovl3(s32 arg0) {
 #endif
 
 #ifdef MIPS_TO_C
+/* FACTORY: 230/262, frame 0x48 vs ROM 0x58 and a 12-word shape gap */
 /* FACTORY: 255/262 [was noted 7/262], whole-function callee-saved permutation (same floor class documented across this cluster). Gives the trail-generator/probe-shape views local LocalO36Gen/LocalO36Emitter/LocalO36Shape/LocalO36Slot types instead of the guarded PcO36* mirrors. Known residual defect: func_80121658 is declared void(void) file-scope-wide (unguarded, elsewhere in this TU) but the ROM still reads its tail ; the PORT arm's function-pointer-cast workaround compiles but forces an indirect jalr where the ROM has a direct jal -- no ANSI-legal local redeclaration is possible without touching that file-scope decl. Queued for the permuter. */
    DIAGNOSIS CONTRADICTED BY THE MEASUREMENT, 2026-08-25. The line above calls
    this a register/permutation floor; 255 of 262 words differ (97%). A
@@ -7208,7 +7188,7 @@ void func_80183A1C_ovl3(s32 arg0) {
 
     func_80153984_ovl3();
     func_8011CF58();
-    if (((s32 (*)(void)) func_80121658)() != 0) {
+    if (func_80121658() != 0) {
         if (D_8012E860 != 0) {
             play_sound(0x11F);
         } else {
