@@ -2739,34 +2739,20 @@ void func_800FBF18(s32 arg0) {
     D_80129210.orbitYawLimit = cam->unkA;
 }
 
-/* FACTORY: 20/74, length and control flow exact. Residue is one cyclic FP rotation seeded at the
-   *arg1 load (ROM temp_f2=$f2/temp_f14=$f14/temp_f12=$f12; IDO gives $f12/$f0/$f14) plus the
-   three c.eq.s operand orders. Retested literal-first spelling on all three compares: zero
-   change, so c.eq.s operand order is invariant like mul.s and addu. Hoisting
-   temp_f12 = *arg0 + 20000.0f ABOVE the *arg2 store is what took this from 51 to 20 (the store
-   may alias, so IDO cannot sink the load past it) -- keep that order.
-   Re-confirmed 2026-08-23 via verify.py in-place: still exactly 20/74, the
-   same cyclic FP register rotation ($f2/$f12/$f0/$f14 permuted throughout).
-   Genuine temp-rotation floor. */
-#ifdef NON_MATCHING
 s32 func_800FC03C(f32 *arg0, f32 *arg1, f32 *arg2) {
-    f32 temp_f0;
-    f32 temp_f2;
     f32 temp_f14;
     f32 temp_f12;
 
-    temp_f0 = *arg2;
-    if (temp_f0 == 9999.0f) {
+    if (*arg2 == 9999.0f) {
         *arg0 = *arg1;
         return 1;
     }
-    temp_f2 = *arg1;
-    if ((temp_f2 == 9999.0f) || (temp_f2 == -9999.0f)) {
+    if ((*arg1 == 9999.0f) || (*arg1 == -9999.0f)) {
         return 1;
     }
-    temp_f14 = temp_f2 + 20000.0f;
     temp_f12 = *arg0 + 20000.0f;
-    *arg2 = temp_f0 + D_801293F4;
+    temp_f14 = *arg1 + 20000.0f;
+    *arg2 = *arg2 + D_801293F4;
     if (20.0f <= *arg2) {
         *arg2 = 20.0f;
     }
@@ -2788,9 +2774,6 @@ s32 func_800FC03C(f32 *arg0, f32 *arg1, f32 *arg2) {
     *arg0 = temp_f12 - 20000.0f;
     return 0;
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl2/ovl2_3/func_800FC03C.s")
-#endif
 #ifdef NON_MATCHING
 s32 func_800FC164(struct Ovl2CamState *arg0) {
     f32 sp30;
@@ -2884,60 +2867,31 @@ void func_800FC53C(void) {
 }
 
 #ifdef MIPS_TO_C
-/* FACTORY: 92/117 -- MEASURED 2026-08-25, the first measurement this draft has
- * ever had, and the note it replaces claimed 25/117.
- *
- * The note that carried that number CLOSED ITSELF. It listed the casts it had
- * tried in the form `u8` star slash `s32`, run together with no spaces -- and
- * a star followed by a slash ENDS a comment. Everything after it was parsed as
- * code, so un-guarding this draft failed on a Syntax Error pointing at the
- * comment text, and no compile could ever have produced 25/117. (Watch the
- * apostrophes too: once the comment has closed early, the next one opens a
- * character constant and the errors move somewhere unrelated.)
- *
- * 92 of 117 words differ. The instruction count is exact and the structure
- * work below is real and worth keeping, but this is not a near-miss and must
- * not be queued to the permuter as one.
- *
- * Structure/offsets solved: DObj was the wrong payload type -- 0x3C..0x53 are
- * Camera.viewMtx.lookAt.eye/.at (0x48 = at, drifted by D_80129408; 0x3C = eye,
- * drifted by D_8012940C) and 0x74 is timeRemaining; the (s32) &D_800D7B38 +
- * 0x18 cast is what puts the save block base in a register with %lo(sym+0x18)
- * and 0x0.. offsets.
- *
- * Residue: IDO CSEs the D_800D7B38 copy base into `addiu v1,a2,24` where the
- * ROM re-materialises lui/addiu %lo(D_800D7B38+0x18) in each arm, which then
- * rotates the copy's temp registers. No source spelling reached it in 5 tries
- * (whole-struct copy, two-Vector copy, per-branch save, and casts through
- * `u8 *`, `s32` and a struct pointer); a separate D_800D7B50 symbol would do
- * it but is not in symbol_addrs.txt. */
+/* FACTORY: MATCH (118/118), needs symbol D_800D7B50 (0x800D7B50, D_800D7B38+0x18 in ovl1.bss.s) to link */
 void func_800FC62C(GObj *arg0) {
-    Camera *cam;
-    struct Ovl2CamPos *save;
+    Camera *cam = D_800D799C->data.cam;
     f32 tf0;
     f32 tf2;
     extern s32 D_800D6B54;
+    extern struct Ovl2CamPos D_800D7B50;
 
-    cam = D_800D799C->data.cam;
     D_800D7B38 = D_800D7B20;
     if (D_800D6B54 == 0) {
         animUpdateCameraAnimation(arg0);
         if (cam->timeRemaining == -3.4028235e38f) {
-            save = (struct Ovl2CamPos *) ((s32) &D_800D7B38 + 0x18);
-            cam->viewMtx.lookAt.at.x = save->unk0.x;
-            cam->viewMtx.lookAt.at.y = save->unk0.y;
-            cam->viewMtx.lookAt.at.z = save->unk0.z;
-            cam->viewMtx.lookAt.eye.x = save->unkC.x;
-            cam->viewMtx.lookAt.eye.y = save->unkC.y;
-            cam->viewMtx.lookAt.eye.z = save->unkC.z;
+            cam->viewMtx.lookAt.at.x = D_800D7B50.unk0.x;
+            cam->viewMtx.lookAt.at.y = D_800D7B50.unk0.y;
+            cam->viewMtx.lookAt.at.z = D_800D7B50.unk0.z;
+            cam->viewMtx.lookAt.eye.x = D_800D7B50.unkC.x;
+            cam->viewMtx.lookAt.eye.y = D_800D7B50.unkC.y;
+            cam->viewMtx.lookAt.eye.z = D_800D7B50.unkC.z;
         } else {
-            save = (struct Ovl2CamPos *) ((s32) &D_800D7B38 + 0x18);
-            save->unk0.x = cam->viewMtx.lookAt.at.x;
-            save->unk0.y = cam->viewMtx.lookAt.at.y;
-            save->unk0.z = cam->viewMtx.lookAt.at.z;
-            save->unkC.x = cam->viewMtx.lookAt.eye.x;
-            save->unkC.y = cam->viewMtx.lookAt.eye.y;
-            save->unkC.z = cam->viewMtx.lookAt.eye.z;
+            D_800D7B50.unk0.x = cam->viewMtx.lookAt.at.x;
+            D_800D7B50.unk0.y = cam->viewMtx.lookAt.at.y;
+            D_800D7B50.unk0.z = cam->viewMtx.lookAt.at.z;
+            D_800D7B50.unkC.x = cam->viewMtx.lookAt.eye.x;
+            D_800D7B50.unkC.y = cam->viewMtx.lookAt.eye.y;
+            D_800D7B50.unkC.z = cam->viewMtx.lookAt.eye.z;
         }
         tf0 = *(s32 *) &D_8012940C * 0.01f;
         tf2 = D_80129408 * 0.01f;

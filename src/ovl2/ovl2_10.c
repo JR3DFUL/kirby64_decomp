@@ -2957,20 +2957,7 @@ void func_801171F0(struct GObj *arg0) {
     func_801153B8(arg0);
 }
 
-#ifdef NON_MATCHING
-/* 22/70: the whole body is decoded and every store is right. Two residues:
-   IDO emits `bc1fl` to the epilogue where the ROM has `bc1f` + `nop`, and the
-   scaled-index spill lands at 0x18($sp) against the ROM's 0x1C with the same
-   0x28 frame, i.e. a 4-byte hole above it. Swept: compare operand order,
-   early-return form, an empty `else`, `do {} while (0)` before the inner if,
-   a type-split store for 0xA, and leading/trailing pad locals (27 each).
-   The file-scope declaration of this function was widened from (s32) to
-   (struct GObj *) for the draft; --all stayed at 0 diff.
-   Re-confirmed 2026-08-23 via verify.py in-place: still exactly 22/70, same
-   bc1fl-vs-bc1f+nop delay-slot-fill difference dragging ~15 words of address
-   materialisation order with it. Genuine scheduler floor. */
 void func_80117210(struct GObj *arg0) {
-    extern f32 D_80128D2C;
     void func_80117570(struct GObj *);
     u8 *sp24 = arg0->unk4C;
     s32 sp20 = arg0->objId;
@@ -2981,16 +2968,13 @@ void func_80117210(struct GObj *arg0) {
         D_800E3210[sp20] = D_800EA6E0[sp20] - gEntitiesPosYArray[sp20];
         D_800E98E0[sp20] = 0xA;
         D_800DEF90[omCurrentObj->objId] = func_80117570;
-        if (func_8011E244() == *sp24) {
-            D_800E3750[sp20] = -0.5f;
-            D_800E3C90[sp20] = D_80128D2C;
-            D_800DEF90[omCurrentObj->objId] = func_801173F4;
-        }
+    }
+    if (*sp24 == func_8011E244()) {
+        D_800E3750[sp20] = -0.5f;
+        D_800E3C90[sp20] = 8.8f;
+        D_800DEF90[omCurrentObj->objId] = func_801173F4;
     }
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl2/ovl2_10/func_80117210.s")
-#endif
 // The float literal below lands in this TU's MIGRATED .rodata block, which
 // this C file emits. verify.py reports a 1-instruction diff because the object
 // references `.rodata + offset` while the ROM references a named symbol; the
@@ -3070,17 +3054,10 @@ extern f32 D_80126CF4[];
 // is EXACTLY 8/95, byte-for-byte the same output. The casts are not the extra
 // temp. What is needed is a C construct that computes a global-indexed f32
 // before a void call without naming it; nothing in the tree does that yet.
-#ifdef NON_MATCHING
-/* FACTORY: 8/95 (verify.py prints 9 on a scratch copy; one is a PHANTOM
-   own-.rodata note that resolves to the right symbol on the real path).
-   Was 10; the trailing dead `s32 pad` below is worth 2 -- later declarations
-   take the lower stack addresses, so a dead word declared LAST lifts the
-   compiler's temps onto the ROM's slots. */
 void func_801173F4(s32 arg0) {
     u8 *sp24 = ((struct GObj *) arg0)->unk4C;
     s32 sp20 = ((struct GObj *) arg0)->objId;
     f32 sp1C = D_80126CF4[D_800E77A0[sp20]];
-    s32 pad;
 
     func_800B4924((struct GObj *) arg0);
     if ((gEntitiesNextPosYArray[sp20] - D_800EA6E0[sp20]) < sp1C) {
@@ -3093,16 +3070,13 @@ void func_801173F4(s32 arg0) {
             gEntitiesNextPosYArray[sp20] = D_800EA6E0[sp20];
             D_800E3210[sp20] = D_800EA6E0[sp20] - gEntitiesPosYArray[sp20];
         }
-        if (func_8011E244() != *sp24) {
+        if (*sp24 != func_8011E244()) {
             D_800E3750[sp20] = 0.5f;
             D_800E3C90[sp20] = 4.4f;
             D_800DEF90[omCurrentObj->objId] = func_80117210;
         }
     }
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl2/ovl2_10/func_801173F4.s")
-#endif
 
 // The float literal below lands in this TU's MIGRATED .rodata block, which
 // this C file emits. verify.py reports a 1-instruction diff because the object
@@ -3475,6 +3449,7 @@ void func_80118618(struct GObj *arg0) {
 }
 
 #ifdef NON_MATCHING
+/* FACTORY: 66/78 words, dead-epilogue nop count after while(1) (word-count mismatch) */
 /* 17/74: body is exact. Two residues, both structural.
  * (1) sp40 lands at 0x48, the ROM has it at 0x40. IDO's local-block base here
  *     is a constant 0x48 (frame = align8(0x48 + L)), so sp40 -- always the
@@ -3497,11 +3472,11 @@ void func_80118638(struct GObj *arg0) {
     extern s32 D_8012BCE0;
     extern s32 func_8010DF9C(Vector *);
     extern u8 func_8010E2A0(s32);
-    extern void func_8010E288(s32, s32);
+    extern void func_8010E288(s32, u8);
     s32 sp54;
-    Vector sp40;
     u8 v;
     s32 id = arg0->objId;
+    Vector sp40;
 
     sp40.x = gEntitiesNextPosXArray[id];
     sp40.y = gEntitiesNextPosYArray[id];
