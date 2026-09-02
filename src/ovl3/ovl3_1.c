@@ -7,7 +7,7 @@ extern u8 *func_8011BABC();
 #include "GObj.h"
 #include "track_arrays.h"
 
-extern void func_8011BF4C(f32 *, s32);
+extern s32 func_8011BF4C(f32 *, s32);
 #include "Player.h"
 
 extern void func_8015439C_ovl3(f32 *);
@@ -1739,18 +1739,21 @@ void func_8015439C_ovl3(f32 *arg0) {
    &D_8012E944[1], and with the pointer store split out of the test) at
    23/29, 23/29, 23/29 and 25/31. The length fix and the register fix are not
    reachable from the same shape. Good permuter seed. */
+/* FACTORY: 19/29, temp[0] lands in $v0 (ROM $t9) so the or $v0,$zero,$zero hoist and the $a2 base for the 0x1C store never form */
 s32 func_80154428_ovl3(f32 *arg0) {
     extern f32 D_8012E948[];
     f32 *dst = D_8012E948;
     f32 **temp;
 
     temp = D_800E0490[omCurrentObj->objId];
-    if ((temp == NULL) || ((*(f32 **) &dst[7] = temp[0]) == NULL)) {
+    if (temp == NULL) {
+        return 0;
+    }
+    if ((*(f32 **) &dst[7] = temp[0]) == NULL) {
         return 0;
     }
     func_8015439C_ovl3(arg0);
-    func_8011BF4C(dst, 0);
-    return 0;
+    return func_8011BF4C(dst, 0);
 }
 #else
 #pragma GLOBAL_ASM("asm/nonmatchings/ovl3/ovl3_1/func_80154428_ovl3.s")
@@ -2583,6 +2586,7 @@ s32 func_80155838_ovl3(Vector *arg0, f32 arg1, s32 arg2) {
    for p[0], declaration order and position of dst/p, dropping the (f32*)arg0
    cast, and a K&R prototype for func_8011BF4C. */
 #ifdef NON_MATCHING
+/* FACTORY: 43/58, p[0] lands in $v0 (ROM $t9) so the or $v0,$zero,$zero hoist never forms; arg1 relocated to $a3 */
 s32 func_80155C68_ovl3(s32 arg0, f32 *arg1) {
     f32 *dst = (f32 *) arg0;
     f32 **p = D_800E0490[omCurrentObj->objId];
@@ -2597,8 +2601,7 @@ s32 func_80155C68_ovl3(s32 arg0, f32 *arg1) {
     dst[4] = gEntitiesPosYArray[omCurrentObj->objId];
     dst[5] = gEntitiesPosZArray[omCurrentObj->objId];
     dst[6] = gEntitiesAngleYArray[omCurrentObj->objId];
-    func_8011BF4C(dst, 0);
-    return 0;
+    return func_8011BF4C(dst, 0);
 }
 #else
 #pragma GLOBAL_ASM("asm/nonmatchings/ovl3/ovl3_1/func_80155C68_ovl3.s")
