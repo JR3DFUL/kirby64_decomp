@@ -2295,12 +2295,11 @@ snap:
 #endif
 
 #ifdef MIPS_TO_C
-/* FACTORY: 15/153 instructions match (138 diffs). Every read decoded and the whole prologue (6 words) exact once gKirbyState.isTurning is cached in a local; the 0x54 word is *(s32 *)&D_800D6F58[0x2A] -- there is no D_800D6FAC symbol on the N64 side, splat spells it D_800D6F58+0x54, and IDO folds the +0x54 into the relocated lo16 either way. Also needed: an explicit 'GObj *obj = omCurrentObj' per basic block (the ROM loads the POINTER once per block and re-reads ->objId off it 3x, where plain inlining makes IDO hoist &omCurrentObj into a held register instead) -- that was worth 6 words. Residue: both builds emit exactly two 'lui omCurrentObj', but the ROM hoists the SECOND block's into the prologue and IDO hoists the FIRST block's, which shifts the branch displacements and rotates a0/a2/a3 vs v0/v1/a0 for the three array bases */
+/* FACTORY: 95/150 words, block order: the ROM lays the snap arm out of line after the rotate arm (bc1fl into the rotate arm, b to the snap), every arm body and register already lines up */
 void func_8011E978(f32 arg0, f32 arg1) {
     s32 flags;
     f32 *temp_a0;
     f32 var_f12;
-    u32 temp_a0_2;
     GObj *obj;
 
     flags = gKirbyState.isTurning;
@@ -2318,9 +2317,9 @@ void func_8011E978(f32 arg0, f32 arg1) {
                 gKirbyState.unk7C -= 6.2831855f;
             }
         } else {
-            gKirbyState.unk7C = D_800E17D0[omCurrentObj->objId];
+            obj = omCurrentObj;
+            gKirbyState.unk7C = D_800E17D0[obj->objId];
         }
-        obj = omCurrentObj;
         gKirbyState.unk80 = gEntitiesAngleYArray[obj->objId];
         if (gKirbyState.unk80 < gKirbyState.unk7C) {
             var_f12 = (gKirbyState.unk80 + 6.2831855f) - gKirbyState.unk7C;
@@ -2331,9 +2330,8 @@ void func_8011E978(f32 arg0, f32 arg1) {
             gKirbyState.unk80 = gKirbyState.unk7C;
             gKirbyState.turnDirection = 0;
             D_800E17D0[obj->objId] = gKirbyState.unk7C;
-            temp_a0_2 = obj->objId;
-            gEntitiesAngleYArray[temp_a0_2] = D_800E17D0[temp_a0_2];
-            gKirbyState.isTurning &= ~1;
+            gEntitiesAngleYArray[obj->objId] = D_800E17D0[obj->objId];
+            gKirbyState.isTurning = flags & ~1;
         } else {
             if (arg1 == 1.0f) {
                 gKirbyState.unk80 -= arg0;
@@ -2347,6 +2345,7 @@ void func_8011E978(f32 arg0, f32 arg1) {
                 }
             }
             gEntitiesAngleYArray[obj->objId] = gKirbyState.unk80;
+            return;
         }
     }
 }
@@ -3697,7 +3696,7 @@ s32 func_80120CCC(f32 arg0, f32 arg1) {
     return 0;
 }
 #ifdef MIPS_TO_C
-/* FACTORY: 31/143 instructions match (112 diffs). Structure and every N64 spelling recovered: D_801283E8 is a 0xC-stride row {struct DmgPal *unk0, s32 unk4 count, s32 unk8 flash} and D_801283F0 is just that row's +8 member symbol (same masked lo16, so the row-array spelling is correct); the palette records are 0x10-stride with the hold time at +0xC; and CRUCIALLY damageFlashTimer/damagePaletteTimer are declared u16 in Player.h but the ROM reads them with lh and materialises their -1/-2 constants with addiu, so every read and store must go through *(s16 *)&field -- the plain (s16) cast emits lhu+sll+sra and the plain store emits ori 0xfffe (that one change was worth 14 words). timer must be s32, not s16, or the compare gets a redundant sign-extend. Confirmed the reset tests the PRE-decrement value (sltiu in the bne delay slot), as the PORT arm notes and m2c gets wrong. Residue: the ROM hoists &D_800D7010 into a0 before the D_800E7CE0 test so both arms share it; IDO here re-materialises it per arm, leaving the block 3 words short and rotating the temp registers after it. An explicit held u32 *dst local did not move it */
+/* FACTORY: 136/144 words, register: unk10 lands in a2 (ROM a1) so the func_800A5404 arm pays a move, and the -1 == count compare keeps its operands in source order */
 void func_80120E74(UNUSED s32 arg0) {
     struct DmgPal {
         /* 0x00 */ u32 flags;
@@ -3722,10 +3721,8 @@ void func_80120E74(UNUSED s32 arg0) {
     struct DmgPal *pal;
     s32 count;
     s32 sel;
-    s32 objId;
     s32 idx;
     s32 timer;
-    u32 *dst;
 
     func_800F90C0(omCurrentObj->objId, &D_800D7010 + 0x12);
     func_800A7BF4(&D_800D7B80 + 6, &D_800D7010 + 0x12);
@@ -3734,24 +3731,18 @@ void func_80120E74(UNUSED s32 arg0) {
             *(s16 *) &gKirbyState.damageFlashTimer = -2;
             goto block10;
         }
-        {
-            dst = &D_800D7010;
-            objId = omCurrentObj->objId;
-            if (D_800E7CE0[objId] == 0) {
-                if (gKirbyState.unk10 == 0) {
-                    func_800F90C0(objId, dst);
-                    return;
-                }
-                func_800A5404(dst, (struct DmgPal *) gKirbyState.unk10);
+        if (D_800E7CE0[omCurrentObj->objId] == 0) {
+            if (gKirbyState.unk10 == 0) {
+                func_800F90C0(omCurrentObj->objId, &D_800D7010);
                 return;
             }
-            sel = 1;
-            if (D_800BE4EC & 2) {
-                sel = 0;
-            }
-            func_800A5468(dst, (sel * 0xC) + &D_80128370);
+            func_800A5404(&D_800D7010, (struct DmgPal *) gKirbyState.unk10);
             return;
+        } else {
+            sel = (D_800BE4EC & 2) ? 0 : 1;
+            func_800A5468(&D_800D7010, &D_80128370 + sel * 3);
         }
+        return;
     }
 block10:
     timer = *(s16 *) &gKirbyState.damageFlashTimer;
@@ -3761,27 +3752,23 @@ block10:
         gKirbyState.damagePaletteTimer = 1;
         *(s16 *) &gKirbyState.damageFlashTimer = D_801283E8[gKirbyState.damageType].unk8;
     } else {
-        *(s16 *) &gKirbyState.damageFlashTimer = timer - 1;
-        if (timer == 0) {
+        if ((*(s16 *) &gKirbyState.damageFlashTimer)-- == 0) {
             gKirbyState.damageType = 0;
             *(s16 *) &gKirbyState.damageFlashTimer = -1;
             return;
         }
     }
     row = &D_801283E8[gKirbyState.damageType];
-    count = row->unk4;
-    if (count == -1) {
+    if ((count = row->unk4) == -1) {
         func_800F90C0(omCurrentObj->objId, &D_800D7010);
         return;
     }
     pal = row->unk0;
     gKirbyState.damagePaletteTimer = *(s16 *) &gKirbyState.damagePaletteTimer - 1;
     if (*(s16 *) &gKirbyState.damagePaletteTimer == 0) {
-        gKirbyState.damagePaletteIndex = gKirbyState.damagePaletteIndex + 1;
-        idx = gKirbyState.damagePaletteIndex & 0xFFFF;
+        idx = gKirbyState.damagePaletteIndex = gKirbyState.damagePaletteIndex + 1;
         if (idx == count) {
-            gKirbyState.damagePaletteIndex = 0;
-            idx = 0;
+            idx = gKirbyState.damagePaletteIndex = 0;
         }
         gKirbyState.damagePaletteTimer = pal[idx].unkC;
     }
@@ -4574,7 +4561,7 @@ s32 func_80122558(void) {
 #endif
 
 #ifdef MIPS_TO_C
-/* FACTORY: 38/180 instructions match (142 diffs). Written as a CLONE of func_80122558 in this file (now MATCHED), which is the same wall-probe skeleton -- the 0x58 save/restore of D_8012BCA0 through 'extern u8 D_8012BCA0[]' plus a local struct cast, the same >>19 &7/&0x38 flag test, and the same 'grab = 0 inside the isTurning arm' placement all reproduce exactly. Tail block decoded: the ROM does div.s 1.0f/nodeLength then mul.s by the +/-0.25f step, and the node stride is the plain 0x10 struct index. Residue: the ROM materialises 1.0f THREE separate times (0x80122790, 0x80122868, 0x801228C4) and IDO here CSEs the first two into one register hoisted ABOVE the struct copy, adding 2 words at the top and shifting every branch displacement after it. Lever 7's double-literal fork is not usable on 1.0f -- it would turn the compare/divide into double ops */
+/* FACTORY: 161/181 words, register: frame 0x98 and every slot exact, the second == 1.0f compare forked as == 1 and the += written on the array element (permuter find); the CSE'd objId*4 lands in a2 where the ROM keeps v0, rotating the temps of the first grab block */
 s32 func_801226FC(void) {
     /* Whole-block view of the collision result D_8012BCA0 (struct
      * CollisionResult in ovl2_7.c) so the probe below can be run and undone.
@@ -4600,10 +4587,11 @@ s32 func_801226FC(void) {
     extern u8 D_8012BCA0[];
     s32 grab;
     struct ColResultSave saved;
-    s32 objId;
-    f32 *prog;
     f32 step;
     Vector pos;
+    GObj *obj;
+    f32 *prog;
+    struct Unk80129114_4_4 *ft;
 
     if ((gKirbyState.unk15 == 0) && (gKirbyState.unk4 == 0)) {
         if (!(gKirbyState.isTurning & 5)) {
@@ -4620,19 +4608,20 @@ s32 func_801226FC(void) {
             }
             *(struct ColResultSave *) D_8012BCA0 = saved;
             if (grab != 0) {
-                objId = omCurrentObj->objId;
-                if (D_800E6A10[objId] == 1.0f) {
+                obj = omCurrentObj;
+                if (D_800E6A10[obj->objId] == 1) {
                     step = -0.25f;
                 } else {
                     step = 0.25f;
                 }
-                prog = &D_800E6BD0[objId];
-                *prog += (1.0f / D_80129114->unk4[D_800E5F90[objId]].footer->length) * step;
-                func_800F8570(omCurrentObj->objId, prog);
-                objId = omCurrentObj->objId;
-                mtxGetInterpolatedPosition(&pos, D_80129114->unk4[D_800E5F90[objId]].footer, D_800E6BD0[objId]);
-                gEntitiesNextPosXArray[omCurrentObj->objId] = pos.x;
-                gEntitiesNextPosZArray[omCurrentObj->objId] = pos.z;
+                prog = &D_800E6BD0[obj->objId];
+                ft = D_80129114->unk4[D_800E5F90[obj->objId]].footer;
+                D_800E6BD0[obj->objId] += (1.0f / ft->length) * step;
+                func_800F8570(obj->objId, prog);
+                mtxGetInterpolatedPosition(&pos, D_80129114->unk4[D_800E5F90[omCurrentObj->objId]].footer, D_800E6BD0[omCurrentObj->objId]);
+                obj = omCurrentObj;
+                gEntitiesNextPosXArray[obj->objId] = pos.x;
+                gEntitiesNextPosZArray[obj->objId] = pos.z;
                 gKirbyState.unk168 = 0.0f;
                 gKirbyState.unk30 = 0;
                 gKirbyState.unk164 = gKirbyState.unk168;
