@@ -70,7 +70,7 @@ ovl16 19, ovl10 18, ovl2 17, ovl17 16, ovl14 14, ovl19 12.
 16. **Hoist a pre-branch load into its OWN local.** A load used inside an `if` whose value is also needed before it leaves IDO a `nop` in the compare/branch gap and rotates every FP temp after it. Read it first into a separate local and use that: the `lwc1` fills the gap exactly as the ROM does. Reusing the destination variable for the read is NOT equivalent -- it keeps the value in that variable's callee-saved register. Worth 20 diffs at once on one function.
 
 
-17. **An unused prototyped parameter is free.** A call site passing 5 arguments to a matched 4-parameter definition: adding an unused `f32 arg4` is byte-identical for the callee, verified by objdump A/B. Incoming arguments live in the caller's frame.
+17. **An unused prototyped parameter is free -- for a LEAF callee.** A call site passing 5 arguments to a matched 4-parameter definition: adding an unused `f32 arg4` is byte-identical for the callee, verified by objdump A/B. Incoming arguments live in the caller's frame. A non-leaf callee homes the extra argument and grows a word (see the 2026-09 section).
 
 
 18. **A `(u16)` cast on an `s32[]` element emits `lhu`; the ROM reads the full word and masks.** Write `(x & 0xFFFF) == 2`, not `(u16)x == 2`. These track/entity arrays are read as words. That was the only real defect in a 205-instruction function — 28/205 straight to MATCH in one edit.
@@ -115,6 +115,58 @@ ovl16 19, ovl10 18, ovl2 17, ovl17 16, ovl14 14, ovl19 12.
 21. **`mul.s` operand slot IS movable — by operand KIND, not by source order.** Correcting the long-standing "INVARIANT" entry below. With one operand a named local and the other a direct array load, IDO emits `load, local` whichever way the product is spelled (`arr * v` and `v * arr` are byte-identical, measured four times, which is what made it look invariant). Change what the operands ARE and the slot moves: spelling the scale factor as an INLINE ternary instead of through a local flips it to the ROM's `local, load`. Two named locals honour source order. Closed func_8015E8E0_ovl3 at 275/275 (the inline form cost 8 bytes of frame, paid back by shrinking its `pad`).
 
 
+
+## MEASURED 2026-09-01/02 (75 closures) -- check these before calling a residue a floor
+
+Each closed at least one function; most closed several. Differing-word counts are verify.py's.
+
+- **Physical line grouping.** IDO's schedule and one register pick depend on which statements share a
+  source line. An if/else head, or the two statements around a transposed pair, written on ONE line
+  closed 801DDF9C_ovl9 (4->0), 801E7F34_ovl9 (2->0), 801DCBF8_ovl16, 8017462C_ovl5, 80174044_ovl5.
+  Absolute line numbers are inert. A decomp-permuter zero that fails by hand usually fails because its
+  output is reformatted: copy its exact line grouping.
+- **Chained assignment** `a = b = 0`, `x = (y = f())`, `*(s32 *) &p->f = q = -1`: the hidden value
+  temp shifts t-register numbering (8017BF34_ovl3, 80186750_ovl3, 801E8A80_ovl9, 801DCBF8_ovl16).
+- **Store then read back** `A[i] = 0.0f; B[i] = C[i] = D[i] = A[i];` holds the first base in a
+  register the ROM way (801E18BC_ovl16, 8015A44C_ovl3).
+- **Same store in both arms** of an if/else when the ROM shows a dead store after a `b`
+  (801E18BC_ovl16, 801ED634_ovl16, 8009E834 partial).
+- **`*p == f()` not `f() == *p`**: a call on the left of a compare against a load reserves an extra
+  temp and shifts the spill slot (80117210, 801173F4).
+- **Statement order**: `x |= K` before `y = 1` (8017B8F4_ovl3); z store last (801E7BD0_ovl16);
+  first operand's sum before the second's (800FC03C).
+- **Every named scalar reserves a frame word** in this tree. Drop m2c temps so results stay
+  expression temps (800A5F94, 800B891C, 801F0EC8_ovl10, 801D56D0_ovl9); keep a dead pad only where
+  the ROM frame needs it.
+- **`if (1) { }` block wrapper** moves saved-register priority (801ED9AC_ovl9, 8015C9B4_ovl5);
+  `do { } while (0);` on one line is the related barrier (8015A9F8_ovl3).
+- **Same-type cast** `(s32) obj->objId` forks a CSE'd value (801DBC38_ovl9).
+- **`default:` after a fall-through case** recreates the ROM's partial-redundancy reload (801EEC28_ovl9).
+- **Pass arg0 where $a0 already holds it** (K&R callee): changes parameter homing from prologue to
+  delay slot (801EA190_ovl9). One-argument call to a K&R callee where m2c passed two (800A9C78).
+- **Ternary assigned through the variable inside the store**: `A[i] = v = c ? 0.5f : 1.0f;` (801DCE6C_ovl9).
+- **Pointer-add record form** `(base + i)->f` instead of `&base[i]` / `base[i].f` (801720D8_ovl5, 801721CC_ovl5).
+- **Signed-cast store into a u32 array** `((s32 *) A)[t] = 1` stops IDO hoisting the unsigned
+  constant across calls (801ED634_ovl16, 801EE970_ovl16).
+- **One loop, not hand peeling**: IDO peels and unrolls `for (i = 1; i < 7; i++)` itself (801F0EC8_ovl10).
+- **Float literal, not extern load, in a dotted-rodata TU**: aliasing keeps an extern load below a
+  NULL store (801F11A8_ovl10). Check kirby64.yaml for `.rodata, <tu>` before trusting notes saying
+  "this TU does not own its rodata".
+- **Expression subscript at one site, named index at another** keeps the value CSE but breaks the
+  element-address CSE (800A8358). A block pointer bumped in place is one integer local (800A8358).
+- **Explicit `case` labels** for every jump-table entry before `default:` (8017CAF8_ovl3, partial).
+- **Swallowed empty function**: a listing whose `.size` includes a following `jr $ra; nop` needs an
+  explicit `void func_X(void) {}` after the matched function (8015C9B4_ovl5, 80174368_ovl5).
+
+Negative results:
+- Lever 17 does not hold for a NON-LEAF callee: IDO homes the unused incoming argument
+  (`sw a0, 0x28(sp)`) and the callee grows a word (func_801E2320_ovl17).
+- A block-scope prototype `void f(void);` is remembered TU-wide; a later implicit call to `f`
+  elsewhere in the TU is then a compile error.
+- decomp-permuter scores ignore stack displacements: a permuter zero can be a verify.py miss
+  (801B0C20_ovl7: permuter 0, verify 8/128).
+- In-body `extern void f();` prototypes for otherwise-undeclared callees change IDO's register pick
+  after the call (801E0A90_ovl13): removing them helped.
 
 ## GUARD ON THE SECOND VARIANT — these are floors, no source spelling reaches them
 Whole-function callee-saved permutation; one-slot temp rotation; a CSE'd load landing in the neighbouring register ($v0/$v1, $a2/$a3); IDO folding an address into load offsets where the ROM CSEs it into a spilled register.

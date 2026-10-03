@@ -117,12 +117,9 @@ Rules that follow, in addition to LEVERS':
 
 ## Note for func_8010E8F0 (ovl2_8.c)
 
-Its ROM prologue is `mtc1 $a1,$f12 / mtc1 $a3,$f14`: the floats ARRIVE in
-integer registers. So the definition is NOT an ANSI `f32` prototype (that
-would receive them in $f12/$f14 directly and needs a declaration change that
-breaks the TU, see above). Next pass should try a K&R definition with float
-parameters while LEAVING the file-scope declaration as
-`s32 func_8010E8F0(Vector *, s32, Vector *, s32, s32);` (LEVERS lever 15).
+Measured 2026-09-01: the file-scope prototype already takes `f32`, and the draft compiles and scores
+25/76 differing words as written; the residue is `x` and `-r` swapped between $f18 and $f0. The K&R
+suggestion that stood here is obsolete.
 
 ## THE METRIC IS progress2.py, NOT A FUNCTION COUNT
 
