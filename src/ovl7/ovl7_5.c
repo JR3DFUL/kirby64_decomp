@@ -194,80 +194,66 @@ void func_801A7000_ovl7(GObj *gobj) {
     utilFuncTableJump(D_800E8220[omCurrentObj->objId], 2, &D_801C29B0_ovl7);
 }
 
-// m2c draft, measured 265/273 diffs
 #ifdef NON_MATCHING
+/* FACTORY: 201/264 words, dz home 0x24 vs ROM 0x20 with target*4 spill below it, sqrtf-block schedule, reg naming */
 void func_801A7104_ovl7(GObj *arg0) {
-    s32 sp3C;
-    struct SubSub800E1B50_Unk88_UnkC *sp34;
-    struct SubSub800E1B50_Unk88_UnkC_Unk0 *sp30;
+    s32 target;
+    struct Sub800E1B50_Unk34 *tmp;
+    struct SubSub800E1B50_Unk88_UnkC *cc;
+    struct SubSub800E1B50_Unk88_UnkC_Unk0 *info;
     f32 sp2C;
-    s32 sp28;
-    f32 sp20;
-    f32 temp_f0;
-    f32 temp_f14;
-    f32 temp_f16;
-    f32 temp_f18;
-    f32 temp_f2;
-    struct Sub800E1B50_Unk34 *temp_a1_2;
-    struct SubSub800E1B50_Unk88_UnkC_Unk0 *temp_a3;
+    f32 dz;
     struct EnemyRecord *ent;
-    u32 temp_a1;
-    u32 temp_v0;
-    u32 temp_v0_6;
-    u32 temp_v0_7;
 
     ent = D_800E1B50[omCurrentObj->objId];
-    sp34 = ent->unk88->unkC;
+    target = D_800E0D50[omCurrentObj->objId];
+    cc = ent->unk88->unkC;
     func_800B19F4(0x30, omCurrentObj->objId);
     D_800DEF90[omCurrentObj->objId] = func_800B4EBC;
     D_800DF150[omCurrentObj->objId] = func_801A7524_ovl7;
     ent->unk48 = 0;
-    ent->unk98 = &D_801CB590_ovl7;
+    ent->unk98 = (struct EnemyEventTable *) &D_801CB590_ovl7;
     ent->unk42 = 1;
-    ent->unk38 = -1;
+    *(s8 *) &ent->unk38 = -1;
     ent->unk39 = -1;
     D_800E8920[omCurrentObj->objId] = 0;
-    temp_a3 = sp34->unk0;
-    D_800E2090[omCurrentObj->objId] = gEntitiesNextPosXArray[omCurrentObj->objId] - gEntitiesNextPosXArray[D_800E0D50[omCurrentObj->objId]];
-    temp_f14 = *gEntitiesNextPosYArray + 20.0f;
-    D_800E2250[omCurrentObj->objId] = gEntitiesNextPosYArray[omCurrentObj->objId] - temp_f14;
-    temp_f18 = gEntitiesNextPosZArray[D_800E0D50[omCurrentObj->objId]];
-    D_800E2410[omCurrentObj->objId] = gEntitiesNextPosZArray[omCurrentObj->objId] - temp_f18;
+    info = cc->unk0;
+    D_800E2090[omCurrentObj->objId] = gEntitiesNextPosXArray[omCurrentObj->objId] - gEntitiesNextPosXArray[target];
+    D_800E2250[omCurrentObj->objId] = gEntitiesNextPosYArray[omCurrentObj->objId] - (gEntitiesNextPosYArray[0] + 20.0f);
+    D_800E2410[omCurrentObj->objId] = gEntitiesNextPosZArray[omCurrentObj->objId] - gEntitiesNextPosZArray[target];
     D_800E4C50[omCurrentObj->objId] = gEntitiesAngleYArray[omCurrentObj->objId];
     D_800E4E10[omCurrentObj->objId] = gEntitiesAngleZArray[omCurrentObj->objId];
-    D_800E3050[omCurrentObj->objId] =
-    D_800E3210[omCurrentObj->objId] =
     D_800E33D0[omCurrentObj->objId] = 0.0f;
-
+    sp2C = D_800E33D0[omCurrentObj->objId];
+    D_800E3210[omCurrentObj->objId] = sp2C;
+    D_800E3050[omCurrentObj->objId] = sp2C;
     D_800EB6A0[omCurrentObj->objId] = 0x2D;
     D_800E9C60[omCurrentObj->objId] = 0;
     D_800E9E20[omCurrentObj->objId] = 0;
-    D_800EA6E0[omCurrentObj->objId] = temp_a3->scale;
+    D_800EA6E0[omCurrentObj->objId] = info->scale;
     D_800EA8A0[omCurrentObj->objId] = 0.0f;
-    temp_f2 = gEntitiesNextPosXArray[omCurrentObj->objId] - gEntitiesNextPosXArray[D_800E0D50[omCurrentObj->objId]];
-    sp20 = gEntitiesNextPosZArray[omCurrentObj->objId] - temp_f18;
-    temp_f16 = gEntitiesNextPosYArray[omCurrentObj->objId] - temp_f14;
-    sp28 = sp3C * 4;
-    sp30 = temp_a3;
-    D_800EAA60[omCurrentObj->objId] = sqrtf((sp20 * sp20) + ((temp_f2 * temp_f2) + (temp_f16 * temp_f16)));
+    dz = gEntitiesNextPosZArray[omCurrentObj->objId] - gEntitiesNextPosZArray[target];
+    D_800EAA60[omCurrentObj->objId] = sqrtf((dz * dz) + (((gEntitiesNextPosXArray[omCurrentObj->objId] - gEntitiesNextPosXArray[target]) * (gEntitiesNextPosXArray[omCurrentObj->objId] - gEntitiesNextPosXArray[target])) + ((gEntitiesNextPosYArray[omCurrentObj->objId] - (gEntitiesNextPosYArray[0] + 20.0f)) * (gEntitiesNextPosYArray[omCurrentObj->objId] - (gEntitiesNextPosYArray[0] + 20.0f)))));
     D_800EAC20[omCurrentObj->objId] = 0.0f;
     D_800E8E60[omCurrentObj->objId] = 1;
-    D_800EB4E0[omCurrentObj->objId] = func_801AC6D0_ovl7(sp30);
+    D_800EB4E0[omCurrentObj->objId] = func_801AC6D0_ovl7(info);
     D_800DF310[omCurrentObj->objId] = NULL;
     if (ent->unk34 != NULL) {
-        func_800A22D4(ent->unk34, ent->unk34);
+        tmp = ent->unk34;
+        func_800A22D4(tmp);
     }
     func_800A2300(arg0);
     ent->unk34 = NULL;
     D_800E7B20[omCurrentObj->objId] = 0.0f;
     func_8019B7D8_ovl7(arg0);
     D_800E83E0[omCurrentObj->objId] = 0;
-loop_3:
-    if (func_801A8BAC_ovl7() == 0) {
+    while (TRUE) {
+        if (func_801A8BAC_ovl7() != 0) {
+            break;
+        }
         ohSleep(1);
-        goto loop_3;
     }
-    if (D_800E8060[D_800E0D50[omCurrentObj->objId]] == -1) {
+    if (D_800E8060[target] == -1) {
         ohSleep(1);
     }
     func_801A9268_ovl7();
@@ -927,30 +913,15 @@ s32 func_801A8BAC_ovl7(void) {
     }
     return 0;
 }
-/* 119/200, from m2c's 171 via three recorded steps (2026-08-26):
-   - LEVER 117: the banked func_800AF408/AECC0/AED20 prototypes (171 -> 143).
-   - objid_inline_sweep: the six objId caches inlined (143 -> 107, with the
-     frame still 0x40 against the ROM's 0x30 -- positional scores across
-     different frames do not compare, LEVER 104).
-   - THE FRAME, by func_801A8BAC's law above (frame = align8(0x1C+4n+4)): the
-     ROM's 0x30 needs n=4 declared scalars and m2c had 8. The f32 store-group
-     temps collapse into assignment CHAINS (right-to-left evaluation gives
-     the ROM's store order) -- EXCEPT the scale group, which the ROM really
-     does RE-READ (`lwc1 $f2` back from D_800EA6E0 after the store), so
-     temp_f2 stays and temp_a2 goes instead (sp2C carries the record). The
-     all-chains n=4 shape is 151-156 across ALL 24 declaration orders; the
-     all-reread n=8 shape is 107 on the wrong frame.
-   Aligned residue at 119: the prologue's two function-pointer address
-   materialisations scheduled two slots apart, `or $a0,$v0` in the
-   func_800A22D4 delay slot where we nop (the null-test shape), and the
-   $v1-for-$a2 naming cascade that follows. */
-#ifdef NON_MATCHING
-/* FACTORY: 16/200, FP register naming on the four chained-assignment reloads */
 void func_801A8CDC_ovl7(GObj *arg0) {
     struct EnemyRecord *rec;
     struct SubSub800E1B50_Unk88_UnkC *ptr;
     struct SubSub800E1B50_Unk88_UnkC_Unk0 *info;
     struct Sub800E1B50_Unk34 *tmp;
+    f32 f1;
+    f32 f2;
+    f32 f3;
+    f32 f4;
 
     rec = D_800E1B50[omCurrentObj->objId];
     ptr = rec->unk88->unkC;
@@ -973,94 +944,76 @@ void func_801A8CDC_ovl7(GObj *arg0) {
     D_800E4E10[omCurrentObj->objId] = 0.0f;
     D_800E4C50[omCurrentObj->objId] = D_800E4E10[omCurrentObj->objId];
     D_800EA6E0[omCurrentObj->objId] = info->scale;
-    gEntitiesScaleXArray[omCurrentObj->objId] = gEntitiesScaleYArray[omCurrentObj->objId] = gEntitiesScaleZArray[omCurrentObj->objId] = D_800EA6E0[omCurrentObj->objId];
+    f1 = D_800EA6E0[omCurrentObj->objId];
+    gEntitiesScaleZArray[omCurrentObj->objId] = f1;
+    gEntitiesScaleYArray[omCurrentObj->objId] = f1;
+    gEntitiesScaleXArray[omCurrentObj->objId] = f1;
     D_800E5350[omCurrentObj->objId] = 1.0f;
-    D_800E4FD0[omCurrentObj->objId] = D_800E5190[omCurrentObj->objId] = D_800E5350[omCurrentObj->objId];
+    f2 = D_800E5350[omCurrentObj->objId];
+    D_800E5190[omCurrentObj->objId] = f2;
+    D_800E4FD0[omCurrentObj->objId] = f2;
     D_800E3910[omCurrentObj->objId] = 0.0f;
-    D_800E3050[omCurrentObj->objId] = D_800E3210[omCurrentObj->objId] = D_800E33D0[omCurrentObj->objId] = D_800E3590[omCurrentObj->objId] = D_800E3750[omCurrentObj->objId] = D_800E3910[omCurrentObj->objId];
+    f3 = D_800E3910[omCurrentObj->objId];
+    D_800E3750[omCurrentObj->objId] = f3;
+    D_800E3590[omCurrentObj->objId] = f3;
+    D_800E33D0[omCurrentObj->objId] = f3;
+    D_800E3210[omCurrentObj->objId] = f3;
+    D_800E3050[omCurrentObj->objId] = f3;
     D_800E3E50[omCurrentObj->objId] = 65535.0f;
-    D_800E3AD0[omCurrentObj->objId] = D_800E3C90[omCurrentObj->objId] = D_800E3E50[omCurrentObj->objId];
+    f4 = D_800E3E50[omCurrentObj->objId];
+    D_800E3C90[omCurrentObj->objId] = f4;
+    D_800E3AD0[omCurrentObj->objId] = f4;
     D_800E8E60[omCurrentObj->objId] = 1;
     D_800E8220[omCurrentObj->objId] = 0;
     *(s32 *) &D_8012E860[0xC] = 0;
     func_800AF408();
     curObjSleepForever();
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl7/ovl7_5/func_801A8CDC_ovl7.s")
-#endif
-/* 32/155 diffs, all register naming, no structural difference: the ROM gives
-   $a0 to the switch-result variable and $v0 to the D_800E77A0 halfword; IDO
-   swaps the pair (var->$v0, halfword->$a0), which cascades into
-   temp_a1 $a1->$a0 and the omCurrentObj/index pair $a2/$a3 swapping.  Their
-   live ranges overlap so the choice is a symmetric colouring decision.
-   Swept over 8 variants: named vs inline index (in-place `sll` needs the
-   inline form), named `ent` variable (that is what moved $v0/$v1 into place,
-   72 -> 32), hoisting the `->posX` load above the switch (68 -> ...),
-   comma-expression vs nested-if condition (32 -> 73, keep the comma form),
-   naming omCurrentObj, and reusing `arg0` as the result variable.  None of
-   them move the $v0/$a0 pair. */
 #ifdef NON_MATCHING
-extern s32 D_800D7090;
-void func_801AA914_ovl7(GObj *);
-void func_801A96C4_ovl7(GObj *);
-
+/* FACTORY: 0/155 words, MATCH; keep guarded until func_801A96C4_ovl7 is C (its void decl clashes with func_801AC4EC's implicit call) */
 void func_801A8FFC_ovl7(GObj *arg0) {
-    f32 temp_f0;
-    s32 var_a0;
+    void func_801AA914_ovl7(GObj *);
+    void func_801A96C4_ovl7(GObj *);
     struct EnemyRecord *ent;
-    struct SubSub800E1B50_Unk88_UnkC *temp_v0;
-    struct SubSub800E1B50_Unk88_UnkC_Unk0 *temp_a1;
-    struct EneAnimSetup *temp_t0;
-    u16 temp_v0_3;
-    u16 temp_v0_2;
-    u32 temp_v1;
-    u32 temp_v1_2;
+    struct SubSub800E1B50_Unk88_UnkC *cc;
+    struct SubSub800E1B50_Unk88_UnkC_Unk0 *info;
+    struct SubSub800E1B50_Unk88_UnkC_Unk4 *anim;
+    s32 var;
 
     ent = D_800E1B50[omCurrentObj->objId];
-    temp_v0 = ent->unk88->unkC;
-    temp_a1 = temp_v0->unk0;
-    temp_t0 = temp_v0->unk4;
+    cc = ent->unk88->unkC;
+    info = cc->unk0;
+    anim = cc->unk4;
     switch (gKirbyState.unkD) {
         case 6:
-            var_a0 = 1;
+            var = 1;
             break;
         case 7:
-            var_a0 = 2;
+            var = 2;
             break;
         case 1:
+            do { } while (0);
         case 2:
-            D_800EA6E0[omCurrentObj->objId] = temp_t0->unk10;
+            D_800EA6E0[omCurrentObj->objId] = anim->unk10;
             assign_new_process_entry(gEntityGObjProcessArray[omCurrentObj->objId], &func_801A96C4_ovl7);
             return;
         case -3:
-            var_a0 = 3;
+            var = 3;
             break;
         default:
-            temp_f0 = temp_a1->scale;
-            D_800EA6E0[omCurrentObj->objId] = temp_f0;
-            var_a0 = 0;
-            gEntitiesScaleZArray[omCurrentObj->objId] = temp_f0;
-            gEntitiesScaleYArray[omCurrentObj->objId] = temp_f0;
-            gEntitiesScaleXArray[omCurrentObj->objId] = temp_f0;
+            gEntitiesScaleXArray[omCurrentObj->objId] = gEntitiesScaleYArray[omCurrentObj->objId] = gEntitiesScaleZArray[omCurrentObj->objId] = D_800EA6E0[omCurrentObj->objId] = info->scale;
+            var = 0;
             break;
     }
-    if ((gKirbyState.numberInhaled >= 2) &&
-        ((temp_v1 = omCurrentObj->objId, D_800E7730[temp_v1] != 6) ||
-         (temp_v0_2 = D_800E77A0[temp_v1], temp_v0_2 < 8) || (temp_v0_2 >= 0x2C) ||
-         (temp_v1 != D_800D7090))) {
-        var_a0 = 2;
+    if ((gKirbyState.numberInhaled >= 2) && ((D_800E7730[omCurrentObj->objId] != 6) || (D_800E77A0[omCurrentObj->objId] < 8) || (D_800E77A0[omCurrentObj->objId] >= 0x2C) || (D_800D7090 != omCurrentObj->objId))) {
+        var = 2;
     }
-    if (var_a0 == 1) {
-        temp_v1_2 = omCurrentObj->objId;
-        if (D_800E7730[temp_v1_2] == 6) {
-            temp_v0_3 = D_800E77A0[temp_v1_2];
-            if ((temp_v0_3 >= 8) && (temp_v0_3 < 0x2C)) {
-                gKirbyState.numberInhaled = 0;
-                if (gKirbyState.unk8 == 0) {
-                    assign_new_process_entry(gEntityGObjProcessArray[omCurrentObj->objId], &func_801AA914_ovl7);
-                    return;
-                }
+    if (var == 1) {
+        if ((D_800E7730[omCurrentObj->objId] == 6) && (D_800E77A0[omCurrentObj->objId] >= 8) && (D_800E77A0[omCurrentObj->objId] < 0x2C)) {
+            gKirbyState.numberInhaled = 0;
+            if (gKirbyState.unk8 == 0) {
+                assign_new_process_entry(gEntityGObjProcessArray[omCurrentObj->objId], &func_801AA914_ovl7);
+                return;
             }
         }
         if (gKirbyState.numberInhaled < 2) {
@@ -1069,9 +1022,9 @@ void func_801A8FFC_ovl7(GObj *arg0) {
                 assign_new_process_entry(gEntityGObjProcessArray[omCurrentObj->objId], &func_801AA914_ovl7);
             }
         }
-    } else if (var_a0 == 2) {
+    } else if (var == 2) {
         func_8019D958_ovl7((u16) omCurrentObj->objId);
-    } else if (var_a0 == 3) {
+    } else if (var == 3) {
         func_8019D958_ovl7((u16) omCurrentObj->objId);
     }
 }
@@ -1079,75 +1032,51 @@ void func_801A8FFC_ovl7(GObj *arg0) {
 #pragma GLOBAL_ASM("asm/nonmatchings/ovl7/ovl7_5/func_801A8FFC_ovl7.s")
 #endif
 
-// m2c draft, measured 163/165 diffs
-#ifdef NON_MATCHING
 void func_801A9268_ovl7(void) {
-    struct SubSub800E1B50_Unk88_UnkC_Unk0 *sp18;
-    struct SubSub800E1B50_Unk88_UnkC *temp_a1;
-    struct SubSub800E1B50_Unk88_UnkC_Unk0 *temp_a2;
-    struct EnemyRecord *var_a0;
-    u32 temp_t2;
-    u32 temp_t7;
-    u32 temp_t9;
-    u32 temp_v0;
-    u8 *temp_v1;
-    u8 *var_a0_2;
-    u8 temp_a1_2;
+    extern u8 D_800D6C90[];
+    struct EnemyRecord *rec;
+    struct SubSub800E1B50_Unk88_UnkC *cc;
+    u8 idx;
+    struct SubSub800E1B50_Unk88_UnkC_Unk0 *info;
 
-    var_a0 = D_800E1B50[omCurrentObj->objId];
-    temp_a1 = var_a0->unk88->unkC;
-    temp_a2 = temp_a1->unk0;
-    gKirbyState.numberInhaled += 1;
-    if (temp_a2 != NULL) {
-        var_a0 = temp_a2->unk1C;
-        if (*(s32 *) &var_a0->unk0 != 0) {
-            gKirbyState.unk8 += 1;
-        }
+    rec = D_800E1B50[omCurrentObj->objId];
+    cc = rec->unk88->unkC;
+    info = cc->unk0;
+    gKirbyState.numberInhaled++;
+    if ((info != NULL) && (*(s32 *) (rec = (struct EnemyRecord *) info->unk1C) != 0)) {
+        gKirbyState.unk8++;
     }
     if (gKirbyState.numberInhaled == 1) {
         gKirbyState.isHoldingEntity = 0;
-        temp_t7 = D_800E76C0[omCurrentObj->objId] << 0x18;
-        gKirbyState.inhaledEntityData = temp_t7;
-        temp_t2 = temp_t7 | (D_800E7730[omCurrentObj->objId] << 0x10);
-        gKirbyState.inhaledEntityData = temp_t2;
-        temp_t9 = temp_t2 | (D_800E77A0[omCurrentObj->objId] << 8);
-        gKirbyState.inhaledEntityData = temp_t9;
-        gKirbyState.inhaledEntityData = temp_t9 | D_800E7880[omCurrentObj->objId];
+        gKirbyState.inhaledEntityData = D_800E76C0[omCurrentObj->objId] << 24;
+        gKirbyState.inhaledEntityData |= D_800E7730[omCurrentObj->objId] << 16;
+        gKirbyState.inhaledEntityData |= D_800E77A0[omCurrentObj->objId] << 8;
+        gKirbyState.inhaledEntityData |= D_800E7880[omCurrentObj->objId];
     }
     if (gKirbyState.firstInhale == 0) {
-        gKirbyState.firstInhale = temp_a2->unk1C->unk4;
+        gKirbyState.firstInhale = info->unk1C->unk4;
     } else if (gKirbyState.secondInhale == 0) {
-        gKirbyState.secondInhale = temp_a2->unk1C->unk4;
-    } else if (gKirbyState.firstInhale < 8) {
-        temp_v0 = temp_a2->unk1C->unk4;
-        if (temp_v0 >= 8) {
-            gKirbyState.firstInhale = temp_v0;
-        }
+        gKirbyState.secondInhale = info->unk1C->unk4;
+    } else if (((s32) gKirbyState.firstInhale < 8) && (info->unk1C->unk4 >= 8)) {
+        gKirbyState.firstInhale = info->unk1C->unk4;
     }
-    sp18 = temp_a2;
-    func_801A94D8_ovl7(var_a0, temp_a1, temp_a2);
-    if (gKirbyState.numberInhaling != gKirbyState.numberInhaled) {
+    func_801A94D8_ovl7();
+    if (gKirbyState.numberInhaled != gKirbyState.numberInhaling) {
         D_80198820_ovl3 = 0.0f;
     }
-    gEntitiesScaleXArray[omCurrentObj->objId] = temp_a2->scale;
-    gEntitiesScaleYArray[omCurrentObj->objId] = temp_a2->scale;
-    gEntitiesScaleZArray[omCurrentObj->objId] = temp_a2->scale;
-    var_a0_2 = &D_800E76C0[omCurrentObj->objId];
-    temp_a1_2 = *var_a0_2;
-    if (temp_a1_2 < 0x40) {
-        temp_v1 = temp_a1_2 + (D_800D6C68 + 0x28);
-        if (D_801290E0[temp_a1_2].unk5 & 1) {
-            *temp_v1 &= 0x80;
-            var_a0_2 = &D_800E76C0[omCurrentObj->objId];
+    gEntitiesScaleXArray[omCurrentObj->objId] = info->scale;
+    gEntitiesScaleYArray[omCurrentObj->objId] = info->scale;
+    gEntitiesScaleZArray[omCurrentObj->objId] = info->scale;
+    idx = D_800E76C0[omCurrentObj->objId];
+    if (idx < 0x40) {
+        if (D_801290E0[idx].unk5 & 1) {
+            D_800D6C90[idx] &= 0x80;
         }
     }
-    *var_a0_2 = 0xFF;
-    func_8019BB58_ovl7(var_a0_2, temp_a1_2, temp_a2);
+    D_800E76C0[omCurrentObj->objId] = 0xFF;
+    func_8019BB58_ovl7();
     func_800A2300(D_800DE350[omCurrentObj->objId]);
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl7/ovl7_5/func_801A9268_ovl7.s")
-#endif
 s32 func_801A94D8_ovl7(void) {
     struct EnemyRecord *ent;
     struct SubSub800E1B50_Unk88_UnkC *temp_a0;
@@ -1194,27 +1123,20 @@ void func_801A9618_ovl7(GObj *gobj) {
     func_801A8CDC_ovl7(gobj);
 }
 
-// m2c draft, measured 138/157 diffs
 #ifdef NON_MATCHING
+/* FACTORY: 29/155 words, v0/v1 swap of var_v1 vs objId*4 throughout (xor-0 forces the ROM's a0 copy) */
 void func_801A96C4_ovl7(GObj *arg0) {
-    s32 sp44;
+    struct EnemyRecord *rec;
+    struct EneInfo *info;
+    struct EneVtable *vt;
     s32 var_v1;
-    s32 var_v1_2;
-    u32 temp_v0_2;
-    u32 temp_v0_3;
-    u32 temp_v0_4;
-    u8 temp_t2;
-    struct EneInfo *temp_a1;
 
-    temp_a1 = ((struct EneAnimSetup *) D_800E1B50[omCurrentObj->objId]->unk88->unkC->unk4)->unk1C;
+    rec = D_800E1B50[omCurrentObj->objId];
+    info = ((struct EneAnimSetup *) rec->unk88->unkC->unk4)->unk1C;
+    vt = info->unk14;
     D_800DF150[omCurrentObj->objId] = func_801A9930_ovl7;
-    sp44 = temp_a1->unk14;
-    /* $a0 is still the incoming GObj at the ROM's jal (it was only copied
-       to $s0 at 801A9724, never overwritten); m2c's temp_a1 was $a1, a
-       leftover. The callee ignores it either way. */
     func_801AA344_ovl7(arg0);
-    temp_t2 = D_8012E860[0x18];
-    switch (temp_t2) {
+    switch (D_8012E860[0x18]) {
         case 0:
         case 1:
         case 2:
@@ -1229,193 +1151,145 @@ void func_801A96C4_ovl7(GObj *arg0) {
             func_801A9FC4_ovl7(arg0);
             break;
     }
-    func_801AA850_ovl7(sp44);
-loop_4:
-    if (sp44 != 0) {
-        func_801AA78C_ovl7(sp44);
+    func_801AA850_ovl7(vt);
+    while (TRUE) {
+        if (vt != NULL) {
+            func_801AA78C_ovl7(vt);
+        }
+        D_800E9C60[omCurrentObj->objId] = D_800E8920[D_800E0D50[omCurrentObj->objId]];
+        D_800E9E20[omCurrentObj->objId] = D_800E8AE0[D_800E0D50[omCurrentObj->objId]] & 6;
+        var_v1 = D_800E0D50[omCurrentObj->objId];
+        do {
+            if (func_800AA8E4(var_v1 ^ 0, 0x20007) != 0) {
+                D_800E0F10[omCurrentObj->objId] = 0xE;
+            } else {
+                D_800E0F10[omCurrentObj->objId] = 0x10;
+            }
+            ohSleep(1);
+            var_v1 = ((u32) D_800DD8D0[omCurrentObj->objId] >> 0x1E) ? 1 : 0;
+            if (var_v1 != 0) {
+                break;
+            }
+            var_v1 = D_800E0D50[omCurrentObj->objId];
+            if (D_800E9C60[omCurrentObj->objId] != D_800E8920[var_v1]) {
+                break;
+            }
+        } while (D_800E9E20[omCurrentObj->objId] == (D_800E8AE0[var_v1] & 6));
     }
-    temp_v0_2 = omCurrentObj->objId;
-    D_800E9C60[temp_v0_2] = D_800E8920[D_800E0D50[temp_v0_2]];
-    temp_v0_3 = omCurrentObj->objId;
-    D_800E9E20[temp_v0_3] = D_800E8AE0[D_800E0D50[temp_v0_3]] & 6;
-    var_v1 = D_800E0D50[omCurrentObj->objId];
-    do {
-        if (func_800AA8E4(var_v1, 0x20007) != 0) {
-            D_800E0F10[omCurrentObj->objId] = 0xE;
-        } else {
-            D_800E0F10[omCurrentObj->objId] = 0x10;
-        }
-        ohSleep(1);
-        var_v1_2 = 0;
-        temp_v0_4 = omCurrentObj->objId;
-        if ((D_800DD8D0[temp_v0_4] >> 0x1E) != 0) {
-            var_v1_2 = 1;
-        }
-        if (var_v1_2 != 0) {
-            goto loop_4;
-        }
-        var_v1 = D_800E0D50[temp_v0_4];
-        if (D_800E9C60[temp_v0_4] != D_800E8920[var_v1]) {
-            goto loop_4;
-        }
-    } while (D_800E9E20[temp_v0_4] == (D_800E8AE0[var_v1] & 6));
-    goto loop_4;
 }
 #else
 #pragma GLOBAL_ASM("asm/nonmatchings/ovl7/ovl7_5/func_801A96C4_ovl7.s")
 #endif
-// m2c draft, measured 414/434 diffs
 #ifdef NON_MATCHING
+/* FACTORY: 246/422 words, same frame and mnemonic stream bar entry/tail scheduling; reg naming (omCurrentObj t0, gKirbyState t5) */
 void func_801A9930_ovl7(s32 arg0) {
-    struct SubSub800E1B50_Unk88_UnkC *sp30;
-    struct SubSub800E1B50_Unk88_UnkC_Unk0 *sp2C;
-    struct EneAnimSetup *sp28;
-    void *sp20;
-    struct EnemyProbe *sp1C;
-    void (*temp_v0_9)(s32, s32 *, s32 *, f32 *);
-    void *temp_a1;
-    GObj *temp_t0;
-    f32 *temp_v1_2;
-    f32 *temp_v1_3;
-    f32 temp_f0;
-    f32 temp_f2;
-    f32 var_f2;
-    s32 *temp_v1_4;
-    s32 temp_t8;
-    s32 var_v0;
-    s8 temp_a0;
-    struct SubSub800E1B50_Unk88_UnkC *temp_a2;
-    struct SubSub800E1B50_Unk88_UnkC_Unk0 *temp_t2;
-    struct EneAnimSetup *temp_t1;
-    struct EnemyRecord *temp_v1;
-    struct EneInfo *temp_a3;
-    struct EneVtable *temp_t3;
+    struct EnemyRecord *rec;
+    struct SubSub800E1B50_Unk88_UnkC *cc;
+    struct EneAnimSetup *setup;
+    struct SubSub800E1B50_Unk88_UnkC_Unk0 *info;
+    struct EneInfo *ei;
+    struct EneVtable *vt;
+    struct EnemyProbe *probe;
+    s32 id;
 
-    temp_t0 = omCurrentObj;
-    temp_v1 = D_800E1B50[temp_t0->objId];
-    temp_a2 = temp_v1->unk88->unkC;
-    temp_t1 = temp_a2->unk4;
-    temp_t2 = temp_a2->unk0;
-    temp_a3 = temp_t1->unk1C;
-    temp_t3 = temp_a3->unk14;
-    sp1C = temp_v1->unk84;
-    if (D_800E83E0[temp_t0->objId] != 0) {
+    rec = D_800E1B50[omCurrentObj->objId];
+    cc = rec->unk88->unkC;
+    setup = (struct EneAnimSetup *) cc->unk4;
+    info = cc->unk0;
+    ei = setup->unk1C;
+    vt = ei->unk14;
+    probe = rec->unk84;
+    if (D_800E83E0[omCurrentObj->objId] != 0) {
         gKirbyState.unkD = -2;
-        if (D_800E83E0[temp_t0->objId] == 0x12) {
-            assign_new_process_entry(gEntityGObjProcessArray[temp_t0->objId], &func_801AC33C_ovl7);
-            return;
+        if (D_800E83E0[omCurrentObj->objId] == 0x12) {
+            assign_new_process_entry(gEntityGObjProcessArray[omCurrentObj->objId], &func_801AC33C_ovl7);
+        } else {
+            assign_new_process_entry(gEntityGObjProcessArray[omCurrentObj->objId], &func_801AC448_ovl7);
         }
-        assign_new_process_entry(gEntityGObjProcessArray[temp_t0->objId], &func_801AC448_ovl7);
         return;
     }
-    temp_a0 = gKirbyState.unkD;
-    switch (temp_a0) {
+    switch (gKirbyState.unkD) {
         case 4:
-            D_800EA6E0[temp_t0->objId] = temp_t1->unk10;
-block_17:
-            if (temp_a0 == 2) {
-                temp_t8 = D_801D0AA4_ovl7 - 1;
-                if (D_801D0AA4_ovl7 != -1) {
-                    D_801D0AA4_ovl7 = temp_t8;
-                    if (temp_t8 <= 0) {
-                        gKirbyState.unkD = -2;
-                        temp_a1 = temp_t3->unk44;
-                        if (temp_a1 == NULL) {
-                            assign_new_process_entry(gEntityGObjProcessArray[temp_t0->objId], &func_801AC448_ovl7);
-                            return;
-                        }
-                        assign_new_process_entry(gEntityGObjProcessArray[temp_t0->objId], temp_a1);
-                        return;
-                    }
-                }
-            }
-            gEntitiesAngleYArray[temp_t0->objId] = gEntitiesAngleYArray[D_800E0D50[temp_t0->objId]];
-            D_800E5F90[temp_t0->objId] = D_800E5F90[D_800E0D50[temp_t0->objId]];
-            D_800E6BD0[temp_t0->objId] = D_800E6BD0[D_800E0D50[temp_t0->objId]];
-            if (temp_a0 == 3) {
-                temp_v1_2 = &gEntitiesScaleXArray[temp_t0->objId];
-                temp_f2 = *temp_v1_2;
-                if ((D_800EA6E0[temp_t0->objId] - 0.001f) < temp_f2) {
-                    *temp_v1_2 = temp_f2 - ((temp_t1->unk10 - temp_t2->scale) / 5.0f);
-                }
-            }
-            var_v0 = temp_t0->objId * 4;
-            temp_v1_3 = &gEntitiesScaleXArray[temp_t0->objId];
-            var_f2 = *temp_v1_3;
-            if ((temp_a0 == 1) && (var_f2 < (D_800EA6E0[temp_t0->objId] + 0.001f))) {
-                *temp_v1_3 = var_f2 + ((temp_t1->unk10 - temp_t2->scale) / 5.0f);
-                var_v0 = temp_t0->objId * 4;
-                var_f2 = gEntitiesScaleXArray[temp_t0->objId];
-            }
-            *(gEntitiesScaleZArray + var_v0) = var_f2;
-            gEntitiesScaleYArray[temp_t0->objId] = var_f2;
-            if (temp_t3 != NULL) {
-                temp_v0_9 = temp_t3->unk3C;
-                if (temp_v0_9 != NULL) {
-                    temp_v0_9(arg0, D_800E0D50, D_800E5F90, D_800E6BD0);
-                }
-            }
-            D_800E6A10[temp_t0->objId] = D_800E6A10[D_800E0D50[temp_t0->objId]];
-            if (D_800E6A10[temp_t0->objId] == 1.0f) {
-                D_800E17D0[temp_t0->objId] = D_800E17D0[D_800E0D50[temp_t0->objId]];
-            } else {
-                D_800E17D0[temp_t0->objId] = D_800E17D0[D_800E0D50[temp_t0->objId]] + 3.1415927f;
-            }
-            if ((temp_a0 == 2) && ((gKirbyState.action != 0x1D) || (gKirbyState.unkB != 1)) && (gKirbyState.unkB != 2)) {
-                if (func_801A0D74_ovl7(arg0, D_800E0D50) != 0) {
-                    func_801A3938(&D_801CAFCC_ovl7);
-                    func_801A36CC(&func_801A3864_ovl7);
-                }
-                temp_v1_4 = &D_800E8920[omCurrentObj->objId];
-                if (*temp_v1_4 == 1) {
-                    *temp_v1_4 = 0;
-                }
-                func_80111C4C(func_801117BC(&D_801D0A78_ovl7, omCurrentObj->objId));
-                return;
-            }
-            if (sp1C != NULL) {
-                sp1C->posX = gEntitiesNextPosXArray[temp_t0->objId];
-                sp1C->posY = gEntitiesNextPosYArray[omCurrentObj->objId];
-                sp1C->posZ = gEntitiesNextPosZArray[omCurrentObj->objId];
-                func_801051AC(sp1C, D_800E0D50);
-            }
-            return;
+            D_800EA6E0[omCurrentObj->objId] = setup->unk10;
+            break;
         case 5:
-            assign_new_process_entry(gEntityGObjProcessArray[temp_t0->objId], &func_801AA1D4_ovl7);
+            assign_new_process_entry(gEntityGObjProcessArray[omCurrentObj->objId], &func_801AA1D4_ovl7);
             return;
         case 3:
-            if (temp_t1->unk10 == gEntitiesScaleXArray[temp_t0->objId]) {
-                D_800EA6E0[temp_t0->objId] = temp_t2->scale;
+            if (setup->unk10 == gEntitiesScaleXArray[omCurrentObj->objId]) {
+                D_800EA6E0[omCurrentObj->objId] = info->scale;
             }
-            goto block_17;
+            break;
         case -1:
-            sp30 = temp_a2;
-            assign_new_process_entry(gEntityGObjProcessArray[temp_t0->objId], &func_801A8CDC_ovl7);
-            gKirbyState.currentInhale = temp_a2->unk0->unk1C->unk4;
+            assign_new_process_entry(gEntityGObjProcessArray[omCurrentObj->objId], &func_801A8CDC_ovl7);
+            gKirbyState.currentInhale = cc->unk0->unk1C->unk4;
             return;
         case 8:
-            sp28 = temp_t1;
-            sp2C = temp_t2;
-            sp20 = temp_t3;
-            if (func_801AA190_ovl7(temp_a0, temp_a2, temp_a3) == 0) {
-                goto block_17;
+            if (func_801AA190_ovl7() != 0) {
+                return;
             }
             break;
         case -3:
-            assign_new_process_entry(gEntityGObjProcessArray[temp_t0->objId], &func_801AC448_ovl7);
+            assign_new_process_entry(gEntityGObjProcessArray[omCurrentObj->objId], &func_801AC448_ovl7);
             return;
         case 1:
-            if (temp_t2->scale == gEntitiesScaleXArray[temp_t0->objId]) {
-                D_800EA6E0[temp_t0->objId] = temp_t1->unk10;
+            if (info->scale == gEntitiesScaleXArray[omCurrentObj->objId]) {
+                D_800EA6E0[omCurrentObj->objId] = setup->unk10;
             }
-            goto block_17;
+            break;
+        case -2:
+        case 0:
+        case 2:
+        case 6:
+        case 7:
         default:
-            temp_f0 = temp_t1->unk10;
-            D_800EA6E0[temp_t0->objId] = temp_f0;
-            gEntitiesScaleZArray[temp_t0->objId] = temp_f0;
-            gEntitiesScaleYArray[temp_t0->objId] = temp_f0;
-            gEntitiesScaleXArray[temp_t0->objId] = temp_f0;
-            goto block_17;
+            gEntitiesScaleXArray[omCurrentObj->objId] = gEntitiesScaleYArray[omCurrentObj->objId] = gEntitiesScaleZArray[omCurrentObj->objId] = D_800EA6E0[omCurrentObj->objId] = setup->unk10;
+            break;
+    }
+    if ((gKirbyState.unkD == 2) && (D_801D0AA4_ovl7 != -1) && (--D_801D0AA4_ovl7 <= 0)) {
+        gKirbyState.unkD = -2;
+        if (vt->unk44 == NULL) {
+            assign_new_process_entry(gEntityGObjProcessArray[omCurrentObj->objId], &func_801AC448_ovl7);
+        } else {
+            assign_new_process_entry(gEntityGObjProcessArray[omCurrentObj->objId], vt->unk44);
+        }
+        return;
+    }
+    gEntitiesAngleYArray[omCurrentObj->objId] = gEntitiesAngleYArray[D_800E0D50[omCurrentObj->objId]];
+    D_800E5F90[omCurrentObj->objId] = D_800E5F90[D_800E0D50[omCurrentObj->objId]];
+    D_800E6BD0[omCurrentObj->objId] = D_800E6BD0[D_800E0D50[omCurrentObj->objId]];
+    if ((gKirbyState.unkD == 3) && ((D_800EA6E0[omCurrentObj->objId] - 0.001f) < gEntitiesScaleXArray[omCurrentObj->objId])) {
+        gEntitiesScaleXArray[omCurrentObj->objId] -= (setup->unk10 - info->scale) / 5.0f;
+    }
+    if ((gKirbyState.unkD == 1) && (gEntitiesScaleXArray[omCurrentObj->objId] < (D_800EA6E0[omCurrentObj->objId] + 0.001f))) {
+        gEntitiesScaleXArray[omCurrentObj->objId] += (setup->unk10 - info->scale) / 5.0f;
+    }
+    gEntitiesScaleYArray[omCurrentObj->objId] = gEntitiesScaleZArray[omCurrentObj->objId] = gEntitiesScaleXArray[omCurrentObj->objId];
+    if ((vt != NULL) && (vt->unk3C != NULL)) {
+        vt->unk3C(arg0, D_800E0D50, D_800E5F90, D_800E6BD0);
+    }
+    D_800E6A10[omCurrentObj->objId] = D_800E6A10[D_800E0D50[omCurrentObj->objId]];
+    if (D_800E6A10[omCurrentObj->objId] == 1.0f) {
+        D_800E17D0[omCurrentObj->objId] = D_800E17D0[D_800E0D50[omCurrentObj->objId]];
+    } else {
+        D_800E17D0[omCurrentObj->objId] = D_800E17D0[D_800E0D50[omCurrentObj->objId]] + 3.1415927f;
+    }
+    if ((gKirbyState.unkD == 2) && ((gKirbyState.action != 0x1D) || (gKirbyState.unkB != 1)) && (gKirbyState.unkB != 2)) {
+        if (func_801A0D74_ovl7(arg0) != 0) {
+            func_801A3938(&D_801CAFCC_ovl7);
+            func_801A36CC(&func_801A3864_ovl7);
+        }
+        if (D_800E8920[omCurrentObj->objId] == 1) {
+            D_800E8920[omCurrentObj->objId] = 0;
+        }
+        func_80111C4C(func_801117BC(&D_801D0A78_ovl7, id = omCurrentObj->objId));
+        return;
+    }
+    if (probe != NULL) {
+        probe->posX = gEntitiesNextPosXArray[omCurrentObj->objId];
+        probe->posY = gEntitiesNextPosYArray[omCurrentObj->objId];
+        probe->posZ = gEntitiesNextPosZArray[omCurrentObj->objId];
+        func_801051AC(probe);
     }
 }
 #else
@@ -1506,31 +1380,21 @@ void func_801AA1D4_ovl7(GObj *gobj) {
 void func_801AA33C_ovl7(GObj *gobj) {
 }
 
-// m2c draft, measured 186/188 diffs
-#ifdef NON_MATCHING
 void func_801AA344_ovl7(GObj *arg0) {
-    struct SubSub800E1B50_Unk88_UnkC *sp2C;
-    struct EneAnimSetup *sp28;
-    s32 temp_v0_2;
-    struct SubSub800E1B50_Unk88_UnkC *temp_v1;
-    struct EneAnimSetup *temp_a1;
-    struct EnemyRecord *temp_s1;
-    u32 temp_v0;
-    struct EneVtable *temp_s0;
-    struct EneInfo *temp_s2;
-    struct Unk801D0A78 *temp_t3;
+    struct EnemyRecord *rec;
+    struct EneInfo *info;
+    struct SubSub800E1B50_Unk88_UnkC *cc;
+    struct EneAnimSetup *setup;
+    struct EneVtable *vt;
 
-    temp_v0 = omCurrentObj->objId;
-    temp_s1 = D_800E1B50[temp_v0];
-    temp_v1 = temp_s1->unk88->unkC;
-    temp_a1 = temp_v1->unk4;
-    temp_s2 = temp_a1->unk1C;
-    temp_s0 = temp_s2->unk14;
-    D_800DEF90[temp_v0] = func_800B799C;
-    sp2C = temp_v1;
-    sp28 = temp_a1;
-    func_801A2558_ovl7(temp_s2->unk10, temp_a1);
-    temp_s1->unk98 = &D_801CD240_ovl7;
+    rec = D_800E1B50[omCurrentObj->objId];
+    cc = rec->unk88->unkC;
+    setup = (struct EneAnimSetup *) cc->unk4;
+    info = setup->unk1C;
+    vt = info->unk14;
+    D_800DEF90[omCurrentObj->objId] = func_800B799C;
+    func_801A2558_ovl7(info->unk10);
+    rec->unk98 = (struct EnemyEventTable *) &D_801CD240_ovl7;
     D_800E8920[omCurrentObj->objId] = 0;
     D_800E8E60[omCurrentObj->objId] = 1;
     func_800AFBB4(1, omCurrentObj);
@@ -1538,51 +1402,37 @@ void func_801AA344_ovl7(GObj *arg0) {
     func_800AED20(2.0f);
     D_800DDA90[omCurrentObj->objId] = 0x23;
     D_800E0D50[omCurrentObj->objId] = 0;
-    D_800EA6E0[omCurrentObj->objId] = sp28->unk10;
-    temp_s1->unk40 = 0;
-    temp_s1->unk38 = -1;
-    temp_s1->unk39 = -1;
-    D_800E2250[omCurrentObj->objId] = temp_s2->unk4;
-    func_801AC6D0_ovl7(sp28, omCurrentObj);
+    D_800EA6E0[omCurrentObj->objId] = setup->unk10;
+    rec->unk40 = 0;
+    *(s8 *) &rec->unk38 = -1;
+    rec->unk39 = -1;
+    D_800E2250[omCurrentObj->objId] = info->unk4;
+    func_801AC6D0_ovl7(setup);
     D_800E0F10[omCurrentObj->objId] = 0xE;
-    D_801D0AA0_ovl7 = 0;
-    D_801D0A9C_ovl7 = 0;
-    D_801D0A98_ovl7 = 0;
+    D_801D0A98_ovl7 = D_801D0A9C_ovl7 = D_801D0AA0_ovl7 = 0;
     D_801D0AA8_ovl7 = 0;
-    temp_s1->unk34 = NULL;
-    D_801D0AA4_ovl7 = temp_s2->unk0;
-    temp_t3 = temp_s2->unkC;
-    D_801D0A78_ovl7.unk0 = temp_t3->unk0;
-    D_801D0A78_ovl7.unk4 = temp_t3->unk4;
-    D_801D0A78_ovl7.unk8 = temp_t3->unk8;
-    D_801D0A78_ovl7.unkC = temp_t3->unkC;
-    D_801D0A78_ovl7.unk10 = temp_t3->unk10;
-    D_801D0A78_ovl7.unk14 = temp_t3->unk14;
-    D_801D0A78_ovl7.unk18 = temp_t3->unk18;
-    D_801D0A78_ovl7.unk1C = temp_t3->unk1C;
-    temp_v0_2 = sp2C->unk0->unk1C->unk4;
-    if (temp_v0_2 != 0) {
-        D_801D0A78_ovl7.unk1C = temp_v0_2;
+    rec->unk34 = NULL;
+    D_801D0AA4_ovl7 = info->unk0;
+    D_801D0A78_ovl7 = *info->unkC;
+    if (cc->unk0->unk1C->unk4 != 0) {
+        D_801D0A78_ovl7.unk1C = cc->unk0->unk1C->unk4;
     }
-    if (temp_s0 != NULL) {
-        gKirbyState.unkB8 = temp_s0->unk0;
-        gKirbyState.unkBC = temp_s0->unk4;
-        gKirbyState.unkC0 = temp_s0->unk8;
-        gKirbyState.unkC4 = temp_s0->unkC;
-        gKirbyState.unkC8 = temp_s0->unk10;
-        gKirbyState.unkB9 = temp_s0->unk1;
+    if (vt != NULL) {
+        gKirbyState.unkB8 = vt->unk0;
+        gKirbyState.unkBC = *(f32 *) &vt->unk4;
+        gKirbyState.unkC0 = *(f32 *) &vt->unk8;
+        gKirbyState.unkC4 = *(f32 *) &vt->unkC;
+        gKirbyState.unkC8 = *(f32 *) &vt->unk10;
+        gKirbyState.unkB9 = vt->unk1;
     } else {
         gKirbyState.unkB8 = 0;
     }
     D_800E83E0[omCurrentObj->objId] = 0;
     gKirbyState.numberInhaled = 1;
-    D_800E8220[omCurrentObj->objId] = 1;
+    ((u32 *) D_800E8220)[omCurrentObj->objId] = 1;
     gKirbyState.isHoldingEntity = 1;
-    gKirbyState.unkE = temp_s2->unk8;
+    gKirbyState.unkE = info->unk8;
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl7/ovl7_5/func_801AA344_ovl7.s")
-#endif
 void func_801AA600_ovl7(struct AnimReq *arg0) {
     if (arg0->unk0 != -1) {
         func_800A9EA4(arg0->unk0);
@@ -1656,12 +1506,6 @@ void func_801AA850_ovl7(struct AnimReqSet *arg0) {
     }
 }
 
-// m2c draft, measured 106/120 diffs; 89/121 after zerofork_sweep 2026-08-26:
-// `D_800EC660[..] = 0` (integer, first of the adjacent pair -- flipping
-// D_800EC820 instead scores the same 89 with different bytes; the third
-// zero D_800E4C50 is inert). 121 is the ROM's true count (tail jr/nop).
-#ifdef NON_MATCHING
-/* FACTORY: 16/121, v0/v1 naming of rec and of the objId/D_800E77A0 pair */
 void func_801AA914_ovl7(GObj *arg0) {
     struct EnemyRecord *rec;
     struct SubSub800E1B50_Unk88_UnkC *ptr;
@@ -1671,6 +1515,7 @@ void func_801AA914_ovl7(GObj *arg0) {
     objId = omCurrentObj->objId;
     rec = D_800E1B50[objId];
     ptr = rec->unk88->unkC;
+    if (omCurrentObj->objId) {}
     info = ptr->unk0;
     func_800B19F4(0, objId, ptr);
     D_800EC660[omCurrentObj->objId] = 0.0f;
@@ -1695,94 +1540,57 @@ void func_801AA914_ovl7(GObj *arg0) {
     func_801AAE60_ovl7();
     func_801AC11C_ovl7(arg0);
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl7/ovl7_5/func_801AA914_ovl7.s")
-#endif
-// m2c draft, measured 200/221 diffs
-/* FACTORY: 185/219.  ONE FAMILY OF THREE -- func_801AAAF8_ovl7 / func_801AB2F4_ovl7 /
-   func_801AB884_ovl7 share a call skeleton and a body; one fix closes all three.
-   Rewritten from the m2c draft by deleting every objId cache local and writing
-   `omCurrentObj->objId` inline: m2c's `temp_vN = omCurrentObj->objId` keeps the
-   UNSHIFTED objId alive beside objId*4, so IDO emits an extra `move` and splits
-   every index across two registers, where the ROM does `lw $v0,0($tN)` then
-   `sll $v0,$v0,2` in place.  Inlining took the three from 200/219, 152/175 and
-   179/199 to 185/219, 138/174 and 165/199 with the same edit.
-   Also gone: m2c's comma-expression guard `(t = D_800E77A0[i], t <= 0) || t >=
-   0x2C`, now two plain reads that IDO CSEs into the ROM's single `lhu`.
-   Remaining residue is ONE delay slot, shared by all three: at the
-   func_801C0588_ovl7 guard the ROM emits `beqz $at, .L; nop` and ours emits
-   `beqzl $at, .L; sll $vN, $aN, 2` -- IDO does partial-redundancy elimination
-   on the next block's objId*4 along the short-circuit path that skips the call,
-   which the ROM does not, and everything after is that one slot shifted with
-   the temp file rotated one slot with it.  Three shapes were spent on it
-   (pointer local per block, distinct pointer local per block, plain inline);
-   plain inline is the best of the three and is what is left here.  Permuter
-   food -- and worth running on only ONE of the three. */
-#ifdef NON_MATCHING
 void func_801AAAF8_ovl7(s32 arg0) {
-    f32 *var_at;
-    f32 var_f0;
-    s32 *temp_v0_4;
-    s32 temp_v1_2;
-    u16 temp_v1_4;
-    u8 temp_v0_3;
+    void func_801AB008_ovl7(void);
+    s32 id;
 
-    if ((D_800E7730[omCurrentObj->objId] != 6) || (D_800E77A0[omCurrentObj->objId] <= 0) || (D_800E77A0[omCurrentObj->objId] >= 0x2C) || (func_801C0588_ovl7(omCurrentObj->objId) == 0)) {
-        temp_v1_2 = D_800E83E0[omCurrentObj->objId];
-        if ((temp_v1_2 != 0) || (D_800E8760[omCurrentObj->objId] != 0)) {
-            if (temp_v1_2 == 0x12) {
-                assign_new_process_entry(gEntityGObjProcessArray[omCurrentObj->objId], &func_801AC33C_ovl7);
-                return;
-            }
+    if ((D_800E7730[omCurrentObj->objId] == 6) && (D_800E77A0[omCurrentObj->objId] > 0) && (D_800E77A0[omCurrentObj->objId] < 0x2C) && (func_801C0588_ovl7() != 0)) {
+        return;
+    }
+    if ((D_800E83E0[omCurrentObj->objId] != 0) || (D_800E8760[omCurrentObj->objId] != 0)) {
+        if (D_800E83E0[omCurrentObj->objId] == 0x12) {
+            assign_new_process_entry(gEntityGObjProcessArray[omCurrentObj->objId], &func_801AC33C_ovl7);
+        } else {
             assign_new_process_entry(gEntityGObjProcessArray[omCurrentObj->objId], &func_801AC11C_ovl7);
-            return;
         }
-        func_801AB008_ovl7();
-        if (D_800E8AE0[omCurrentObj->objId] & 1) {
-            var_f0 = 7.0f;
-            D_800E64D0[omCurrentObj->objId] = D_800E6A10[omCurrentObj->objId] * 7.0f;
-            D_800E6690[omCurrentObj->objId] = 0.0f;
-            var_at = &D_800E6850[omCurrentObj->objId];
+        return;
+    }
+    func_801AB008_ovl7();
+    if (D_800E8AE0[omCurrentObj->objId] & 1) {
+        D_800E64D0[omCurrentObj->objId] = D_800E6A10[omCurrentObj->objId] * 7.0f;
+        D_800E6690[omCurrentObj->objId] = 0.0f;
+        D_800E6850[omCurrentObj->objId] = 7.0f;
+    } else {
+        D_800E64D0[omCurrentObj->objId] = D_800E6A10[omCurrentObj->objId] * 14.0f;
+        D_800E6690[omCurrentObj->objId] = 0.0f;
+        D_800E6850[omCurrentObj->objId] = 14.0f;
+    }
+    if ((D_800E7730[omCurrentObj->objId] == 6) && (D_800E77A0[omCurrentObj->objId] >= 8) && (D_800E77A0[omCurrentObj->objId] < 0x2C)) {
+        func_801A3938(&D_801CB0F8_ovl7);
+        func_801A36CC(&func_801A3864_ovl7);
+        func_801A0D74_ovl7(arg0);
+        if ((D_800E77A0[omCurrentObj->objId] >= 8) && (D_800E77A0[omCurrentObj->objId] < 0x24)) {
+            func_80111C4C(func_801117BC(&D_801D0A38_ovl7, id = omCurrentObj->objId));
         } else {
-            var_f0 = 14.0f;
-            D_800E64D0[omCurrentObj->objId] = D_800E6A10[omCurrentObj->objId] * 14.0f;
-            D_800E6690[omCurrentObj->objId] = 0.0f;
-            var_at = &D_800E6850[omCurrentObj->objId];
+            func_80111C4C(func_801117BC(&D_801CA7DC_ovl7, id = omCurrentObj->objId));
         }
-        *var_at = var_f0;
-        temp_v0_3 = D_800E7730[omCurrentObj->objId];
-        if ((temp_v0_3 == 6) && (D_800E77A0[omCurrentObj->objId] >= 8) && (D_800E77A0[omCurrentObj->objId] < 0x2C)) {
-            func_801A3938(&D_801CB0F8_ovl7);
+    } else if ((D_800E7730[omCurrentObj->objId] == 6) && (D_800E77A0[omCurrentObj->objId] > 0) && (D_800E77A0[omCurrentObj->objId] < 8)) {
+        if (func_801A0D74_ovl7(arg0) != 0) {
+            func_801A3938(&D_801CB008_ovl7);
             func_801A36CC(&func_801A3864_ovl7);
-            func_801A0D74_ovl7(arg0);
-            temp_v1_4 = D_800E77A0[omCurrentObj->objId];
-            if ((temp_v1_4 >= 8) && (temp_v1_4 < 0x24)) {
-                func_80111C4C(func_801117BC(&D_801D0A38_ovl7, omCurrentObj->objId, omCurrentObj->objId));
-            } else {
-                func_80111C4C(func_801117BC(&D_801CA7DC_ovl7, omCurrentObj->objId, omCurrentObj->objId));
-            }
-        } else if ((temp_v0_3 == 6) && (D_800E77A0[omCurrentObj->objId] > 0) && (D_800E77A0[omCurrentObj->objId] < 8)) {
-            if (func_801A0D74_ovl7(arg0) != 0) {
-                func_801A3938(&D_801CB008_ovl7);
-                func_801A36CC(&func_801A3864_ovl7);
-            }
-            func_80111C4C(func_801117BC(&D_801D0A58_ovl7, omCurrentObj->objId));
-        } else {
-            if (func_801A0D74_ovl7(arg0) != 0) {
-                func_801A3938(&D_801CB008_ovl7);
-                func_801A36CC(&func_801A3864_ovl7);
-            }
-            func_80111C4C(func_801117BC(&D_801CA6F4_ovl7, omCurrentObj->objId));
         }
-        temp_v0_4 = &D_800E8920[omCurrentObj->objId];
-        if (*temp_v0_4 == 1) {
-            *temp_v0_4 = 0;
+        func_80111C4C(func_801117BC(&D_801D0A58_ovl7, omCurrentObj->objId));
+    } else {
+        if (func_801A0D74_ovl7(arg0) != 0) {
+            func_801A3938(&D_801CB008_ovl7);
+            func_801A36CC(&func_801A3864_ovl7);
         }
+        func_80111C4C(func_801117BC(&D_801CA6F4_ovl7, omCurrentObj->objId));
+    }
+    if (D_800E8920[omCurrentObj->objId] == 1) {
+        D_800E8920[omCurrentObj->objId] = 0;
     }
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl7/ovl7_5/func_801AAAF8_ovl7.s")
-#endif
 void func_801AAE60_ovl7(void) {
     if (D_800E8AE0[D_800E0D50[omCurrentObj->objId]] & 6) {
         D_800E64D0[omCurrentObj->objId] = D_800E6A10[omCurrentObj->objId] * 7.0f;
@@ -1803,58 +1611,19 @@ void func_801AAE60_ovl7(void) {
     ohSleep(0x3C);
 }
 
-#ifdef NON_MATCHING
 void func_801AB008_ovl7(void) {
-    f32 *temp_a0;
-    f32 *temp_a0_2;
-    f32 *var_a0;
-    f32 var_f0;
-    f32 var_f2;
-    s32 var_v1;
-    s32 var_v1_2;
-    u32 temp_v1;
-    u32 temp_v1_2;
-    u32 temp_v1_3;
-    u32 temp_v1_4;
-    u32 temp_v1_5;
-
-    temp_a0 = &D_800E4C50[omCurrentObj->objId];
-    *temp_a0 += 0.34906587f;
-    temp_v1 = omCurrentObj->objId;
-    var_v1 = temp_v1 * 4;
-    temp_a0_2 = &D_800E4C50[temp_v1];
-    var_f0 = *temp_a0_2;
-    if (var_f0 >= 6.2831855f) {
-        *temp_a0_2 = var_f0 - 6.2831855f;
-        temp_v1_2 = omCurrentObj->objId;
-        var_v1 = temp_v1_2 * 4;
-        var_f0 = D_800E4C50[temp_v1_2];
+    D_800E4C50[omCurrentObj->objId] += 0.34906587f;
+    if (D_800E4C50[omCurrentObj->objId] >= 6.2831855f) {
+        D_800E4C50[omCurrentObj->objId] -= 6.2831855f;
     }
-    *(gEntitiesAngleYArray + var_v1) = var_f0;
-    temp_v1_3 = omCurrentObj->objId;
-    var_v1_2 = temp_v1_3 * 4;
-    var_a0 = &gEntitiesAngleZArray[temp_v1_3];
-    var_f2 = *var_a0;
-    if ((var_f2 > 0.69813174f) && (var_f2 < 1.5707964f)) {
-        D_800EA6E0[temp_v1_3] = -0.06981317f;
-        temp_v1_4 = omCurrentObj->objId;
-        var_v1_2 = temp_v1_4 * 4;
-        var_a0 = &gEntitiesAngleZArray[temp_v1_4];
-        goto block_8;
+    gEntitiesAngleYArray[omCurrentObj->objId] = D_800E4C50[omCurrentObj->objId];
+    if ((gEntitiesAngleZArray[omCurrentObj->objId] > 0.69813174f) && (gEntitiesAngleZArray[omCurrentObj->objId] < 1.5707964f)) {
+        D_800EA6E0[omCurrentObj->objId] = -0.06981317f;
+    } else if ((gEntitiesAngleZArray[omCurrentObj->objId] < 5.585054f) && (gEntitiesAngleZArray[omCurrentObj->objId] > 1.5707964f)) {
+        D_800EA6E0[omCurrentObj->objId] = 0.06981317f;
     }
-    if ((var_f2 < 5.585054f) && (var_f2 > 1.5707964f)) {
-        D_800EA6E0[temp_v1_3] = 0.06981317f;
-        temp_v1_5 = omCurrentObj->objId;
-        var_v1_2 = temp_v1_5 * 4;
-        var_a0 = &gEntitiesAngleZArray[temp_v1_5];
-block_8:
-        var_f2 = *var_a0;
-    }
-    *var_a0 = var_f2 + *(D_800EA6E0 + var_v1_2);
+    gEntitiesAngleZArray[omCurrentObj->objId] += D_800EA6E0[omCurrentObj->objId];
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl7/ovl7_5/func_801AB008_ovl7.s")
-#endif
 s32 func_801AC6D0_ovl7(struct AnimTrack *);
 void func_801AB2F4_ovl7(GObj *);
 extern struct EnemyEventTable D_801CB500_ovl7;
@@ -1883,211 +1652,124 @@ void func_801AB174_ovl7(GObj *gobj) {
     func_801AAE60_ovl7();
     func_801AC11C_ovl7(gobj);
 }
-// m2c draft, measured 152/175 diffs
-/* FACTORY: 138/174.  ONE FAMILY OF THREE -- func_801AAAF8_ovl7 / func_801AB2F4_ovl7 /
-   func_801AB884_ovl7 share a call skeleton and a body; one fix closes all three.
-   Rewritten from the m2c draft by deleting every objId cache local and writing
-   `omCurrentObj->objId` inline: m2c's `temp_vN = omCurrentObj->objId` keeps the
-   UNSHIFTED objId alive beside objId*4, so IDO emits an extra `move` and splits
-   every index across two registers, where the ROM does `lw $v0,0($tN)` then
-   `sll $v0,$v0,2` in place.  Inlining took the three from 200/219, 152/175 and
-   179/199 to 185/219, 138/174 and 165/199 with the same edit.
-   Also gone: m2c's comma-expression guard `(t = D_800E77A0[i], t <= 0) || t >=
-   0x2C`, now two plain reads that IDO CSEs into the ROM's single `lhu`.
-   Remaining residue is ONE delay slot, shared by all three: at the
-   func_801C0588_ovl7 guard the ROM emits `beqz $at, .L; nop` and ours emits
-   `beqzl $at, .L; sll $vN, $aN, 2` -- IDO does partial-redundancy elimination
-   on the next block's objId*4 along the short-circuit path that skips the call,
-   which the ROM does not, and everything after is that one slot shifted with
-   the temp file rotated one slot with it.  Three shapes were spent on it
-   (pointer local per block, distinct pointer local per block, plain inline);
-   plain inline is the best of the three and is what is left here.  Permuter
-   food -- and worth running on only ONE of the three. */
-#ifdef NON_MATCHING
 void func_801AB2F4_ovl7(GObj *arg0) {
-    f32 *var_at;
-    f32 var_f0;
-    s32 *temp_v0_5;
-    s32 temp_v1_2;
-
-    if ((D_800E7730[omCurrentObj->objId] != 6) || (D_800E77A0[omCurrentObj->objId] <= 0) || (D_800E77A0[omCurrentObj->objId] >= 0x2C) || (func_801C0588_ovl7() == 0)) {
-        temp_v1_2 = D_800E83E0[omCurrentObj->objId];
-        if ((temp_v1_2 != 0) || (D_800E8760[omCurrentObj->objId] != 0)) {
-            if (temp_v1_2 == 0x12) {
-                assign_new_process_entry(gEntityGObjProcessArray[omCurrentObj->objId], &func_801AC33C_ovl7);
-                return;
-            }
+    if ((D_800E7730[omCurrentObj->objId] == 6) && (D_800E77A0[omCurrentObj->objId] > 0) && (D_800E77A0[omCurrentObj->objId] < 0x2C) && (func_801C0588_ovl7() != 0)) {
+        return;
+    }
+    if ((D_800E83E0[omCurrentObj->objId] != 0) || (D_800E8760[omCurrentObj->objId] != 0)) {
+        if (D_800E83E0[omCurrentObj->objId] == 0x12) {
+            assign_new_process_entry(gEntityGObjProcessArray[omCurrentObj->objId], &func_801AC33C_ovl7);
+        } else {
             assign_new_process_entry(gEntityGObjProcessArray[omCurrentObj->objId], &func_801AC11C_ovl7);
-            return;
         }
-        func_801AB008_ovl7();
-        if (D_800E8AE0[omCurrentObj->objId] & 1) {
-            var_f0 = 7.0f;
-            D_800E64D0[omCurrentObj->objId] = D_800E6A10[omCurrentObj->objId] * 7.0f;
-            D_800E6690[omCurrentObj->objId] = 0.0f;
-            var_at = &D_800E6850[omCurrentObj->objId];
-        } else {
-            var_f0 = 14.0f;
-            D_800E64D0[omCurrentObj->objId] = D_800E6A10[omCurrentObj->objId] * 14.0f;
-            D_800E6690[omCurrentObj->objId] = 0.0f;
-            var_at = &D_800E6850[omCurrentObj->objId];
-        }
-        *var_at = var_f0;
-        if ((D_800E7730[omCurrentObj->objId] == 6) && (D_800E77A0[omCurrentObj->objId] >= 8) && (D_800E77A0[omCurrentObj->objId] < 0x2C)) {
-            func_801A3938(&D_801CB134_ovl7);
+        return;
+    }
+    func_801AB008_ovl7();
+    if (D_800E8AE0[omCurrentObj->objId] & 1) {
+        D_800E64D0[omCurrentObj->objId] = D_800E6A10[omCurrentObj->objId] * 7.0f;
+        D_800E6690[omCurrentObj->objId] = 0.0f;
+        D_800E6850[omCurrentObj->objId] = 7.0f;
+    } else {
+        D_800E64D0[omCurrentObj->objId] = D_800E6A10[omCurrentObj->objId] * 14.0f;
+        D_800E6690[omCurrentObj->objId] = 0.0f;
+        D_800E6850[omCurrentObj->objId] = 14.0f;
+    }
+    if ((D_800E7730[omCurrentObj->objId] == 6) && (D_800E77A0[omCurrentObj->objId] >= 8) && (D_800E77A0[omCurrentObj->objId] < 0x2C)) {
+        func_801A3938(&D_801CB134_ovl7);
+        func_801A36CC(&func_801A3864_ovl7);
+        func_801A0D74_ovl7(arg0);
+        func_80111C4C(func_801117BC(&D_801CA7DC_ovl7, omCurrentObj->objId));
+    } else {
+        if (func_801A0D74_ovl7(arg0) != 0) {
+            func_801A3938(&D_801CB044_ovl7);
             func_801A36CC(&func_801A3864_ovl7);
-            func_801A0D74_ovl7(arg0);
-            func_80111C4C(func_801117BC(&D_801CA7DC_ovl7, omCurrentObj->objId));
-        } else {
-            if (func_801A0D74_ovl7(arg0) != 0) {
-                func_801A3938(&D_801CB044_ovl7);
-                func_801A36CC(&func_801A3864_ovl7);
-            }
-            func_80111C4C(func_801117BC(&D_801CA738_ovl7, omCurrentObj->objId));
         }
-        temp_v0_5 = &D_800E8920[omCurrentObj->objId];
-        if (*temp_v0_5 == 1) {
-            *temp_v0_5 = 0;
-        }
+        func_80111C4C(func_801117BC(&D_801CA738_ovl7, omCurrentObj->objId));
+    }
+    if (D_800E8920[omCurrentObj->objId] == 1) {
+        D_800E8920[omCurrentObj->objId] = 0;
     }
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl7/ovl7_5/func_801AB2F4_ovl7.s")
-#endif
-// m2c draft, measured 163/184 diffs
-#ifdef NON_MATCHING
-void func_801AB5A4_ovl7(GObj *arg0) {
-    struct EnemyRecord *sp24;
-    struct EneAnimSetup *sp1C;
-    struct SubSub800E1B50_Unk88_UnkC *temp_a3;
-    struct EneAnimSetup *temp_a2;
-    struct EnemyRecord *temp_a1;
-    u32 temp_v1_2;
-    u32 temp_v1_3;
-    u32 temp_v1_4;
+void func_801AB5A4_ovl7(GObj *gobj) {
+    struct EnemyRecord *ent = D_800E1B50[omCurrentObj->objId];
+    struct SubSub800E1B50_Unk88_UnkC *mid = ent->unk88->unkC;
+    struct SubSub800E1B50_Unk88_UnkC_Unk4 *temp = mid->unk4;
 
-    temp_a1 = D_800E1B50[omCurrentObj->objId];
-    temp_a3 = temp_a1->unk88->unkC;
-    temp_a2 = temp_a3->unk4;
     D_800EC660[omCurrentObj->objId] = 0.0f;
-    sp24 = temp_a1;
-    sp1C = temp_a2;
     D_800EC820[omCurrentObj->objId] = 25.0f;
-    func_801ABBA0_ovl7(temp_a1);
+    func_801ABBA0_ovl7();
     D_800DF150[omCurrentObj->objId] = func_801AB884_ovl7;
-    temp_a1->unk48 = 0;
-    temp_a1->unk98 = &D_801CB4DC_ovl7;
-    temp_a1->unk42 = 1;
-    temp_a1->unk38 = -1;
-    temp_a1->unk39 = -1;
+    ent->unk48 = 0;
+    ent->unk98 = (struct EnemyEventTable *) &D_801CB4DC_ovl7;
+    ent->unk42 = 1;
+    *(s8 *) &ent->unk38 = -1;
+    ent->unk39 = -1;
     D_800E8920[omCurrentObj->objId] = 0;
     D_800EA6E0[omCurrentObj->objId] = 0.06981317f;
     D_800E4C50[omCurrentObj->objId] = 0.0f;
-    func_801AC6D0_ovl7(sp1C);
-    gEntitiesScaleXArray[omCurrentObj->objId] = temp_a2->unk10;
-    gEntitiesScaleYArray[omCurrentObj->objId] = temp_a2->unk10;
-    gEntitiesScaleZArray[omCurrentObj->objId] = temp_a2->unk10;
-    temp_v1_2 = omCurrentObj->objId;
-    if (D_800E8AE0[D_800E0D50[temp_v1_2]] & 6) {
-        D_800E6690[temp_v1_2] = 0.0f;
-        temp_v1_3 = omCurrentObj->objId;
-        D_800E64D0[temp_v1_3] = D_800E6690[temp_v1_3];
+    func_801AC6D0_ovl7((struct AnimTrack *) temp);
+    gEntitiesScaleXArray[omCurrentObj->objId] = temp->unk10;
+    gEntitiesScaleYArray[omCurrentObj->objId] = temp->unk10;
+    gEntitiesScaleZArray[omCurrentObj->objId] = temp->unk10;
+    if (D_800E8AE0[D_800E0D50[omCurrentObj->objId]] & 6) {
+        D_800E6690[omCurrentObj->objId] = 0.0f;
+        D_800E64D0[omCurrentObj->objId] = D_800E6690[omCurrentObj->objId];
         D_800E6850[omCurrentObj->objId] = 65535.0f;
         D_800E3210[omCurrentObj->objId] = 7.0f;
         D_800E3750[omCurrentObj->objId] = 0.0f;
         D_800E3C90[omCurrentObj->objId] = 7.0f;
         ohSleep(0x3C);
     } else {
-        D_800E6690[temp_v1_2] = 0.0f;
-        temp_v1_4 = omCurrentObj->objId;
-        D_800E64D0[temp_v1_4] = D_800E6690[temp_v1_4];
+        D_800E6690[omCurrentObj->objId] = 0.0f;
+        D_800E64D0[omCurrentObj->objId] = D_800E6690[omCurrentObj->objId];
         D_800E6850[omCurrentObj->objId] = 65535.0f;
         D_800E3210[omCurrentObj->objId] = 14.0f;
         D_800E3750[omCurrentObj->objId] = 0.0f;
         D_800E3C90[omCurrentObj->objId] = 14.0f;
         ohSleep(0x1E);
     }
-    func_801AC11C_ovl7(arg0);
+    func_801AC11C_ovl7(gobj);
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl7/ovl7_5/func_801AB5A4_ovl7.s")
-#endif
-// m2c draft, measured 179/200 diffs
-/* FACTORY: 165/199.  ONE FAMILY OF THREE -- func_801AAAF8_ovl7 / func_801AB2F4_ovl7 /
-   func_801AB884_ovl7 share a call skeleton and a body; one fix closes all three.
-   Rewritten from the m2c draft by deleting every objId cache local and writing
-   `omCurrentObj->objId` inline: m2c's `temp_vN = omCurrentObj->objId` keeps the
-   UNSHIFTED objId alive beside objId*4, so IDO emits an extra `move` and splits
-   every index across two registers, where the ROM does `lw $v0,0($tN)` then
-   `sll $v0,$v0,2` in place.  Inlining took the three from 200/219, 152/175 and
-   179/199 to 185/219, 138/174 and 165/199 with the same edit.
-   Also gone: m2c's comma-expression guard `(t = D_800E77A0[i], t <= 0) || t >=
-   0x2C`, now two plain reads that IDO CSEs into the ROM's single `lhu`.
-   Remaining residue is ONE delay slot, shared by all three: at the
-   func_801C0588_ovl7 guard the ROM emits `beqz $at, .L; nop` and ours emits
-   `beqzl $at, .L; sll $vN, $aN, 2` -- IDO does partial-redundancy elimination
-   on the next block's objId*4 along the short-circuit path that skips the call,
-   which the ROM does not, and everything after is that one slot shifted with
-   the temp file rotated one slot with it.  Three shapes were spent on it
-   (pointer local per block, distinct pointer local per block, plain inline);
-   plain inline is the best of the three and is what is left here.  Permuter
-   food -- and worth running on only ONE of the three. */
-#ifdef NON_MATCHING
 void func_801AB884_ovl7(s32 arg0) {
-    f32 *var_at;
-    f32 var_f0;
-    s32 temp_v0;
-    u16 temp_v1_5;
-    u8 temp_a0;
+    s32 id;
 
-    if ((D_800E7730[omCurrentObj->objId] != 6) || (D_800E77A0[omCurrentObj->objId] <= 0) || (D_800E77A0[omCurrentObj->objId] >= 0x2C) || (func_801C0588_ovl7(omCurrentObj->objId) == 0)) {
-        temp_v0 = D_800E83E0[omCurrentObj->objId];
-        if ((temp_v0 != 0) || (D_800E8760[omCurrentObj->objId] != 0)) {
-            if (temp_v0 == 0x12) {
-                assign_new_process_entry(gEntityGObjProcessArray[omCurrentObj->objId], &func_801AC33C_ovl7);
-                return;
-            }
-            assign_new_process_entry(gEntityGObjProcessArray[omCurrentObj->objId], &func_801AC11C_ovl7);
-            return;
-        }
-        func_801AB008_ovl7();
-        if (D_800E8AE0[omCurrentObj->objId] & 1) {
-            var_f0 = 7.0f;
-            D_800E3210[omCurrentObj->objId] = 7.0f;
-            D_800E3750[omCurrentObj->objId] = 0.0f;
-            var_at = &D_800E3C90[omCurrentObj->objId];
+    if ((D_800E7730[omCurrentObj->objId] == 6) && (D_800E77A0[omCurrentObj->objId] > 0) && (D_800E77A0[omCurrentObj->objId] < 0x2C) && (func_801C0588_ovl7() != 0)) {
+        return;
+    }
+    if ((D_800E83E0[omCurrentObj->objId] != 0) || (D_800E8760[omCurrentObj->objId] != 0)) {
+        if (D_800E83E0[omCurrentObj->objId] == 0x12) {
+            assign_new_process_entry(gEntityGObjProcessArray[omCurrentObj->objId], &func_801AC33C_ovl7);
         } else {
-            var_f0 = 14.0f;
-            D_800E3210[omCurrentObj->objId] = 14.0f;
-            D_800E3750[omCurrentObj->objId] = 0.0f;
-            var_at = &D_800E3C90[omCurrentObj->objId];
+            assign_new_process_entry(gEntityGObjProcessArray[omCurrentObj->objId], &func_801AC11C_ovl7);
         }
-        *var_at = var_f0;
-        temp_a0 = D_800E7730[omCurrentObj->objId];
-        if (temp_a0 == 6) {
-            if ((D_800E77A0[omCurrentObj->objId] >= 8) && (D_800E77A0[omCurrentObj->objId] < 0x2C)) {
-                func_801A3938(&D_801CB170_ovl7);
-                func_801A36CC(&func_801A3864_ovl7);
-                func_801A0D74_ovl7(arg0);
-                temp_v1_5 = D_800E77A0[omCurrentObj->objId];
-                if ((temp_v1_5 >= 8) && (temp_v1_5 < 0x24)) {
-                    func_80111C4C(func_801117BC(&D_801D0A38_ovl7, omCurrentObj->objId, omCurrentObj->objId));
-                    return;
-                }
-                func_80111C4C(func_801117BC(&D_801CA7DC_ovl7, omCurrentObj->objId, omCurrentObj->objId));
-                return;
-            }
+        return;
+    }
+    func_801AB008_ovl7();
+    if (D_800E8AE0[omCurrentObj->objId] & 1) {
+        D_800E3210[omCurrentObj->objId] = 7.0f;
+        D_800E3750[omCurrentObj->objId] = 0.0f;
+        D_800E3C90[omCurrentObj->objId] = 7.0f;
+    } else {
+        D_800E3210[omCurrentObj->objId] = 14.0f;
+        D_800E3750[omCurrentObj->objId] = 0.0f;
+        D_800E3C90[omCurrentObj->objId] = 14.0f;
+    }
+    if ((D_800E7730[omCurrentObj->objId] == 6) && (D_800E77A0[omCurrentObj->objId] >= 8) && (D_800E77A0[omCurrentObj->objId] < 0x2C)) {
+        func_801A3938(&D_801CB170_ovl7);
+        func_801A36CC(&func_801A3864_ovl7);
+        func_801A0D74_ovl7(arg0);
+        if ((D_800E77A0[omCurrentObj->objId] >= 8) && (D_800E77A0[omCurrentObj->objId] < 0x24)) {
+            func_80111C4C(func_801117BC(&D_801D0A38_ovl7, id = omCurrentObj->objId));
+        } else {
+            func_80111C4C(func_801117BC(&D_801CA7DC_ovl7, id = omCurrentObj->objId));
         }
-        if (temp_a0 == 6) {
-            if ((D_800E77A0[omCurrentObj->objId] > 0) && (D_800E77A0[omCurrentObj->objId] < 8)) {
-                if (func_801A0D74_ovl7(arg0) != 0) {
-                    func_801A3938(&D_801CB080_ovl7);
-                    func_801A36CC(&func_801A3864_ovl7);
-                }
-                func_80111C4C(func_801117BC(&D_801D0A58_ovl7, omCurrentObj->objId));
-                return;
-            }
+    } else if ((D_800E7730[omCurrentObj->objId] == 6) && (D_800E77A0[omCurrentObj->objId] > 0) && (D_800E77A0[omCurrentObj->objId] < 8)) {
+        if (func_801A0D74_ovl7(arg0) != 0) {
+            func_801A3938(&D_801CB080_ovl7);
+            func_801A36CC(&func_801A3864_ovl7);
         }
+        func_80111C4C(func_801117BC(&D_801D0A58_ovl7, omCurrentObj->objId));
+    } else {
         if (func_801A0D74_ovl7(arg0) != 0) {
             func_801A3938(&D_801CB080_ovl7);
             func_801A36CC(&func_801A3864_ovl7);
@@ -2095,99 +1777,47 @@ void func_801AB884_ovl7(s32 arg0) {
         func_80111C4C(func_801117BC(&D_801CA738_ovl7, omCurrentObj->objId));
     }
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl7/ovl7_5/func_801AB884_ovl7.s")
-#endif
-// m2c draft, measured 349/365 diffs; 348/360 with the LEVER 117 prototypes
-// banked 2026-08-26 plus zerofork's `temp_f0 != 0` (integer) in the first
-// guard -- the four zeros in the second guard block all measured worse.
 #ifdef NON_MATCHING
+/* FACTORY: 101/351 words, pure register rotation (omCurrentObj/objId*4/D_800E0D50 base; D_800E7730 block), instruction stream identical */
 void func_801ABBA0_ovl7(GObj *arg0) {
-    struct EnemyRecord *sp24;
-    struct EneInfo *sp1C;
-    GObj *temp_v1;
-    f32 *temp_a0;
-    f32 *temp_a0_2;
-    f32 temp_f0;
-    f32 temp_f0_2;
-    s32 temp_v0_11;
-    s32 var_v0;
-    struct Sub800E1B50_Unk34 *temp_v0_9;
-    struct EnemyProbe *temp_a0_3;
-    struct EnemyRecord *temp_t6;
-    u16 temp_a1;
-    u16 temp_a1_2;
-    u16 temp_a1_3;
-    u32 temp_a2;
-    u32 temp_v0;
-    u32 temp_v0_12;
-    u32 temp_v0_2;
-    u32 temp_v0_3;
-    u32 temp_v0_4;
-    u32 temp_v0_5;
-    u32 temp_v0_6;
-    u32 temp_v0_7;
-    u32 temp_v0_8;
-    u32 var_a2;
-    u8 temp_v0_10;
+    struct EnemyRecord *rec;
+    struct EnemyProbe *probe;
+    struct EneInfo *info;
+    struct Sub800E1B50_Unk34 *tmp;
 
-    temp_v0 = omCurrentObj->objId;
-    temp_t6 = D_800E1B50[temp_v0];
-    sp24 = temp_t6;
-    D_800DEF90[temp_v0] = func_800B4954;
-    sp1C = ((struct EneAnimSetup *) temp_t6->unk88->unkC->unk4)->unk1C;
-    temp_v0_2 = omCurrentObj->objId;
-    gEntitiesNextPosXArray[temp_v0_2] = gEntitiesNextPosXArray[D_800E0D50[temp_v0_2]];
-    temp_v0_3 = omCurrentObj->objId;
-    gEntitiesNextPosYArray[temp_v0_3] = (D_800EC820[temp_v0_3] * 0.5f) + (*gEntitiesNextPosYArray + 20.0f);
-    temp_v0_4 = omCurrentObj->objId;
-    gEntitiesNextPosZArray[temp_v0_4] = gEntitiesNextPosZArray[D_800E0D50[temp_v0_4]];
-    temp_v0_5 = omCurrentObj->objId;
-    D_800E6A10[temp_v0_5] = D_800E6A10[D_800E0D50[temp_v0_5]];
-    temp_v0_6 = omCurrentObj->objId;
-    D_800E5F90[temp_v0_6] = D_800E5F90[D_800E0D50[temp_v0_6]];
-    temp_v0_7 = omCurrentObj->objId;
-    D_800E6BD0[temp_v0_7] = D_800E6BD0[D_800E0D50[temp_v0_7]];
-    temp_v0_8 = omCurrentObj->objId;
-    if (D_800E6A10[temp_v0_8] == 1.0f) {
-        D_800E17D0[temp_v0_8] = D_800E17D0[D_800E0D50[temp_v0_8]];
+    rec = D_800E1B50[omCurrentObj->objId];
+    info = ((struct EneAnimSetup *) rec->unk88->unkC->unk4)->unk1C;
+    D_800DEF90[omCurrentObj->objId] = func_800B4954;
+    gEntitiesNextPosXArray[omCurrentObj->objId] = gEntitiesNextPosXArray[D_800E0D50[omCurrentObj->objId]];
+    gEntitiesNextPosYArray[omCurrentObj->objId] = (gEntitiesNextPosYArray[0] + 20.0f) + (D_800EC820[omCurrentObj->objId] * 0.5f);
+    gEntitiesNextPosZArray[omCurrentObj->objId] = gEntitiesNextPosZArray[D_800E0D50[omCurrentObj->objId]];
+    D_800E6A10[omCurrentObj->objId] = D_800E6A10[D_800E0D50[omCurrentObj->objId]];
+    D_800E5F90[omCurrentObj->objId] = D_800E5F90[D_800E0D50[omCurrentObj->objId]];
+    D_800E6BD0[omCurrentObj->objId] = D_800E6BD0[D_800E0D50[omCurrentObj->objId]];
+    if (D_800E6A10[omCurrentObj->objId] == 1.0f) {
+        D_800E17D0[omCurrentObj->objId] = D_800E17D0[D_800E0D50[omCurrentObj->objId]];
     } else {
-        D_800E17D0[temp_v0_8] = D_800E17D0[D_800E0D50[temp_v0_8]] + 3.1415927f;
+        D_800E17D0[omCurrentObj->objId] = D_800E17D0[D_800E0D50[omCurrentObj->objId]] + 3.1415927f;
     }
     D_800E8E60[omCurrentObj->objId] = 0;
     D_800DF310[omCurrentObj->objId] = NULL;
-    temp_v0_9 = sp24->unk34;
-    if (temp_v0_9 != NULL) {
-        func_800A22D4(temp_v0_9);
+    if (rec->unk34 != NULL) {
+        tmp = rec->unk34;
+        func_800A22D4(tmp);
     }
     func_800A2300(arg0);
-    sp24->unk34 = NULL;
-    var_a2 = omCurrentObj->objId;
-    temp_v0_10 = D_800E7730[var_a2];
-    if (temp_v0_10 == 6) {
-        temp_a1 = D_800E77A0[var_a2];
-        if ((temp_a1 > 0) && (temp_a1 < 8)) {
-            func_801BC1AC_ovl7(temp_a1, temp_a1, var_a2);
-            goto block_17;
-        }
+    rec->unk34 = NULL;
+    if ((D_800E7730[omCurrentObj->objId] == 6) && (D_800E77A0[omCurrentObj->objId] > 0) && (D_800E77A0[omCurrentObj->objId] < 8)) {
+        func_801BC1AC_ovl7(D_800E77A0[omCurrentObj->objId]);
+        D_800D7090 = omCurrentObj->objId;
+    } else if ((D_800E7730[omCurrentObj->objId] == 6) && (D_800E77A0[omCurrentObj->objId] >= 8) && (D_800E77A0[omCurrentObj->objId] < 0x24)) {
+        func_801BC44C_ovl7(D_800E77A0[omCurrentObj->objId]);
+        D_800D7090 = omCurrentObj->objId;
+    } else if ((D_800E7730[omCurrentObj->objId] == 6) && (D_800E77A0[omCurrentObj->objId] >= 0x24) && (D_800E77A0[omCurrentObj->objId] < 0x2C)) {
+        func_801BC72C_ovl7(D_800E77A0[omCurrentObj->objId] - 0x24);
+        D_800D7090 = omCurrentObj->objId;
     }
-    if (temp_v0_10 == 6) {
-        temp_a1_2 = D_800E77A0[var_a2];
-        if ((temp_a1_2 >= 8) && (temp_a1_2 < 0x24)) {
-            func_801BC44C_ovl7(temp_a1_2, temp_a1_2, var_a2);
-            goto block_17;
-        }
-    }
-    if (temp_v0_10 == 6) {
-        temp_a1_3 = D_800E77A0[var_a2];
-        if ((temp_a1_3 >= 0x24) && (temp_a1_3 < 0x2C)) {
-            func_801BC72C_ovl7(temp_a1_3 - 0x24, temp_a1_3, var_a2);
-block_17:
-            var_a2 = omCurrentObj->objId;
-        }
-    }
-    temp_v0_11 = D_800E8220[var_a2];
-    switch (temp_v0_11) {                           /* irregular */
+    switch (D_800E8220[omCurrentObj->objId]) {
         case 0:
             func_801A2558_ovl7(&D_801CAF28_ovl7);
             break;
@@ -2196,39 +1826,27 @@ block_17:
             break;
     }
     func_80161CE0_ovl3(arg0);
-    temp_a2 = omCurrentObj->objId;
-    temp_f0 = D_800EC660[temp_a2];
-    if ((temp_f0 != 0) && (func_800F98EC(temp_a2, D_800E6A10[temp_a2] * temp_f0) != 0)) {
+    if ((D_800EC660[omCurrentObj->objId] != 0) && (func_800F98EC(omCurrentObj->objId, D_800E6A10[omCurrentObj->objId] * D_800EC660[omCurrentObj->objId]) != 0)) {
         func_801AC11C_ovl7(arg0);
     }
-    temp_v1 = omCurrentObj;
-    gEntitiesNextPosYArray[temp_v1->objId] = *gEntitiesNextPosYArray + 20.0f;
-    temp_v0_12 = temp_v1->objId;
-    var_v0 = temp_v0_12 * 4;
-    if (D_800E8220[temp_v0_12] == 1) {
-        temp_a0 = &gEntitiesNextPosYArray[temp_v0_12];
-        if (sp1C->unk8 == 1) {
-            *temp_a0 += 30.0f;
-            var_v0 = temp_v1->objId * 4;
-        }
+    gEntitiesNextPosYArray[omCurrentObj->objId] = gEntitiesNextPosYArray[0] + 20.0f;
+    if ((D_800E8220[omCurrentObj->objId] == 1) && (info->unk8 == 1)) {
+        gEntitiesNextPosYArray[omCurrentObj->objId] += 30.0f;
     }
-    temp_f0_2 = *(D_800EC820 + var_v0);
-    temp_a0_2 = gEntitiesNextPosYArray + var_v0;
-    if (temp_f0_2 != 0.0f) {
-        *temp_a0_2 += temp_f0_2;
-        var_v0 = temp_v1->objId * 4;
+    if (D_800EC820[omCurrentObj->objId] != 0) {
+        gEntitiesNextPosYArray[omCurrentObj->objId] += D_800EC820[omCurrentObj->objId];
     }
-    *(D_800E2090 + var_v0) = 0.0f;
-    D_800E2250[temp_v1->objId] = 0.0f;
-    D_800E2410[temp_v1->objId] = 0.0f;
-    temp_a0_3 = sp24->unk84;
-    if (temp_a0_3 != NULL) {
-        temp_a0_3->posX = gEntitiesNextPosXArray[temp_v1->objId];
-        temp_a0_3->posY = gEntitiesNextPosYArray[omCurrentObj->objId];
-        temp_a0_3->posZ = gEntitiesNextPosZArray[omCurrentObj->objId];
-        func_801051AC(temp_a0_3, gEntitiesNextPosYArray);
+    D_800E2090[omCurrentObj->objId] = 0.0f;
+    D_800E2250[omCurrentObj->objId] = 0.0f;
+    D_800E2410[omCurrentObj->objId] = 0.0f;
+    probe = rec->unk84;
+    if (probe != NULL) {
+        probe->posX = gEntitiesNextPosXArray[omCurrentObj->objId];
+        probe->posY = gEntitiesNextPosYArray[omCurrentObj->objId];
+        probe->posZ = gEntitiesNextPosZArray[omCurrentObj->objId];
+        func_801051AC(probe);
     }
-    gEntityFuncListIDArray[temp_v1->objId] = 0;
+    gEntityFuncListIDArray[omCurrentObj->objId] = 0;
     func_8019BB58_ovl7();
 }
 #else
