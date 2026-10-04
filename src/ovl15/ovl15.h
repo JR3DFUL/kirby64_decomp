@@ -77,10 +77,21 @@ struct Unk80111C88Inner {
     /* 0x34 */ u8 pad34[0x24];
     /* 0x58 */ s32 unk58;
 };
+/* func_80111C88 (and func_801A0464_ovl7, which returns its result) hands back
+ * ovl2_9.c's struct CollSlot. CollSlot leads with a pointer, so at LP64 its
+ * unk24 sits at 48, not at the N64's 0x24 -- 40 is CollSlot's s32 unk20, the
+ * shape count. Same fix as struct Ovl7AnimObj in ovl7_2.c. */
+#ifdef PORT
+struct Unk80111C88 {
+    /* 0x00 */ u8 pad0[48];   /* = offsetof(struct CollSlot, unk24) at LP64 */
+    /* 0x30 */ struct Unk80111C88Inner *unk24;
+};
+#else
 struct Unk80111C88 {
     /* 0x00 */ u8 pad0[0x24];
     /* 0x24 */ struct Unk80111C88Inner *unk24;
 };
+#endif
 struct Unk80111C88 *func_80111C88(void *, u32);
 void func_80111ECC(void *);
 void func_801DD208_ovl15(struct GObj *);

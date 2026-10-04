@@ -1958,6 +1958,15 @@ static uintptr_t gw_emit(struct GeoWiden *w, u32 off, int depth) {
             }
             if (child != 0) {
                 w1v = child;
+            } else if ((w1 >> 24) != 0 && (w1 >> 24) < 0x10 && (w1 >> 24) != 4) {
+                /* A call into a RUNTIME segment, set by the game at draw
+                 * time and not part of this blob: renderLoadTextures points
+                 * segment 0xE at the per-MObj material lists it builds each
+                 * frame (texture image, TLUT, tile size), and the model
+                 * calls them as gsSPDisplayList(0x0E000000 + 8 * i). Keep the
+                 * segmented address, as the RSP would; the interpreter
+                 * resolves it through its segment table when it runs. */
+                w1v = w1;
             } else if (((w0 >> 16) & 0xFF) == 0) {
                 w0v = 0; /* G_SPNOOP */
                 w1v = 0;

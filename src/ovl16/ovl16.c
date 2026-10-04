@@ -91,10 +91,21 @@ struct Ovl16DObj {
     struct Ovl16MObj *mobjList;
 };
 
+/* func_80111C88 returns ovl2_9.c's struct CollSlot, which leads with a
+ * pointer, so at LP64 its unk24 sits at 48, not at the N64's 0x24 (40 is
+ * CollSlot's s32 unk20, the shape count); same fix as struct Ovl7AnimObj
+ * in ovl7_2.c. */
+#ifdef PORT
+struct Ovl16AnimObj {
+    u8 filler0[48];   /* = offsetof(struct CollSlot, unk24) at LP64 */
+    struct Ovl16AnimCmd *unk24;
+};
+#else
 struct Ovl16AnimObj {
     u8 filler0[0x24];
     struct Ovl16AnimCmd *unk24;
 };
+#endif
 
 extern void (*D_801EF4C0_ovl16[])(struct GObj *);
 extern s32 D_801EF5E0_ovl16[];
