@@ -1111,13 +1111,12 @@ void func_801A2558_ovl7(s32 arg0) {
 }
 #endif
 
-#ifdef NON_MATCHING
 void func_801A2ADC_ovl7(struct Ovl7TrackParams *arg0) {
-    u32 idx = omCurrentObj->objId;
-    struct EnemyProbe *sub84 = D_800E1B50[idx]->unk84;
+    struct EnemyRecord *rec = D_800E1B50[omCurrentObj->objId];
+    struct EnemyProbe *sub84 = rec->unk84;
 
     if (sub84 != NULL) {
-        sub84->posX = gEntitiesNextPosXArray[idx];
+        sub84->posX = gEntitiesNextPosXArray[omCurrentObj->objId];
         sub84->posY = gEntitiesNextPosYArray[omCurrentObj->objId];
         sub84->posZ = gEntitiesNextPosZArray[omCurrentObj->objId];
         *(struct Ovl7TrackParams *) &sub84->unk10 = *arg0;
@@ -1131,9 +1130,6 @@ void func_801A2ADC_ovl7(struct Ovl7TrackParams *arg0) {
         sub84->facingAngle = D_800E17D0[omCurrentObj->objId];
     }
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl7/ovl7_3/func_801A2ADC_ovl7.s")
-#endif
 /* FACTORY: 24/123 [was noted 27/123] [was noted 96/123], whole-frame +0x10 base residue.  Every instruction,
    register and RELATIVE stack slot matches the ROM except: (a) our IDO
    places the locals block 0x10 higher (frame 0x78 vs 0x68; every sp offset
@@ -1232,114 +1228,66 @@ s32 func_801A2C78_ovl7(f32 arg0) {
 #pragma GLOBAL_ASM("asm/nonmatchings/ovl7/ovl7_3/func_801A2C78_ovl7.s")
 #endif
 
-/* FACTORY: 50/103, whole-function temp-register rotation, and it is a TWIN of
-   func_801A3000_ovl7 below (identical call skeleton, identical body, unk18 vs
-   unk14 / &= ~1 vs |= 1 / += vs -= 0.1f / 0x1C0 vs 0xE00): whatever closes one
-   closes the other, both at 50 diffs.  Every instruction, branch, branch-likely
-   and memory reference is the ROM's; only the temp names differ -- the ROM
-   takes $v0/$v1 for the D_800E1B50->unk84 chain and $a3/$a2/$t0 for the three
-   held array bases, ours takes $t9/$t2 and $t0/$a3/$t1, one slot rotated, and
-   ours splits objId / objId*4 across two registers where the ROM shifts in
-   place.  Two variants spent on it: m2c per-use temporaries (58, and it moves
-   `obj` out of $v1) and an overlay-struct cast instead of *(f32 *)& (50,
-   inert).  Permuter food.
-   Two REAL bugs were fixed getting here and both are worth keeping: the call
-   needs an f32 prototype in scope (guarded, so the definition below does not
-   supply one -- without it IDO passes the field with `lw $a0`), and repeating
-   `omCurrentObj->objId` makes IDO hoist &omCurrentObj into a register, where
-   the ROM caches the POINTER once per block and re-reads ->objId; caching it
-   in a local took this function from 101/106 to 50/103. */
-#ifdef NON_MATCHING
-s32 func_801A2C78_ovl7(f32);
-
 void func_801A2E64_ovl7(s32 arg0) {
+    s32 func_801A2C78_ovl7(f32);
     struct EneUnk84Float {
         u8  pad0[0x14];
         f32 unk14;
         f32 unk18;
     };
-    struct GObj *obj;
-    f32 *temp_a1;
-    s32 *temp_a0;
+    struct EnemyRecord *rec = D_800E1B50[omCurrentObj->objId];
+    struct EneUnk84Float *sub84 = (struct EneUnk84Float *) rec->unk84;
 
-    if (func_801A2C78_ovl7(((struct EneUnk84Float *) D_800E1B50[omCurrentObj->objId]->unk84)->unk18) != 0) {
-        obj = omCurrentObj;
-        temp_a0 = &D_800E8AE0[obj->objId];
-        *temp_a0 &= ~1;
-        D_800E8920[obj->objId] = 0;
-        temp_a1 = &gEntitiesNextPosYArray[obj->objId];
-        *temp_a1 += 0.1f;
-        if ((gEntitiesNextPosYArray[obj->objId] < gEntitiesPosYArray[obj->objId]) && (D_800E8AE0[obj->objId] & 2) && ((D_8012BCA0 >> 0x13) & 0x1C0)) {
-            D_800E5F90[obj->objId] = D_800E6150[obj->objId];
-            D_800E6BD0[obj->objId] = D_800E6D90[obj->objId];
-            gEntitiesNextPosXArray[obj->objId] = gEntitiesPosXArray[obj->objId];
-            gEntitiesNextPosYArray[obj->objId] = gEntitiesPosYArray[obj->objId];
-            gEntitiesNextPosZArray[obj->objId] = gEntitiesPosZArray[obj->objId];
+    if (func_801A2C78_ovl7(sub84->unk18) != 0) {
+        D_800E8AE0[omCurrentObj->objId] &= ~1;
+        D_800E8920[omCurrentObj->objId] = 0;
+        gEntitiesNextPosYArray[omCurrentObj->objId] += 0.1f;
+        if ((gEntitiesNextPosYArray[omCurrentObj->objId] < gEntitiesPosYArray[omCurrentObj->objId]) && (D_800E8AE0[omCurrentObj->objId] & 2) && ((D_8012BCA0 >> 0x13) & 0x1C0)) {
+            D_800E5F90[omCurrentObj->objId] = D_800E6150[omCurrentObj->objId];
+            D_800E6BD0[omCurrentObj->objId] = D_800E6D90[omCurrentObj->objId];
+            gEntitiesNextPosXArray[omCurrentObj->objId] = gEntitiesPosXArray[omCurrentObj->objId];
+            gEntitiesNextPosYArray[omCurrentObj->objId] = gEntitiesPosYArray[omCurrentObj->objId];
+            gEntitiesNextPosZArray[omCurrentObj->objId] = gEntitiesPosZArray[omCurrentObj->objId];
         }
     }
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl7/ovl7_3/func_801A2E64_ovl7.s")
-#endif
-/* FACTORY: 38/102 [was noted 49/102] [was noted 50/102].  Twin of func_801A2E64_ovl7 above -- same residue, same
-   fix; see that note. */
-#ifdef NON_MATCHING
-s32 func_801A2C78_ovl7(f32);
-
 void func_801A3000_ovl7(s32 arg0) {
+    s32 func_801A2C78_ovl7(f32);
     struct EneUnk84Float {
         u8  pad0[0x14];
         f32 unk14;
         f32 unk18;
     };
-    struct GObj *obj;
-    f32 *temp_a1;
-    s32 *temp_a0;
+    struct EnemyRecord *rec = D_800E1B50[omCurrentObj->objId];
+    struct EneUnk84Float *sub84 = (struct EneUnk84Float *) rec->unk84;
 
-    if (func_801A2C78_ovl7(((struct EneUnk84Float *) D_800E1B50[omCurrentObj->objId]->unk84)->unk14) != 0) {
-        obj = omCurrentObj;
-        temp_a0 = &D_800E8AE0[obj->objId];
-        *temp_a0 |= 1;
-        D_800E8920[obj->objId] = 0;
-        temp_a1 = &gEntitiesNextPosYArray[obj->objId];
-        *temp_a1 -= 0.1f;
-        if ((gEntitiesPosYArray[obj->objId] < gEntitiesNextPosYArray[obj->objId]) && (D_800E8AE0[obj->objId] & 2) && ((D_8012BCA0 >> 0x13) & 0xE00)) {
-            D_800E5F90[obj->objId] = D_800E6150[obj->objId];
-            D_800E6BD0[obj->objId] = D_800E6D90[obj->objId];
-            gEntitiesNextPosXArray[obj->objId] = gEntitiesPosXArray[obj->objId];
-            gEntitiesNextPosYArray[obj->objId] = gEntitiesPosYArray[obj->objId];
-            gEntitiesNextPosZArray[obj->objId] = gEntitiesPosZArray[obj->objId];
+    if (func_801A2C78_ovl7(sub84->unk14) != 0) {
+        D_800E8AE0[omCurrentObj->objId] |= 1;
+        D_800E8920[omCurrentObj->objId] = 0;
+        gEntitiesNextPosYArray[omCurrentObj->objId] -= 0.1f;
+        if ((gEntitiesPosYArray[omCurrentObj->objId] < gEntitiesNextPosYArray[omCurrentObj->objId]) && (D_800E8AE0[omCurrentObj->objId] & 2) && ((D_8012BCA0 >> 0x13) & 0xE00)) {
+            D_800E5F90[omCurrentObj->objId] = D_800E6150[omCurrentObj->objId];
+            D_800E6BD0[omCurrentObj->objId] = D_800E6D90[omCurrentObj->objId];
+            gEntitiesNextPosXArray[omCurrentObj->objId] = gEntitiesPosXArray[omCurrentObj->objId];
+            gEntitiesNextPosYArray[omCurrentObj->objId] = gEntitiesPosYArray[omCurrentObj->objId];
+            gEntitiesNextPosZArray[omCurrentObj->objId] = gEntitiesPosZArray[omCurrentObj->objId];
         }
     }
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl7/ovl7_3/func_801A3000_ovl7.s")
-#endif
-#ifdef NON_MATCHING
 void func_801A3198_ovl7(void) {
-    struct EnemyRecord *temp_v0;
-    struct CollisionTriangle *temp_a1;
-    f32 *temp_v0_2;
-    f32 var_f6;
-    u16 temp_a2;
-    u32 temp_t7;
+    struct EnemyRecord *rec = D_800E1B50[omCurrentObj->objId];
+    struct CollisionTriangle *tri;
+    u16 type;
 
-    temp_v0 = D_800E1B50[omCurrentObj->objId];
-    if ((D_800E8920[omCurrentObj->objId] == 1) && (temp_a1 = (struct CollisionTriangle *) temp_v0->unk7C, (temp_a1 != NULL)) && ((temp_a2 = temp_a1->collisionType, (temp_a2 == 0x13)) || (temp_a2 == 0x12))) {
-        temp_t7 = temp_a1->collisionParameter;
-        var_f6 = temp_t7;
-        D_800E5510[omCurrentObj->objId] = var_f6 * 0.1f;
-        if (((struct CollisionTriangle *) temp_v0->unk7C)->collisionType == 0x12) {
-            temp_v0_2 = &D_800E5510[omCurrentObj->objId];
-            *temp_v0_2 *= -1.0f;
+    if ((D_800E8920[omCurrentObj->objId] == 1) && ((tri = rec->unk7C) != NULL) && (((type = tri->collisionType) == 0x13) || (type == 0x12))) {
+        D_800E5510[omCurrentObj->objId] = (u32) tri->collisionParameter * 0.1f;
+        if (rec->unk7C->collisionType == 0x12) {
+            D_800E5510[omCurrentObj->objId] *= -1.0f;
         }
     } else {
         D_800E5510[omCurrentObj->objId] = 0.0f;
     }
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl7/ovl7_3/func_801A3198_ovl7.s")
-#endif
 void func_801A3280_ovl7(void) {
     func_801A32A8_ovl7(omCurrentObj->objId);
 }
