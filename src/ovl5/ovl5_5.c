@@ -2354,50 +2354,6 @@ void func_80174328_ovl5(GObj *arg0) {
  * which a conversion writes out as `void func_80174624_ovl5(void) {}` after
  * this one, the way ovl5_2.c does for func_80160A70_ovl5. Not a padding trap
  * and not what blocks this site: measured with the stub, still 172 of 176. */
-#ifdef PORT
-/* Splash/dust effect at the racer of lane arg1: plays the effect model and
- * a one-shot animation at the racer's z (water level on stage 3, y=75
- * otherwise), doubles its scale for character kind 1, waits the animation
- * out and frees its own track. */
-void func_80174368_ovl5(GObj *arg0, s32 arg1) {
-    extern u32 D_80187CE8_ovl5[];
-    extern u32 D_80187CEC_ovl5[];
-    extern u32 D_80187CF0_ovl5[];
-    Vector2 kf;
-
-    D_800E98E0[omCurrentObj->objId] = arg1;
-    D_800DF150[omCurrentObj->objId] = func_80174328_ovl5;
-    setProcessMain(gEntityGObjProcessArray5[omCurrentObj->objId], func_801773C4_ovl5);
-    func_800A9864(D_80187CE8_ovl5[0], 0x1869F, 0x10);
-    func_800AA018(D_80187CEC_ovl5[0]);
-    if (D_80187CF0_ovl5[0] != 0) {
-        func_800AA018(D_80187CF0_ovl5[0]);
-    }
-    if (D_8018ECD8_ovl5 == 3) {
-        gEntitiesNextPosXArray[omCurrentObj->objId] = D_80187C94_ovl5[arg1];
-        gEntitiesNextPosYArray[omCurrentObj->objId] = 0.0f;
-        gEntitiesNextPosZArray[omCurrentObj->objId] = gEntitiesNextPosZArray[D_8018E458_ovl5[arg1]];
-    } else {
-        gEntitiesNextPosXArray[omCurrentObj->objId] = D_80187C94_ovl5[arg1];
-        gEntitiesNextPosYArray[omCurrentObj->objId] = 75.0f;
-        gEntitiesNextPosZArray[omCurrentObj->objId] = gEntitiesNextPosZArray[D_8018E458_ovl5[arg1]];
-    }
-    func_8016FF60_ovl5(&kf, arg1);
-    if (*(s32 *) &kf.x == 1) {
-        gEntitiesScaleXArray[omCurrentObj->objId] = 1.5f;
-        gEntitiesScaleYArray[omCurrentObj->objId] = 1.5f;
-        gEntitiesScaleZArray[omCurrentObj->objId] = 1.5f;
-    }
-    func_8016FF60_ovl5(&kf, arg1);
-    if (*(s32 *) &kf.x == 1) {
-        gEntitiesScaleXArray[omCurrentObj->objId] = 1.5f;
-        gEntitiesScaleYArray[omCurrentObj->objId] = 1.5f;
-        gEntitiesScaleZArray[omCurrentObj->objId] = 1.5f;
-    }
-    func_800AF27C();
-    func_800B1900((u16) omCurrentObj->objId);
-}
-#else
 void func_80174368_ovl5(GObj *arg0, s32 arg1) {
     extern s32 D_80187CE8_ovl5;
     extern s32 D_80187CEC_ovl5;
@@ -2445,7 +2401,6 @@ void func_80174368_ovl5(GObj *arg0, s32 arg1) {
 
 void func_80174624_ovl5(void) {
 }
-#endif
 
 /* FACTORY: 4/140 (4 words DIFFER -- measured with measure_seeds.py, which is
    the authority; the old note said 136/140 in the matched-count convention).

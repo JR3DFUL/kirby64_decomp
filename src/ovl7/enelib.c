@@ -1133,33 +1133,24 @@ f32 eneGetPlayerHeight(void) {
     return ret;
 }
 
-#ifdef PORT
-/* PORT: func_8019A900_ovl7 stores a whole 8-byte struct TrackPosition
- * through its pointer. The matching body below hands it &sp18 and relies on
- * the N64 frame placing sp1C right above it; gcc on LP64 neither orders nor
- * packs locals that way, so the unk4 store lands on the stack canary
- * (caught as "stack smashing detected" on the level's first enemy tick).
- * Same read, spelled with the real struct. */
-void func_8019B164_ovl7(void) {
-    struct TrackPosition sp18;
-
-    if (func_8019A900_ovl7(&sp18) != 0) {
-        D_800E6A10[omCurrentObj->objId] = sp18.unk0;
-    }
-    else if (random_soft_s32_range(2) != 0) {
-        D_800E6A10[omCurrentObj->objId] = 1.0f;
-    } else {
-        D_800E6A10[omCurrentObj->objId] = -1.0f;
-    }
-}
-#else
 void func_8019B164_ovl7(void) {
     // TODO: struct
+#ifdef PORT
+    /* func_8019A900_ovl7 stores a whole 8-byte struct TrackPosition; the N64
+     * frame lends it this s32 and the f32 above it, gcc neither orders nor
+     * packs locals that way (the unk4 store hit the stack canary). */
+    struct TrackPosition sp18;
+#else
     f32 sp1C;
     s32 sp18;
+#endif
 
     if (func_8019A900_ovl7(&sp18) != 0) {
+#ifdef PORT
+        D_800E6A10[omCurrentObj->objId] = sp18.unk0;
+#else
         D_800E6A10[omCurrentObj->objId] = sp18;
+#endif
     }
     else if (random_soft_s32_range(2) != 0) {
         D_800E6A10[omCurrentObj->objId] = 1.0f;
@@ -1167,7 +1158,6 @@ void func_8019B164_ovl7(void) {
         D_800E6A10[omCurrentObj->objId] = -1.0f;
     }
 }
-#endif
 
 s32 eneCheckAboveBelowPlayer(void) {
     return (gEntitiesNextPosYArray[omCurrentObj->objId] < (gEntitiesNextPosYArray[0] + 20.0f)) ? 1 : -1;
@@ -1233,58 +1223,54 @@ void func_8019B3C8_ovl7(Unused GObj *gobj) {
     D_800DE350[omCurrentObj->objId]->data.dobj->firstChild->angle.v.z = 0.0f;
 }
 
-#ifdef PORT
-/* PORT: same 4-byte-local landmine as func_8019B164_ovl7 above -- the
- * callee stores 8 bytes, the matching bodies lend it a lone s32 and count
- * on the N64 frame layout for the spill. Real struct locals instead. */
 void func_8019B424_ovl7(GObj *arg0) {
     EnemyRecord *sp24;
+#ifdef PORT
+    /* func_8019A900_ovl7 stores a whole 8-byte struct TrackPosition; the N64
+     * frame lends it this s32 and the f32 above it, gcc neither orders nor
+     * packs locals that way (the unk4 store hit the stack canary). */
     struct TrackPosition sp1C;
+#else
+    f32 sp20;
+    s32 sp1C;
+#endif
 
     sp24 = D_800E1B50[omCurrentObj->objId];
+#ifdef PORT
     if ((func_8019A900_ovl7(&sp1C) != 0) && (sp1C.unk0 != D_800E6A10[omCurrentObj->objId]) && (sp24->unk3C == 0)) {
+#else
+    if ((func_8019A900_ovl7(&sp1C) != 0) && (sp1C != D_800E6A10[omCurrentObj->objId]) && (sp24->unk3C == 0)) {
+#endif
         func_80199F1C_ovl7(arg0);
     }
 }
 
 void func_8019B4BC_ovl7(GObj *arg0) {
     EnemyRecord *sp24;
+#ifdef PORT
+    /* func_8019A900_ovl7 stores a whole 8-byte struct TrackPosition; the N64
+     * frame lends it this s32 and the f32 above it, gcc neither orders nor
+     * packs locals that way (the unk4 store hit the stack canary). */
     struct TrackPosition sp1C;
+#else
+    f32 sp20;
+    s32 sp1C;
+#endif
 
     sp24 = D_800E1B50[omCurrentObj->objId];
     if (func_8019A900_ovl7(&sp1C) == 0) {
+#ifdef PORT
         sp1C.unk0 = func_8019B608_ovl7(0);
     }
     if ((sp1C.unk0 != D_800E6A10[omCurrentObj->objId]) && (sp24->unk3C == 0)) {
-        func_80199F1C_ovl7(arg0);
-    }
-}
 #else
-void func_8019B424_ovl7(GObj *arg0) {
-    EnemyRecord *sp24;
-    f32 sp20;
-    s32 sp1C;
-
-    sp24 = D_800E1B50[omCurrentObj->objId];
-    if ((func_8019A900_ovl7(&sp1C) != 0) && (sp1C != D_800E6A10[omCurrentObj->objId]) && (sp24->unk3C == 0)) {
-        func_80199F1C_ovl7(arg0);
-    }
-}
-
-void func_8019B4BC_ovl7(GObj *arg0) {
-    EnemyRecord *sp24;
-    f32 sp20;
-    s32 sp1C;
-
-    sp24 = D_800E1B50[omCurrentObj->objId];
-    if (func_8019A900_ovl7(&sp1C) == 0) {
         sp1C = func_8019B608_ovl7(0);
     }
     if ((sp1C != D_800E6A10[omCurrentObj->objId]) && (sp24->unk3C == 0)) {
+#endif
         func_80199F1C_ovl7(arg0);
     }
 }
-#endif
 
 void func_8019B570_ovl7(Unused GObj *gobj) {
     func_800AFBB4(0, omCurrentObj);
@@ -1364,40 +1350,28 @@ void func_8019B7D8_ovl7(void) {
  *            tell: a draft whose call is scheduled far EARLIER than the ROM's,
  *            with stack stores that should precede it, is describing a sink,
  *            and the fix is usually to give the stores one name. */
+s32 func_8019B834_ovl7(void) {
+    Vector pos;
+    s32 pad;
 #ifdef PORT
-/* PORT: same 4-byte-local landmine as func_8019B164_ovl7 -- the spilled unk4
- * would corrupt the live position vector that func_800A4F48 reads. Real struct
- * local instead. */
-s32 func_8019B834_ovl7(void) {
-    Vector pos;
-    s32 pad;
-    struct TrackPosition sp1C;
-
-    pos.x = gEntitiesNextPosXArray[omCurrentObj->objId];
-    pos.y = gEntitiesNextPosYArray[omCurrentObj->objId];
-    pos.z = gEntitiesNextPosZArray[omCurrentObj->objId];
-    if ((func_8019A900_ovl7(&sp1C) != 0) && (sp1C.unk0 != D_800E6A10[omCurrentObj->objId]) &&
-        (func_800A4F48(D_800D799C->data.ptr, &pos, 1.075f, 1.075f) == 0)) {
-        return 1;
-    }
-    return 0;
-}
+    struct TrackPosition sp1C; /* the callee's 8-byte store would spill into pos */
 #else
-s32 func_8019B834_ovl7(void) {
-    Vector pos;
-    s32 pad;
     s32 sp1C;
+#endif
 
     pos.x = gEntitiesNextPosXArray[omCurrentObj->objId];
     pos.y = gEntitiesNextPosYArray[omCurrentObj->objId];
     pos.z = gEntitiesNextPosZArray[omCurrentObj->objId];
+#ifdef PORT
+    if ((func_8019A900_ovl7(&sp1C) != 0) && (sp1C.unk0 != D_800E6A10[omCurrentObj->objId]) &&
+#else
     if ((func_8019A900_ovl7(&sp1C) != 0) && (sp1C != D_800E6A10[omCurrentObj->objId]) &&
+#endif
         (func_800A4F48(D_800D799C->data.ptr, &pos, 1.075f, 1.075f) == 0)) {
         return 1;
     }
     return 0;
 }
-#endif
 s32 func_8019B918_ovl7(void) {
     Vector vec;
 

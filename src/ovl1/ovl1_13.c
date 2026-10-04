@@ -277,120 +277,6 @@ void draw_pause_bg(GObj *gobj) {
     }
 }
 
-#ifdef PORT
-/* The PAUSE screen process (draft above). Runs any pending per-track
- * pause callback from D_800D55BC (native void*[] cells, gen_data resolved
- * the function words to host symbols), picks the pause layout mode (0x21
- * boss rush -> 2, level kind 9 -> 1, else 0), spawns the four pause child
- * tracks mirroring that mode, fades in over the paused game, then polls
- * controller 0: C-up/C-down (0x0800/0x0400) move the CONTINUE/QUIT cursor
- * D_800E98E0, START or A (0x9000) commits. QUIT (cursor 1, not allowed in
- * mode 1) fades to black and stops the song; CONTINUE fades back and
- * unpauses. request_track_3 takes three args (ovl1_6.c definition); the
- * N64 fourth register was dead. */
-void func_800BCA5C(void) {
-    extern void *D_800D55BC[];
-    extern Controller_800D6FE8 gPlayerControllers[];
-    extern u32 gGameState;
-    extern f32 gameTicksPerDrawInv;
-    extern s32 D_800D6B6C;
-    extern s32 D_800BE4F8;
-    extern s32 D_800BE544;
-    void func_800AF9B8(s32, s32);
-    s32 func_800F8560(void);
-    void auSetBGMVolumeSmooth(s32, u32, u32);
-    void auStopSong(s32);
-    void func_80023884(void);
-    void func_80023794(void);
-    void func_800B1900(u16);
-    u32 objId = omCurrentObj->objId;
-    u32 cb = D_800EC2E0[objId].as_u32;
-    s32 mode;
-    s32 i;
-    u16 btn;
-
-    if (cb != 0) {
-        ((void (*)(void)) D_800D55BC[cb])();
-    }
-    if (gGameState == 0x21) {
-        mode = 2;
-    } else if (func_800F8560() == 9) {
-        mode = 1;
-    } else {
-        mode = 0;
-    }
-    D_800E9E20[objId] = mode;
-    for (i = 1; i != 5; i++) {
-        s32 tr = request_track_3(0x27, 0x3C, 0x50);
-
-        D_800EC2E0[tr].as_u32 = i;
-        D_800E9E20[tr] = mode;
-    }
-    func_800AF9B8(0x28, 0xE);
-    D_800E98E0[objId] = 0;
-    D_800E9C60[objId] = 0;
-    D_800E9AA0[objId] = NULL;
-    utilSetRectBoundsAndColor(0xA, 0xA, 0x136, 0xB6, 0xF0, 0xD8, 0xA0);
-    utilSpawnRect(0, 0x10, 0);
-    auSetBGMVolumeSmooth(0, 0x5000, 0x10);
-    func_80023884();
-    play_sound(0xED);
-    while (D_800D6B24 != 0) {
-        ohSleep(1);
-    }
-    D_800E9AA0[objId] = (struct EntityThing800E9AA0 *) 1;
-    utilSpawnRect(0xFF, -0x10, 0);
-    while (D_800D6B24 != 0) {
-        ohSleep(1);
-    }
-    ohSleep((s32) (3.0f * gameTicksPerDrawInv));
-    while (1) {
-        btn = gPlayerControllers[0].buttonPressed;
-        if (btn & 0x9000) {
-            break;
-        }
-        if (btn & 0x800) {
-            play_sound(0x113);
-            D_800E98E0[objId] = 0;
-            btn = gPlayerControllers[0].buttonPressed;
-        }
-        if (btn & 0x400) {
-            play_sound(0x113);
-            D_800E98E0[objId] = 1;
-        }
-        ohSleep(1);
-    }
-    play_sound(0xED);
-    if (D_800E98E0[objId] == 1 && D_800E9E20[objId] != 1) {
-        if (gGameState == 0x21) {
-            D_800D6B6C = 1;
-        }
-        D_800BE4F8 = 0;
-        utilSetRectColorFullScreen(0, 0, 0);
-        utilSpawnRect(0, 0x20, 2);
-        auSetBGMVolumeSmooth(0, 0, 8);
-        while (D_800D6B24 != 0) {
-            ohSleep(1);
-        }
-        auStopSong(0);
-    } else {
-        utilSpawnRect(0, 0x10, 0);
-        while (D_800D6B24 != 0) {
-            ohSleep(1);
-        }
-        D_800E9AA0[objId] = NULL;
-        D_800E9C60[objId] = 1;
-        auSetBGMVolumeSmooth(0, 0x7800, 0x10);
-        func_80023794();
-        utilSpawnRect(0xFF, -0x10, 0);
-        while (D_800D6B24 != 0) {
-            ohSleep(1);
-        }
-        D_800BE544 = 0x8000;
-    }
-    func_800B1900((u16) objId);
-}
-#else
 void func_800BCA5C(s32 arg0) {
     extern void (*D_800D55BC[])(s32);
     extern u16 gPlayerControllers[];
@@ -484,7 +370,6 @@ void func_800BCA5C(s32 arg0) {
     }
     func_800B1900((u16) omCurrentObj->objId);
 }
-#endif
 
 extern u32 D_800ED500[];
 SPObj *func_800AC954(GObj *, u32, void *);
@@ -822,50 +707,6 @@ void func_800BDD98(void) {
     D_800D6EB4 = D_800D6EB8 = D_800D6EBC = D_800F4D10 = D_800D6EC0 = 0;
 }
 
-#ifdef PORT
-/* HUD frame service: on first-dirty either clears the HUD arena rows to the
- * fill value (pause/transition path) or reloads the themed HUD texture bank,
- * then draws lives/health/stars. Row geometry from the ROM draft above: 42
- * rows of 0x280 bytes from D_800EDA10 (until &D_800F4324); per row two u16
- * at +0x14 and the span +0x18..+0x1B0 get the fill halfword at D_800EDA60.
- * Fixed counts here: the arena is one whole PC object (pc_bss_whole.c) and
- * D_800F4324 is a separate one, so the end-pointer compare cannot be used. */
-void func_800BDE0C(s32 arg0) {
-    extern u16 D_800EDA10[], D_800EDA60[];
-    extern s32 D_800F4D14, D_800F6198, D_800D6F50;
-    extern u32 D_800D52FC[];
-    extern void *D_800D6F58;
-
-    D_800D6F58 = (void *) &D_800ED510;
-    if (D_800F4D14 != 0) {
-        if (D_800F6198 != 0) {
-            u16 fill = D_800EDA60[0];
-            s32 r, off;
-
-            func_800A8934(0x50002, 0x10, 0, &D_800ED510);
-            for (r = 0; r < 42; r++) {
-                u8 *row = (u8 *) D_800EDA10 + r * 0x280;
-
-                *(u16 *) (row + 0x14) = fill;
-                *(u16 *) (row + 0x16) = fill;
-                for (off = 0x18; off < 0x1B0; off += 2) {
-                    *(u16 *) (row + off) = fill;
-                }
-            }
-        } else {
-            D_800D6F50 = 0;
-            func_800A8934(D_800D52FC[saveHUDTheme], 0x10, 0, &D_800ED510);
-            func_800BDB18();
-        }
-        D_800F4D14 = 0;
-    }
-    if (D_800F6198 != 0) {
-        func_800BDD68();
-        return;
-    }
-    func_800BDD08();
-}
-#else
 void func_800BDE0C(s32 arg0) {
     extern s32 D_800F4D14;
     extern s32 D_800F6198;
@@ -899,7 +740,6 @@ void func_800BDE0C(s32 arg0) {
     }
     func_800BDD08();
 }
-#endif
 
 // Draft, 4/35: `or $a1,$zero,$zero` (counter init) scheduled 3 slots early.
 // Split residue: for() fixes the ENTRY exactly but hoists the pointer bumps;
@@ -937,83 +777,6 @@ void func_800BE028(s32 *arg0, s32 arg1, u32 arg2) {
     }
 }
 
-#ifdef PORT
-/* PORT: in-level HUD init, from asm/nonmatchings/ovl1/ovl1_13/
- * func_800BE098.s. The N64 clears the ten 0x100-byte digit rows by walking
- * a pointer from D_800F4D70 to D_800F5770 (cross-symbol arithmetic that
- * does not survive this build's separate bss blocks); the compiled sibling
- * func_800BDF2C above already spells those rows as [10][0x40] u32 arrays,
- * so the same spelling is used here. The theme tables handed to
- * func_800BDFB8 are value-preserving u32 words (native reads are right)
- * and the D_800ED500 header's +8/+0xC words become truncated host pointers
- * into D_800ED510, exactly like every other <4GiB static on this build. */
-s32 func_800BE098(void) {
-    extern s32 D_800F4D18;
-    extern s32 D_800F4D20[];
-    extern s32 D_800F4D48[];
-    extern s32 D_800F6170[];
-    extern s32 D_800D6EC4;
-    extern s32 D_800F6198;
-    extern s32 D_800D6F3C;
-    s32 request_track_3(s32, s32, s32);
-    s32 func_800AEA64(s32, s32, s32);
-    void scSetPostProcessFunc(void (*)(void *));
-    s32 sp18;
-    s32 i;
-    s32 j;
-
-    D_800F4D18 = 2;
-    for (i = 0; i < 10; i++) {
-        D_800F6170[i] = 0;
-        D_800F4D48[i] = 0;
-        D_800F4D20[i] = 0;
-        for (j = 0; j < 0x40; j++) {
-            D_800F5770[i][j] = 0xFFFE7961;
-            D_800F4D70[i][j] = 0;
-        }
-    }
-    sp18 = request_track_3(0x26, 0x4A, 0x50);
-    if (func_800F8560() != 9) {
-        func_800BDFB8(D_800D5310, saveHUDTheme * 10, 8);
-    } else {
-        D_800D6E54 = 0;
-        D_800D6E90 = 0;
-        func_800BDFB8(D_800D5310, saveHUDTheme * 10, 10);
-    }
-    func_800BDFB8(D_800D53DC, saveHUDTheme * 2, 2);
-    func_800BDFB8(D_800D5408, saveHUDTheme * 2, 2);
-    func_800BDFB8(D_800D5434, saveHUDTheme * 2, 2);
-    func_800BDFB8(D_800D5460, saveHUDTheme * 10, 10);
-    func_800A8934(0x50001, 0, 0x10, &D_800ED500);
-    /* func_800A8934 dma-reads the raw big-endian header; decode the
-     * multi-byte fields once, the way func_800A8C40's PORT arm does for BG
-     * headers, THEN relocate the image/palette offsets onto D_800ED510
-     * (host pointer, truncated -- statics sit below 4 GiB). */
-    {
-        u8 *raw = (u8 *) D_800ED500;
-        u32 img = ((u32) raw[8] << 24) | ((u32) raw[9] << 16) |
-                  ((u32) raw[10] << 8) | raw[11];
-        u32 pal = ((u32) raw[12] << 24) | ((u32) raw[13] << 16) |
-                  ((u32) raw[14] << 8) | raw[15];
-
-        *(u16 *) (raw + 4) = (u16) ((raw[4] << 8) | raw[5]);
-        *(u16 *) (raw + 6) = (u16) ((raw[6] << 8) | raw[7]);
-        D_800ED500[2] = img + (u32) (uintptr_t) D_800ED510;
-        D_800ED500[3] = pal + (u32) (uintptr_t) D_800ED510;
-    }
-    D_800F6198 = 0;
-    D_800D6EC4 = 0;
-    if ((D_800D6F3C == 4) || (D_800D6F3C == 3)) {
-        D_800F6198 = 1;
-        sp18 = func_800AEA64(0x2D, 0x4A, 0x50);
-        D_800E98E0[sp18] = 0;
-    }
-    func_800BDF2C();
-    func_800BDE0C(0);
-    scSetPostProcessFunc((void (*)(void *)) func_800BDE0C);
-    return sp18;
-}
-#else
 s32 func_800BE098(void) {
     extern s32 D_800F4D18;
     extern s32 D_800F4D20[];
@@ -1054,8 +817,25 @@ s32 func_800BE098(void) {
     func_800BDFB8(D_800D5434, saveHUDTheme * 2, 2);
     func_800BDFB8(D_800D5460, saveHUDTheme * 0xA, 0xA);
     func_800A8934(0x50001, 0, 0x10, &D_800ED500);
+#ifdef PORT
+    {
+        /* func_800A8934 dma-reads the raw big-endian header: decode the
+         * multi-byte fields (u16 at 4/6, image/palette offsets at 8/12) the
+         * way func_800A8C40 does for BG headers, then relocate onto
+         * D_800ED510 (a truncated host pointer -- statics sit below 4 GiB). */
+        u8 *raw = (u8 *) D_800ED500;
+        u32 img = ((u32) raw[8] << 24) | ((u32) raw[9] << 16) | ((u32) raw[10] << 8) | raw[11];
+        u32 pal = ((u32) raw[12] << 24) | ((u32) raw[13] << 16) | ((u32) raw[14] << 8) | raw[15];
+
+        *(u16 *) (raw + 4) = (u16) ((raw[4] << 8) | raw[5]);
+        *(u16 *) (raw + 6) = (u16) ((raw[6] << 8) | raw[7]);
+        D_800ED500[2] = img + (u32) (uintptr_t) D_800ED510;
+        D_800ED500[3] = pal + (u32) (uintptr_t) D_800ED510;
+    }
+#else
     D_800ED500[2] = D_800ED500[2] + (u32) D_800ED510;
     D_800ED500[3] = D_800ED500[3] + (u32) D_800ED510;
+#endif
     D_800F6198 = 0;
     D_800D6EC4 = 0;
     if ((D_800D6F3C == 4) || (D_800D6F3C == 3)) {
@@ -1068,7 +848,6 @@ s32 func_800BE098(void) {
     scSetPostProcessFunc(func_800BDE0C);
     return sp18;
 }
-#endif
 
 /* HAND-WRITTEN ASSEMBLY FROM HERE: func_800BE320 and func_800BE374 are the
  * game's setjmp and longjmp, and they are NOT a decompilation target.  A

@@ -144,46 +144,6 @@ s32 func_800A8310(s32 arg0) {
     return D_800D7BB4 - arg0;
 }
 
-#ifdef PORT
-/* Same function through the 16-byte PORT header (CL() widens the 32-bit
- * link slots; pointer stores narrow with a cast). */
-void *func_800A8358(s32 arg0) {
-    s32 temp_v1;
-    struct CacheLine *var_a1;
-    u32 lim;
-    struct CacheLine *found;
-    struct CacheLine *temp_a2;
-
-    temp_v1 = arg0 & 3;
-    arg0 = ((arg0 - temp_v1) + 0xC) & ~0xF;
-    var_a1 = D_800D7BD0[temp_v1];
-    lim = arg0 + 0x10;
-loop_1:
-    if (var_a1->unkC != 0) {
-        goto advance;
-    }
-    if (var_a1->unk8 >= lim) {
-        goto block_found;
-    }
-advance:
-    var_a1 = CL(var_a1->unk4);
-    goto loop_1;
-block_found:
-    found = (struct CacheLine *)((u8 *)var_a1 + arg0);
-    temp_a2 = (struct CacheLine *)((u8 *)found + 0x10);
-    temp_a2->unk0 = (u32)(uintptr_t)var_a1;
-    temp_a2->unk4 = var_a1->unk4;
-    temp_a2->unkC = 0;
-    temp_a2->unk8 = (var_a1->unk8 - arg0) - 0x10;
-    var_a1->unk4 = (u32)(uintptr_t)temp_a2;
-    CL(temp_a2->unk4)->unk0 = (u32)(uintptr_t)temp_a2;
-    D_800D7BD0[temp_v1] = CL(CL(temp_a2->unk4)->unk0);
-    D_800D7BBC = var_a1;
-    var_a1->unk8 = arg0;
-    var_a1->unkC = 1;
-    return (u8 *)var_a1 + 0x10;
-}
-#else
 void *func_800A8358(s32 arg0) {
     s32 temp_v1;
     struct CacheLine *var_a1;
@@ -201,57 +161,38 @@ loop_1:
         goto block_found;
     }
 advance:
+#ifdef PORT
+    var_a1 = CL(var_a1->unk4);
+#else
     var_a1 = var_a1->unk4;
+#endif
     goto loop_1;
 block_found:
+    /* PORT: the u32 holds an arena address, lossless below 4 GiB (see struct CacheLine). */
     var_a2 = (u32)var_a1 + arg0 + 0x10;
+#ifdef PORT
+    ((struct CacheLine *)var_a2)->unk0 = (u32)(uintptr_t)var_a1;
+#else
     ((struct CacheLine *)var_a2)->unk0 = var_a1;
+#endif
     ((struct CacheLine *)var_a2)->unk4 = var_a1->unk4;
     ((struct CacheLine *)var_a2)->unk8 = (var_a1->unk8 - arg0) - 0x10;
     ((struct CacheLine *)var_a2)->unkC = 0;
+#ifdef PORT
+    /* The links are 32-bit slots; CL() widens them back. */
+    var_a1->unk4 = var_a2;
+    CL(((struct CacheLine *)var_a2)->unk4)->unk0 = var_a2;
+    D_800D7BD0[temp_v1] = CL(CL(((struct CacheLine *)var_a2)->unk4)->unk0);
+#else
     var_a1->unk4 = (struct CacheLine *)var_a2;
     ((struct CacheLine *)var_a2)->unk4->unk0 = (struct CacheLine *)var_a2;
     D_800D7BD0[temp_v1] = ((struct CacheLine *)var_a2)->unk4->unk0;
+#endif
     D_800D7BBC = var_a1;
     var_a1->unk8 = arg0;
     var_a1->unkC = 1;
     return (u8 *)var_a1 + 0x10;
 }
-#endif
-#ifdef PORT
-/* Region init through the 16-byte PORT header (see struct CacheLine): the
- * `-= 2` is two 0x10 headers, and the link fields hold 32-bit arena
- * pointers. */
-struct CacheLine *func_800A840C(u32 arg0, s32 arg1) {
-    struct CacheLine *sp1C;
-    struct CacheLine *temp_a3;
-    struct CacheLine *temp_v0_2;
-
-    if (D_800D7BD0[arg1 & 3] != NULL) {
-        return NULL;
-    }
-    if (arg0 < 0x40) {
-        return NULL;
-    }
-    sp1C = (struct CacheLine *)(uintptr_t)func_800A8310(arg0);
-    if (sp1C == NULL) {
-        return NULL;
-    }
-    D_800D7BD0[arg1] = sp1C;
-    temp_v0_2 = (struct CacheLine *)((u8 *)sp1C + arg0 - 0x20);
-    sp1C->unk0 = (u32)(uintptr_t)temp_v0_2;
-    sp1C->unk4 = (u32)(uintptr_t)temp_v0_2;
-    sp1C->unk8 = arg0 - 0x30;
-    sp1C->unkC = 0;
-    temp_v0_2->unk4 = (u32)(uintptr_t)sp1C;
-    temp_a3 = CL(sp1C->unk4);
-    temp_a3->unk0 = temp_a3->unk4;
-    CL(sp1C->unk4)->unk8 = 0x10;
-    CL(sp1C->unk4)->unkC = 0xFF000000;
-    memcpy((u8 *)CL(sp1C->unk4) + 0x10, D_800C4640, 0x10);
-    return sp1C;
-}
-#else
 struct CacheLine *func_800A840C(u32 arg0, s32 arg1) {
     struct CacheLine *sp1C;
     struct CacheLine *temp_a3;
@@ -270,6 +211,19 @@ struct CacheLine *func_800A840C(u32 arg0, s32 arg1) {
     D_800D7BD0[arg1] = sp1C;
     temp_v0_2 = (struct CacheLine *)((u8 *)sp1C + arg0);
     temp_v0_2 -= 2;
+#ifdef PORT
+    /* The links are 32-bit slots holding arena addresses; CL() widens them back. */
+    sp1C->unk0 = (u32)(uintptr_t)temp_v0_2;
+    sp1C->unk4 = (u32)(uintptr_t)temp_v0_2;
+    sp1C->unk8 = arg0 - 0x30;
+    sp1C->unkC = 0;
+    temp_v0_2->unk4 = (u32)(uintptr_t)sp1C;
+    temp_a3 = CL(sp1C->unk4);
+    temp_a3->unk0 = temp_a3->unk4;
+    CL(sp1C->unk4)->unk8 = 0x10;
+    CL(sp1C->unk4)->unkC = 0xFF000000;
+    memcpy((u8 *)CL(sp1C->unk4) + 0x10, D_800C4640, 0x10);
+#else
     sp1C->unk0 = temp_v0_2;
     sp1C->unk4 = temp_v0_2;
     sp1C->unk8 = arg0 - 0x30;
@@ -280,9 +234,9 @@ struct CacheLine *func_800A840C(u32 arg0, s32 arg1) {
     sp1C->unk4->unk8 = 0x10;
     sp1C->unk4->unkC = 0xFF000000;
     memcpy((u8 *)sp1C->unk4 + 0x10, D_800C4640, 0x10);
+#endif
     return sp1C;
 }
-#endif
 
 #ifdef NON_MATCHING
 // 4/10, one-slot temp rotation (t7/t8/t9 vs t6/t7/t8). Swept: 24 source forms
@@ -684,45 +638,6 @@ struct BGHeader *func_800A8BAC(u32 arg0) {
     return (*temp_v1)[idx];
 }
 
-#ifdef PORT
-/* The dma'd image blob is raw big-endian ROM data on the host. The N64 body
- * relocates imgOffset/palOffset with native word reads, which on the host adds
- * the base to a byte-swapped offset and hands the S2DEX bg path a wild image
- * pointer (measured: strncmp fault inside the renderer's signature probe).
- * Decode the multi-byte header fields once at load; the u8 fields (fmt, siz,
- * unk2) are single bytes and already correct. Texel/palette payload stays raw
- * -- N64 texture formats are byte streams and the renderer expects them. */
-struct BGHeader *func_800A8C40(u32 arg0) {
-    struct BGHeader ***temp_a2;
-    s32 idx;
-    u8 *raw;
-    struct BGHeader *h;
-
-    temp_a2 = &D_800D0104[arg0 >> 16];
-    idx = arg0 & 0xFFFF;
-    if ((*temp_a2)[idx] == NULL) {
-        (*temp_a2)[idx] = (struct BGHeader *)func_800A8B0C(arg0, 3);
-        h = (*temp_a2)[idx];
-        raw = (u8 *)h;
-        /* BGHeader (ovl1_3.h) is opaque in this TU; the layout is
-         * fmt/siz/unk2 u8 at 0..2, width u16 at 4, height u16 at 6,
-         * imgOffset u32 at 8, palOffset u32 at 12. */
-        (void)h;
-        *(u16 *)(raw + 4) = (u16)((raw[4] << 8) | raw[5]);
-        *(u16 *)(raw + 6) = (u16)((raw[6] << 8) | raw[7]);
-        *(u32 *)(raw + 8) = (((u32)raw[8] << 24) | ((u32)raw[9] << 16) | ((u32)raw[10] << 8) | raw[11])
-                            + (u32)(uintptr_t)raw;
-        *(u32 *)(raw + 12) = (((u32)raw[12] << 24) | ((u32)raw[13] << 16) | ((u32)raw[14] << 8) | raw[15])
-                             + (u32)(uintptr_t)raw;
-        {
-            extern void pc_bgload_debug(u32 id, const void *raw, const void *img, const void *pal);
-            pc_bgload_debug(arg0, raw, (void *)(uintptr_t)*(u32 *)(raw + 8),
-                            (void *)(uintptr_t)*(u32 *)(raw + 12));
-        }
-    }
-    return (*temp_a2)[idx];
-}
-#else
 struct BGHeader *func_800A8C40(u32 arg0) {
     struct BGHeader ***temp_a2;
     s32 idx;
@@ -733,12 +648,32 @@ struct BGHeader *func_800A8C40(u32 arg0) {
     if ((*temp_a2)[idx] == NULL) {
         (*temp_a2)[idx] = (struct BGHeader *)func_800A8B0C(arg0, 3);
         temp_v1 = (u32 *)(*temp_a2)[idx];
+#ifdef PORT
+        {
+            /* The dma'd image blob is raw big-endian ROM data on the host; the
+             * native word reads below would add the base to a byte-swapped
+             * offset and hand the S2DEX bg path a wild image pointer. Decode the
+             * multi-byte header fields (width/height u16 at 4/6, imgOffset/
+             * palOffset u32 at 8/12) once at load; the u8 fields at 0..2 and the
+             * texel/palette payload stay raw. */
+            u8 *raw = (u8 *)temp_v1;
+            extern void pc_bgload_debug(u32 id, const void *raw, const void *img, const void *pal);
+
+            *(u16 *)(raw + 4) = (u16)((raw[4] << 8) | raw[5]);
+            *(u16 *)(raw + 6) = (u16)((raw[6] << 8) | raw[7]);
+            temp_v1[2] = (((u32)raw[8] << 24) | ((u32)raw[9] << 16) | ((u32)raw[10] << 8) | raw[11])
+                         + (u32)(uintptr_t)temp_v1;
+            temp_v1[3] = (((u32)raw[12] << 24) | ((u32)raw[13] << 16) | ((u32)raw[14] << 8) | raw[15])
+                         + (u32)(uintptr_t)temp_v1;
+            pc_bgload_debug(arg0, raw, (void *)(uintptr_t)temp_v1[2], (void *)(uintptr_t)temp_v1[3]);
+        }
+#else
         temp_v1[2] = temp_v1[2] + (u32)temp_v1;
         temp_v1[3] = temp_v1[3] + (u32)temp_v1;
+#endif
     }
     return (*temp_a2)[idx];
 }
-#endif /* PORT */
 
 /* MATCHED. Two things had to be true at once, and every earlier sweep had one
  * of them.
@@ -2807,49 +2742,6 @@ void *func_800A9AA8(u32 arg0, s32 arg1) {
     return buf;
 }
 
-#ifdef PORT
-s32 func_800A9B48(s32 arg0) {
-    u32 *temp_v0;
-    GObj *temp_v1;
-    s32 temp_a2;
-    u32 *var_a0;
-    u32 temp_v0_2;
-
-    temp_v0 = func_800A94F4(arg0);
-#ifdef PORT
-    /* The PORT loader returns a WIDENED block (8-byte cells, see the
-     * func_800A94F4 PORT arm): the kind word that lived at byte +4 lives at
-     * byte +8 (low half of cell 1). */
-    temp_a2 = temp_v0[2];
-#else
-    temp_a2 = temp_v0[1];
-#endif
-    if (temp_a2 != 0) {
-        temp_v1 = omCurrentObj;
-        var_a0 = &D_800DF850[temp_v1->objId];
-        temp_v0_2 = *var_a0;
-        if (temp_v0_2 != -1) {
-            func_800A8578(temp_v0_2 | 2, temp_v0, temp_a2);
-            temp_v1 = omCurrentObj;
-            var_a0 = &D_800DF850[temp_v1->objId];
-        }
-        *var_a0 = (u32)temp_v0;
-        D_800E0110[temp_v1->objId] = arg0;
-    } else {
-        temp_v1 = omCurrentObj;
-        var_a0 = (u32 *)&D_800DF690[temp_v1->objId];
-        temp_v0_2 = *var_a0;
-        if (temp_v0_2 != -1) {
-            func_800A8578(temp_v0_2 | 2, temp_v0, temp_a2);
-            temp_v1 = omCurrentObj;
-            var_a0 = (u32 *)&D_800DF690[temp_v1->objId];
-        }
-        *var_a0 = (u32)temp_v0;
-        D_800DFF50[temp_v1->objId] = arg0;
-    }
-    return temp_a2;
-}
-#else
 s32 func_800A9B48(s32 arg0) {
     s32 temp_a2;
     s32 pad;
@@ -2872,7 +2764,6 @@ s32 func_800A9B48(s32 arg0) {
     }
     return temp_a2;
 }
-#endif
 s32 func_800A9C78(s32 arg0, s32 arg1) {
     s32 temp_a3;
     s32 pad;

@@ -1510,78 +1510,7 @@ void func_8015CF9C_ovl3(s32 arg0) {
  *     different operand kind and lands on the ROM's $f0/$f2 assignment.
  *     Same family as LEVER 3 (ABS vs ABSF).
  * pad0/pad1 are two dead words the ROM's frame reserves (0x28/0x2C of a
- * 0x30 frame, never written) -- LEVER 43; without them the frame is 0x28.
- *
- * The PORT arm below is kept only because this body stores GObj pointers
- * through the s32 arrays D_800EA520/D_801915B4/D_80194458, which truncate
- * under LP64. */
-#ifdef PORT
-/* PORT: service routine for the lobbed throw installed by func_8015CF9C_ovl3
- * above, from asm/nonmatchings/ovl3/plyshot/func_8015D3C8_ovl3.s. Before
- * impact (D_800E98E0==0) it pops off-screen, faces the walk direction,
- * pitches the model along its velocity (-atan2(vy,|vx|)), and while nothing
- * has been hit re-seats the trail effect block from position+angles and
- * steps the flight track; any contact (ground, hit record, shot collision
- * or off-parent flag) freezes the motion and raises D_800E98E0=1, waking
- * the sleeping init coroutine to run the burst. After impact it drives the
- * burst: scales anim D_801915B4 and ring row D_801943A8 by trail DObj [1]'s
- * scale.x and runs the impact hit record D_80194458. */
-void func_8015D3C8_ovl3(struct GObj *arg0) {
-    extern char D_80190C38_ovl3[];
-    extern s32 D_801915B4_ovl3[];
-    extern f32 D_801943A8_ovl3[][4];
-    extern f32 D_80198438_ovl3[];
-    extern s32 D_80194458_ovl3[];
-    s32 func_80152070_ovl3(f32 (*)[4], f32 (*)[4], u8, f32);
-    s32 id = omCurrentObj->objId;
-
-    if (D_800E98E0[id] != 0) {
-        f32 s = D_800DFBD0[id][1]->scale.v.x;
-
-        func_8016854C_ovl3((s32) (uintptr_t) D_801915B4_ovl3, 0, s);
-        func_80152070_ovl3(D_801943A8_ovl3, (f32 (*)[4]) D_80198438_ovl3, 0xB, s);
-        func_80155D50_ovl3(D_801982F8_ovl3[id - 4], (s32) (uintptr_t) D_80194458_ovl3, 0, id);
-        return;
-    }
-    if (func_800B3158() == 0) {
-        func_800A22D4(D_800EA520[id]);
-        func_800B1900((u16) id);
-        return;
-    }
-    gEntitiesAngleYArray[id] = D_800E17D0[id];
-    {
-        f32 h = D_800E64D0[id];
-
-        if (h < 0.0f) {
-            h = -h;
-        }
-        gEntitiesAngleXArray[id] = -atan2f(D_800E3210[id], h);
-    }
-    if ((D_800E6310[id] == 0) && (D_800E83E0[id] == 0)
-        && (func_8015550C_ovl3(D_80197F60_ovl3[id - 4], D_801982F8_ovl3[id - 4]) == 0)
-        && (D_800E8920[id] == 0)) {
-        struct PcPlyshotFx *fx = ((GObj *) (uintptr_t) (u32) D_800EA520[id])->unk4C;
-
-        fx->unk4 = gEntitiesNextPosXArray[id];
-        fx->unk8 = gEntitiesNextPosYArray[id];
-        fx->unkC = gEntitiesNextPosZArray[id];
-        fx->unk10 = gEntitiesAngleXArray[id];
-        fx->unk14 = gEntitiesAngleYArray[id];
-        fx->unk18 = gEntitiesAngleZArray[id];
-        func_80162150_ovl3();
-        func_80111C4C(func_801117BC(D_80190C38_ovl3, id));
-        return;
-    }
-    D_800E6690[id] = 0.0f;
-    D_800E64D0[id] = D_800E6690[id];
-    D_800E6850[id] = 65535.0f;
-    D_800E3750[id] = 0.0f;
-    D_800E3210[id] = D_800E3750[id];
-    D_800E3C90[id] = 65535.0f;
-    D_800E98E0[id] = 1;
-    func_800A22D4(D_800EA520[id]);
-}
-#else
+ * 0x30 frame, never written) -- LEVER 43; without them the frame is 0x28. */
 void func_8015D3C8_ovl3(struct GObj *arg0) {
     struct PlyshotFx { u32 kind; f32 unk4, unk8, unkC, unk10, unk14, unk18; };
     extern char D_80190C38_ovl3[];
@@ -1610,7 +1539,12 @@ void func_8015D3C8_ovl3(struct GObj *arg0) {
             && (func_8015550C_ovl3(D_80197F60_ovl3[omCurrentObj->objId - 4],
                                    D_801982F8_ovl3[omCurrentObj->objId - 4]) == 0)
             && (D_800E8920[omCurrentObj->objId] == 0)) {
+#ifdef PORT
+            /* the s32 cell holds a truncated host pointer: widen it unsigned */
+            o = (GObj *) (uintptr_t) (u32) D_800EA520[omCurrentObj->objId];
+#else
             o = (GObj *) D_800EA520[omCurrentObj->objId];
+#endif
             ((struct PlyshotFx *) o->unk4C)->unk4 = gEntitiesNextPosXArray[omCurrentObj->objId];
             ((struct PlyshotFx *) o->unk4C)->unk8 = gEntitiesNextPosYArray[omCurrentObj->objId];
             ((struct PlyshotFx *) o->unk4C)->unkC = gEntitiesNextPosZArray[omCurrentObj->objId];
@@ -1638,7 +1572,6 @@ void func_8015D3C8_ovl3(struct GObj *arg0) {
                        omCurrentObj->objId);
 }
 
-#endif
 
 #ifdef NON_MATCHING
 /* FACTORY: 36/273 -- swept 2026-08-24, down from 43/273, and the residue is

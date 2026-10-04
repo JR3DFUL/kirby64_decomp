@@ -2184,58 +2184,6 @@ void func_801E17E0_ovl16(s32 arg0) {
     }
 }
 
-#ifdef PORT
-/* Phase-7 entry: halt all motion, then if a punch is in flight (heading
- * D_800EA6E0 nonzero) collect a bitmask of the four fist DObjs still extended
- * past +/-10 units, command the retract (heading = -10), wait for the mask to
- * be cleared by the per-limb watchers, and play the per-round (D_800D7098.unk8)
- * recover anims. */
-void func_801E18BC_ovl16(s32 arg0) {
-    D_800DDFD0[omCurrentObj->objId] = 7;
-    D_800E3750[omCurrentObj->objId] = 0.0f;
-    D_800E3590[omCurrentObj->objId] = 0.0f;
-    D_800E3210[omCurrentObj->objId] = 0.0f;
-    D_800E3050[omCurrentObj->objId] = 0.0f;
-    D_800E3C90[omCurrentObj->objId] = 65535.0f;
-    D_800E3AD0[omCurrentObj->objId] = D_800E3C90[omCurrentObj->objId];
-    D_800E9E20[omCurrentObj->objId] = 0;
-    if (D_800EA6E0[omCurrentObj->objId] != 0.0f) {
-        if (D_800DFBD0[omCurrentObj->objId][5]->pos.v.y > 10.0f) {
-            D_800E9E20[omCurrentObj->objId] |= 1;
-        }
-        if (D_800DFBD0[omCurrentObj->objId][7]->pos.v.x > 10.0f) {
-            D_800E9E20[omCurrentObj->objId] |= 8;
-        }
-        if (D_800DFBD0[omCurrentObj->objId][9]->pos.v.y < -10.0f) {
-            D_800E9E20[omCurrentObj->objId] |= 2;
-        }
-        if (D_800DFBD0[omCurrentObj->objId][3]->pos.v.x < -10.0f) {
-            D_800E9E20[omCurrentObj->objId] |= 4;
-        }
-        D_800EA6E0[omCurrentObj->objId] = -10.0f;
-        play_sound(0x1AA);
-        while (D_800E9E20[omCurrentObj->objId] != 0) {
-            ohSleep(1);
-        }
-        switch (D_800D7098.unk8) {
-        case 0:
-            func_800AA018(0x1047D);
-            func_800AA154(0x1047C);
-            break;
-        case 1:
-            func_800AA018(0x10477);
-            func_800AA154(0x10476);
-            break;
-        case 2:
-            func_800AA018(0x10483);
-            func_800AA154(0x10482);
-            break;
-        }
-        D_800EA6E0[omCurrentObj->objId] = 0.0f;
-    }
-    gEntityFuncListIDArray[omCurrentObj->objId] = 7;
-}
-#else
 /* Phase-7 entry: halt all motion, then if a punch is in flight (heading
  * D_800EA6E0 nonzero) collect a bitmask of the four fist DObjs still extended
  * past +/-10 units, command the retract (heading = -10), wait for the mask to
@@ -2286,7 +2234,6 @@ void func_801E18BC_ovl16(s32 arg0) {
     }
     gEntityFuncListIDArray[omCurrentObj->objId] = 7;
 }
-#endif
 
 void func_801E1C1C_ovl16(s32 arg0) {
     extern s32 D_801D95C4;
@@ -3728,64 +3675,6 @@ void func_801E4754_ovl16(s32 arg0) {
 #pragma GLOBAL_ASM("asm/nonmatchings/ovl16/ovl16/func_801E4754_ovl16.s")
 #endif
 
-#ifdef PORT
-/* Phase-0x12 ram-attack drive tick: lean the body ([1].angle.z) with the
- * horizontal speed while charging (D_800E9FE0 set), clamp x to the +/-200
- * lane, and while ramming (D_800E9E20) clamp the leading edge instead of the
- * shared bounds helper; then the usual phase-4 anim/step dispatch. */
-void func_801E538C_ovl16(s32 arg0) {
-    struct DObj *d;
-
-    if ((D_800E9FE0[omCurrentObj->objId].as_u32 != 0) && (D_800E3050[omCurrentObj->objId] != 0.0f)) {
-        D_800EA6E0[omCurrentObj->objId] = -0.028571427f;
-    } else {
-        D_800EA6E0[omCurrentObj->objId] = 0.0f;
-    }
-    d = D_800DFBD0[omCurrentObj->objId][1];
-    d->angle.v.z += D_800E3050[omCurrentObj->objId] * D_800EA6E0[omCurrentObj->objId];
-    while (d->angle.v.z > 6.2831855f) {
-        d->angle.v.z -= 6.2831855f;
-    }
-    while (d->angle.v.z < -6.2831855f) {
-        d->angle.v.z += 6.2831855f;
-    }
-    if (gEntitiesNextPosXArray[omCurrentObj->objId] < -200.0f) {
-        gEntitiesNextPosXArray[omCurrentObj->objId] = -200.0f;
-    }
-    if (gEntitiesNextPosXArray[omCurrentObj->objId] > 200.0f) {
-        gEntitiesNextPosXArray[omCurrentObj->objId] = 200.0f;
-    }
-    D_800E8920[omCurrentObj->objId] = 0;
-    if (D_800E9E20[omCurrentObj->objId] != 0) {
-        if (D_800E3050[omCurrentObj->objId] < 0.0f) {
-            if (gEntitiesNextPosXArray[omCurrentObj->objId] < -200.0f) {
-                gEntitiesNextPosXArray[omCurrentObj->objId] = -200.0f;
-            }
-        } else if (gEntitiesNextPosXArray[omCurrentObj->objId] > 200.0f) {
-            gEntitiesNextPosXArray[omCurrentObj->objId] = 200.0f;
-        }
-        if (D_800E3210[omCurrentObj->objId] < 0.0f) {
-            if (gEntitiesNextPosYArray[omCurrentObj->objId] < 20.0f) {
-                gEntitiesNextPosYArray[omCurrentObj->objId] = 20.0f;
-            }
-        } else if (gEntitiesNextPosYArray[omCurrentObj->objId] > 260.0f) {
-            gEntitiesNextPosYArray[omCurrentObj->objId] = 260.0f;
-        }
-    } else {
-        func_801DB400_ovl16();
-    }
-    if (D_801F0120_ovl16[4] <= 0) {
-        D_800E1B50[omCurrentObj->objId]->unk8C = &D_801D9948;
-    } else {
-        D_800E1B50[omCurrentObj->objId]->unk8C = &D_801D9900;
-    }
-    if ((D_800D7098.unk18 != 0) || (D_801F0120_ovl16[4] <= 0)) {
-        func_801DC314_ovl16(0, 0, 0);
-    } else {
-        func_801DB698_ovl16(0);
-    }
-}
-#else
 /* Phase-0x12 ram-attack drive tick: lean the body ([1].angle.z) with the
  * horizontal speed while charging (D_800E9FE0 set), clamp x to the +/-200
  * lane, and while ramming (D_800E9E20) clamp the leading edge instead of the
@@ -3843,7 +3732,6 @@ void func_801E538C_ovl16(s32 arg0) {
         func_801DB698_ovl16(0);
     }
 }
-#endif
 
 void func_801E5734_ovl16(s32 arg0) {
     D_800DDFD0[omCurrentObj->objId] = 0x12;

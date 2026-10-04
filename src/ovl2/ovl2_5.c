@@ -613,6 +613,26 @@ struct UnkFunc800FEE6C_2 {
     u8 unk20;
 };
 
+#ifdef PORT
+/* The overlay names DObj fields by their N64 offsets; on LP64 the leading
+ * pointers widen, so the host view is laid at the host DObj's offsets:
+ * unk8/unkC/unk14 are next/prev/parent and unk84 is the truncated
+ * Ovl2Particle pointer func_800FF144 stores (read with a cast below). */
+#define OFS_DOBJ(f) __builtin_offsetof(DObj, f)
+struct UnkFunc800FEE6C {
+    u8 filler[OFS_DOBJ(next)];
+    struct UnkFunc800FEE6C *unk8;
+    void *unkC;
+    u8 filler1[OFS_DOBJ(parent) - OFS_DOBJ(prev) - sizeof(void *)];
+    uintptr_t unk14;
+    u8 filler2[OFS_DOBJ(unk84) - OFS_DOBJ(parent) - sizeof(void *)];
+    u32 unk84;
+};
+_Static_assert(__builtin_offsetof(struct UnkFunc800FEE6C, unkC) == OFS_DOBJ(prev), "prev");
+_Static_assert(__builtin_offsetof(struct UnkFunc800FEE6C, unk14) == OFS_DOBJ(parent), "parent");
+_Static_assert(__builtin_offsetof(struct UnkFunc800FEE6C, unk84) == OFS_DOBJ(unk84), "unk84");
+#undef OFS_DOBJ
+#else
 struct UnkFunc800FEE6C {
     u8 filler[0x8];
     struct UnkFunc800FEE6C *unk8;
@@ -622,45 +642,8 @@ struct UnkFunc800FEE6C {
     u8 filler2[0x84 - 0x18];
     struct UnkFunc800FEE6C_2 *unk84;
 };
+#endif
 
-#ifdef PORT
-/* PORT: same body through the REAL DObj/Ovl2Particle types. The N64-offset
- * overlay structs above shear on LP64 (their leading pointer fields widen),
- * so unk84/unk8/unkC/unk14 landed mid-field: the first particle DObj this
- * build ever created (Kirby's shadow, allocated by the now-ported
- * func_800FF2C8/func_8016BF60_ovl3 chain) crashed the render pass here.
- * unk84 is the truncated Ovl2Particle pointer func_800FF144 stores; unk8/
- * unkC/unk14 are DObj next/prev/parent. */
-void func_800FEE6C(DObj *arg0) {
-    s32 sp34;
-    void *phi_a2;
-    DObj *phi_s0;
-    u8 phi_v0;
-
-    sp34 = 0;
-    phi_v0 = ((struct Ovl2Particle *) (uintptr_t) arg0->unk84)->unk20;
-    if ((phi_v0 & 3) == 0) {
-        if ((phi_v0 & 8) != 0) {
-            phi_a2 = func_80104A08;
-        } else {
-            phi_a2 = func_80104958;
-        }
-        func_800FE154(arg0, &sp34, phi_a2);
-    }
-    if (sp34 != 0) {
-        if (((uintptr_t) arg0->parent == 1) || (arg0->next != NULL)) {
-            gSPPopMatrix(gDisplayListHeads[0]++, G_MTX_MODELVIEW);
-        }
-    }
-    if (arg0->prev == NULL) {
-        phi_s0 = arg0->next;
-        while (phi_s0 != NULL) {
-            func_800FEE6C(phi_s0);
-            phi_s0 = phi_s0->next;
-        }
-    }
-}
-#else
 void func_800FEE6C(struct UnkFunc800FEE6C *arg0) {
     s32 sp34;
     void *phi_a2;
@@ -668,7 +651,11 @@ void func_800FEE6C(struct UnkFunc800FEE6C *arg0) {
     u8 phi_v0;
 
     sp34 = 0;
+#ifdef PORT
+    phi_v0 = ((struct Ovl2Particle *) (uintptr_t) arg0->unk84)->unk20;
+#else
     phi_v0 = arg0->unk84->unk20;
+#endif
     if ((phi_v0 & 3) == 0) {
         if ((phi_v0 & 8) != 0) {
             phi_a2 = func_80104A08;
@@ -690,39 +677,41 @@ void func_800FEE6C(struct UnkFunc800FEE6C *arg0) {
         }
     }
 }
-#endif
 
+#ifdef PORT
+/* unk3C is the GObj's data.dobj; on LP64 0x3C lands inside the host GObj's
+ * process pointers, so the view is laid at the host offset. */
 struct UnkFunc800FEF44 {
-    u8 filler[0x3C];
+    u8 filler[__builtin_offsetof(GObj, data)];
     struct UnkFunc800FEE6C *unk3C;
 };
 
-#ifdef PORT
-/* PORT: the particle draw-list entry (gDrawFuncList slot). arg0->unk3C is
- * the GObj's data.dobj on the N64; the overlay struct's 0x3C offset lands
- * inside the host GObj's process pointers, so it is spelled through the
- * real GObj here.
- *
- * The two static setup lists this function branches to (D_801246C0 and
+/* The two static setup lists func_800FEF44 branches to (D_801246C0 and
  * D_80124708) are PACKED 8-byte N64 commands in the data emission, and
- * D_801246C0 additionally relies on falling through into D_801246F0 for
- * its EndDL -- neither survives the fork's 16-byte native Gfx stream (the
- * interpreter walked into the neighbouring vertex tables and spammed
- * "Unhandled OP 0x10"). Their handful of RDP state commands are emitted
- * inline instead. */
+ * D_801246C0 additionally falls through into D_801246F0 for its EndDL --
+ * neither survives the fork's 16-byte native Gfx stream (the interpreter
+ * walked into the neighbouring vertex tables and spammed "Unhandled OP
+ * 0x10"). Their handful of RDP state commands are emitted inline instead. */
 static void pc_dl_cmd(u32 w0, u32 w1) {
     Gfx *g = gDisplayListHeads[0]++;
 
     g->words.w0 = w0;
     g->words.w1 = w1;
 }
+#else
+struct UnkFunc800FEF44 {
+    u8 filler[0x3C];
+    struct UnkFunc800FEE6C *unk3C;
+};
+#endif
 
-void func_800FEF44(GObj *arg0) {
+void func_800FEF44(struct UnkFunc800FEF44 *arg0) {
     struct UnkD_8012B9AC sp3C;
 
-    if (arg0->data.dobj != NULL) {
+    if (arg0->unk3C != NULL) {
         D_8012B9AC = &sp3C;
         sp3C.unk30 = 0;
+#ifdef PORT
         /* D_801246C0 (+ fallthrough head of D_801246F0), minus EndDL */
         pc_dl_cmd(0xE7000000, 0x00000000);
         pc_dl_cmd(0xE3001001, 0x00000000);
@@ -732,32 +721,9 @@ void func_800FEF44(GObj *arg0) {
         pc_dl_cmd(0xF9000000, 0x0000000F);
         pc_dl_cmd(0xE2001E01, 0x00000001);
         pc_dl_cmd(0xD9DDFFFB, 0x00000000);
-        gDPSetTextureImage(gDisplayListHeads[0]++, G_IM_FMT_I, G_IM_SIZ_16b, 1, D_8012B99C);
-        gDPSetTile(gDisplayListHeads[0]++, G_IM_FMT_I, G_IM_SIZ_16b, 0, 0, 7, 0, G_TX_MIRROR | G_TX_WRAP, 5, 0,
-                   G_TX_MIRROR | G_TX_WRAP, 5, 0);
-        gDPLoadSync(gDisplayListHeads[0]++);
-        gDPLoadBlock(gDisplayListHeads[0]++, G_TX_LOADTILE, 0x000, 0x000, 0x1FF, 0x200);
-        gDPPipeSync(gDisplayListHeads[0]++);
-        gDPSetTile(gDisplayListHeads[0]++, G_IM_FMT_I, G_IM_SIZ_8b, 4, 0, 0, 0, G_TX_MIRROR | G_TX_WRAP, 5, 0,
-                   G_TX_MIRROR | G_TX_WRAP, 5, 0);
-        gDPSetTileSize(gDisplayListHeads[0]++, 0, 0 << 2, 0 << 2, (32 - 1) << 2, (32 - 1) << 2);
-        func_800FEE6C(arg0->data.dobj);
-        /* D_80124708, minus EndDL */
-        pc_dl_cmd(0xE7000000, 0x00000000);
-        pc_dl_cmd(0xE200001C, 0x00552078);
-        pc_dl_cmd(0xD7000000, 0x00000000);
-        pc_dl_cmd(0xE2001E01, 0x00000000);
-        pc_dl_cmd(0xD9FFFFFF, 0x00220004);
-    }
-}
 #else
-void func_800FEF44(struct UnkFunc800FEF44 *arg0) {
-    struct UnkD_8012B9AC sp3C;
-
-    if (arg0->unk3C != NULL) {
-        D_8012B9AC = &sp3C;
-        sp3C.unk30 = 0;
         gSPDisplayList(gDisplayListHeads[0]++, D_801246C0);
+#endif
         gDPSetTextureImage(gDisplayListHeads[0]++, G_IM_FMT_I, G_IM_SIZ_16b, 1, D_8012B99C);
         gDPSetTile(gDisplayListHeads[0]++, G_IM_FMT_I, G_IM_SIZ_16b, 0, 0, 7, 0, G_TX_MIRROR | G_TX_WRAP, 5, 0,
                    G_TX_MIRROR | G_TX_WRAP, 5, 0);
@@ -768,10 +734,18 @@ void func_800FEF44(struct UnkFunc800FEF44 *arg0) {
                    G_TX_MIRROR | G_TX_WRAP, 5, 0);
         gDPSetTileSize(gDisplayListHeads[0]++, 0, 0 << 2, 0 << 2, (32 - 1) << 2, (32 - 1) << 2);
         func_800FEE6C(arg0->unk3C);
+#ifdef PORT
+        /* D_80124708, minus EndDL */
+        pc_dl_cmd(0xE7000000, 0x00000000);
+        pc_dl_cmd(0xE200001C, 0x00552078);
+        pc_dl_cmd(0xD7000000, 0x00000000);
+        pc_dl_cmd(0xE2001E01, 0x00000000);
+        pc_dl_cmd(0xD9FFFFFF, 0x00220004);
+#else
         gSPDisplayList(gDisplayListHeads[0]++, D_80124708);
+#endif
     }
 }
-#endif
 
 void func_800FF0A8(struct Sub800E1B50_80 *arg0) {
     if (arg0 != NULL) {

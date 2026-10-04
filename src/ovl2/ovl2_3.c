@@ -345,19 +345,19 @@ void func_800F8A24(s32 arg0) {
     }
 }
 
-#ifdef PORT
-/* PORT: same body, but through the NATIVE node records func_800F78E4's PORT
- * arm builds (ovl2_2.c). TrackNodeHeader's LP64 layout does not match those
- * records (its unk8 pointer widens to 8 bytes and pushes unkC/unkE), so the
- * node accesses go through struct Unk80129114_4: the connection count is the
- * big-endian s16 the record keeps as its two raw bytes (unkC<<8|unkD), the
- * connection array pointer lives in the u32 unk8 slot (arena < 4 GiB), and
- * the footer is the native descriptor whose LP64 TrackFooter view is
- * asserted layout-identical in ovl2_2.c. */
 s32 func_800F8B1C(s32 arg0) {
     s32 *nodePtr;
     s32 cur;
+#ifdef PORT
+    /* TrackNodeHeader's LP64 layout does not match the NATIVE node records
+     * func_800F78E4's PORT arm builds (ovl2_2.c): walk them as struct
+     * Unk80129114_4 -- the link count is the big-endian s16 kept as two raw
+     * bytes, the connection array lives in the u32 links slot (arena < 4 GiB),
+     * and the footer's TrackFooter view is asserted layout-identical there. */
     struct Unk80129114_4 *node;
+#else
+    struct TrackNodeHeader *node;
+#endif
     s32 n;
     f32 *progressPtr;
     f32 progress;
@@ -369,112 +369,15 @@ s32 func_800F8B1C(s32 arg0) {
     f32 nextLen;
     f32 newProgress;
 
-    if (arg0 == 0) {
-        extern void pc_probe_hit(const char *);
-
-        pc_probe_hit("8B1C.obj0.call");
-    }
     nodePtr = &D_800E5F90[arg0];
     cur = *nodePtr;
+#ifdef PORT
     node = &D_80129114->unk4[cur];
     n = (s16)((node->linkCountHi << 8) | node->linkCountLo);
-    if (n == 0) {
-        /* PROBE: a node with no connectors at all. Nothing can hop off it and
-         * func_800F8A24 will pin the parameter at the end it ran past. */
-        if (arg0 == 0) {
-            extern void pc_probe_say(const char *, int, const char *, ...);
-
-            pc_probe_say("8B1C.nolinks", 4, "obj0 node=%d t=%.6f",
-                         (int)cur, (double)D_800E6BD0[arg0]);
-        }
-        return 0;
-    }
-    dir = 0;
-    progressPtr = &D_800E6BD0[arg0];
-    progress = *progressPtr;
-    idx = -1;
-    if (progress > 1.0f) {
-        dir = 1;
-    }
-    if (progress < 0.0f) {
-        dir = -1;
-    }
-    if (dir == 0) {
-        return 0;
-    }
-    conn = (struct TrackConnection *)(uintptr_t)node->links;
-    if (dir > 0) {
-        if ((n != 0) && (conn[n - 1].unk0 != 0)) {
-            idx = n - 1;
-        }
-    } else if (conn->unk0 == 0) {
-        idx = 0;
-    }
-    if (idx == -1) {
-        /* PROBE: the connector at the end the entity ran off does not point at
-         * the end point (dir>0 wants conn[n-1].unk0 != 0, dir<0 wants
-         * conn[0].unk0 == 0). Printing the operands says whether the records
-         * are being read correctly at all -- a byte-order or stride mistake in
-         * the native node array shows up here as nonsense. */
-        if (arg0 == 0) {
-            extern void pc_probe_say(const char *, int, const char *, ...);
-
-            pc_probe_say("8B1C.noexit", 4,
-                         "obj0 node=%d n=%d dir=%d t=%.6f conn=%p "
-                         "conn[0].unk0=%d conn[0].unk2=%d "
-                         "conn[n-1].unk0=%d conn[n-1].unk2=%d",
-                         (int)cur, (int)n, (int)dir, (double)progress,
-                         (void *)conn, (int)conn[0].unk0, (int)conn[0].unk2,
-                         (int)conn[n - 1].unk0, (int)conn[n - 1].unk2);
-        }
-        return 0;
-    }
-    len = ((struct TrackFooter *)node->footer)->length;
-    if (dir > 0) {
-        dist = (progress * len) - len;
-    } else {
-        dist = progress * len;
-    }
-    n = conn[idx].unk2;
-    node = &D_80129114->unk4[n];
-    nextLen = ((struct TrackFooter *)node->footer)->length;
-    if (dir > 0) {
-        newProgress = dist / nextLen;
-    } else {
-        newProgress = (nextLen + dist) / nextLen;
-    }
-    D_800E6150[arg0] = cur;
-    *nodePtr = n;
-    D_800E6D90[arg0] = newProgress;
-    *progressPtr = newProgress;
-    if (arg0 == 0) {
-        extern void pc_probe_say(const char *, int, const char *, ...);
-
-        pc_probe_say("8B1C.hop", 6, "obj0 node %d -> %d  t %.6f -> %.6f",
-                     (int)cur, (int)n, (double)progress, (double)newProgress);
-    }
-    return 1;
-}
 #else
-s32 func_800F8B1C(s32 arg0) {
-    s32 *nodePtr;
-    s32 cur;
-    struct TrackNodeHeader *node;
-    s32 n;
-    f32 *progressPtr;
-    f32 progress;
-    s32 dir;
-    s32 idx;
-    struct TrackConnection *conn;
-    f32 len;
-    f32 dist;
-    f32 nextLen;
-    f32 newProgress;
-
-    nodePtr = &D_800E5F90[arg0];
-    cur = *nodePtr;
     node = (struct TrackNodeHeader *) ((cur * 0x10) + (s32) D_80129114->unk4);
     n = node->linkCount;
+#endif
     if (n == 0) {
         return 0;
     }
@@ -491,7 +394,11 @@ s32 func_800F8B1C(s32 arg0) {
     if (dir == 0) {
         return 0;
     }
+#ifdef PORT
+    conn = (struct TrackConnection *)(uintptr_t)node->links;
+#else
     conn = node->links;
+#endif
     if (dir > 0) {
         if ((n != 0) && (conn[n - 1].unk0 != 0)) {
             idx = n - 1;
@@ -502,15 +409,24 @@ s32 func_800F8B1C(s32 arg0) {
     if (idx == -1) {
         return 0;
     }
+#ifdef PORT
+    len = ((struct TrackFooter *)node->footer)->length;
+#else
     len = node->footer->length;
+#endif
     if (dir > 0) {
         dist = (progress * len) - len;
     } else {
         dist = progress * len;
     }
     n = conn[idx].unk2;
+#ifdef PORT
+    node = &D_80129114->unk4[n];
+    nextLen = ((struct TrackFooter *)node->footer)->length;
+#else
     node = &((struct TrackNodeHeader *) D_80129114->unk4)[n];
     nextLen = node->footer->length;
+#endif
     if (dir > 0) {
         newProgress = dist / nextLen;
     } else {
@@ -522,7 +438,6 @@ s32 func_800F8B1C(s32 arg0) {
     *progressPtr = newProgress;
     return 1;
 }
-#endif /* PORT */
 
 #ifdef NON_MATCHING
 /* FACTORY: 29/127 words, FP register rotation only (stack, GPRs, schedule exact) */
@@ -1750,46 +1665,6 @@ void func_800FA5C0(s32 arg0, struct Ovl2CamState *arg1, struct Ovl2CamOut *arg2)
     arg2->focusY = arg2->focusY + arg1->heightOffset;
 }
 
-#ifdef PORT
-/* PORT: camera eye placement behind the target, from asm/nonmatchings/ovl2/
- * ovl2_3/func_800FA608.s. The N64 byte pokes become their host accesses:
- * the camera up vector is Camera.viewMtx.lookAt.up (N64 +0x54) and the
- * track tangent comes from the NATIVE node records (see func_800F8B1C).
- * Mode 0 aims along a fixed yaw, mode 1 along the track tangent rotated by
- * the node's yaw offset; anything else keeps the previous direction (the
- * ROM reads the uninitialized stack slot -- here `dir` simply stays
- * whatever the compiler left, matching that don't-care). */
-void func_800FA608(s32 arg0, struct Ovl2CamState *arg1, struct Ovl2CamOut *arg2) {
-    Camera *cam = D_800D799C->data.cam;
-    Vector dir;
-    Vector diff;
-    Vector axis;
-
-    dir.x = dir.y = dir.z = 0.0f;
-    switch (arg1->mode) {
-        case 0:
-            dir.x = cosf((arg1->yaw * 3.1415927f) / 180.0f);
-            dir.z = -sinf((arg1->yaw * 3.1415927f) / 180.0f);
-            dir.y = 0.0f;
-            break;
-        case 1:
-            func_8001E344(&dir, D_80129114->unk4[D_800E5F90[arg0]].footer,
-                          D_800E6BD0[arg0]);
-            dir.y = 0.0f;
-            lbvector_Normalize(&dir);
-            lbvector_Rotate(&dir, 2, (arg1->yaw * 3.1415927f) / 180.0f);
-            break;
-    }
-    lbvector_Scale(&dir, -arg1->eyeDistance);
-    lbvector_Add(&dir, (Vector *) &arg2->focusX);
-    lbvector_Diff(&diff, (Vector *) &arg2->focusX, &dir);
-    vec3_normalized_cross_product(&cam->viewMtx.lookAt.up, &diff, &axis);
-    func_800191F8(&diff, &axis, ((arg1->pitch - 90.0f) * 3.1415927f) / 180.0f);
-    arg2->rawEyeX = arg2->focusX - diff.x;
-    arg2->rawEyeY = arg2->focusY - diff.y;
-    arg2->rawEyeZ = arg2->focusZ - diff.z;
-}
-#else
 void func_800FA608(s32 arg0, struct Ovl2CamState *arg1, struct Ovl2CamOut *arg2) {
     DObj *dobj;
     s32 pad;
@@ -1797,9 +1672,15 @@ void func_800FA608(s32 arg0, struct Ovl2CamState *arg1, struct Ovl2CamOut *arg2)
     Vector axis;
     Vector diff;
     struct Unk80129114_4_4 *footer;
+#ifndef PORT
+    /* PORT: func_800F8E6C's PORT arm declares it at file scope with a void * parameter. */
     void func_8001E344(Vector *, struct Unk80129114_4_4 *, f32);
+#endif
 
     dobj = D_800D799C->data.dobj;
+#ifdef PORT
+    dir.x = dir.y = dir.z = 0.0f; /* the ROM reads stale stack for modes other than 0/1 */
+#endif
     switch (arg1->mode) {
     case 0:
         dir.x = cosf((arg1->yaw * 3.1415927f) / 180.0f);
@@ -1817,13 +1698,17 @@ void func_800FA608(s32 arg0, struct Ovl2CamState *arg1, struct Ovl2CamOut *arg2)
     lbvector_Scale(&dir, -arg1->eyeDistance);
     lbvector_Add(&dir, (Vector *) arg2);
     lbvector_Diff(&diff, (Vector *) arg2, &dir);
+#ifdef PORT
+    /* N64 +0x54 is the camera's up vector; reach it through the host Camera layout. */
+    vec3_normalized_cross_product(&((Camera *) dobj)->viewMtx.lookAt.up, &diff, &axis);
+#else
     vec3_normalized_cross_product((Vector *) ((s32) dobj + 0x54), &diff, &axis);
+#endif
     func_800191F8(&diff, &axis, ((arg1->pitch - 90.0f) * 3.1415927f) / 180.0f);
     arg2->rawEyeX = arg2->focusX - diff.x;
     arg2->rawEyeY = arg2->focusY - diff.y;
     arg2->rawEyeZ = arg2->focusZ - diff.z;
 }
-#endif
 
 void func_800FA7EC(UNUSED s32 arg0, struct Ovl2CamState *arg1, struct Ovl2CamOut *arg2) {
     f32 temp_f0;
@@ -2584,46 +2469,6 @@ void func_800FBA98() {
     func_800FA2D4(&D_801291B0, &D_801292B0);
 }
 
-#ifdef PORT
-/* Free-look camera step: snapshot the live cam state and output block
- * (D_80129150/D_80129270 saves; D_801292B0 is now a whole 0x3C-byte object,
- * see src/pc/pc_bss_whole.c), aim a scratch output D_80129330 at the
- * config's target raised by unk14, place the eye with the same yaw/pitch
- * math as func_800FA608's PORT arm, then run the standard smoothing/publish
- * pair and write the resolved eye/at fields back into the config. */
-void func_800FBBB8(void) {
-    extern struct Ovl2CamOut D_80129330;
-    Camera *cam = D_800D799C->data.cam;
-    Vector dir;
-    Vector diff;
-    Vector axis;
-
-    D_80129150 = D_80129210;
-    D_80129270 = D_801292B0;
-    D_80129330.focusX = D_801292B0.focusX;
-    D_80129330.focusZ = D_801292B0.focusZ;
-    D_80129330.focusY = D_801292B0.focusY + D_80129210.heightOffset;
-    dir.x = cosf((D_80129210.yaw * 3.1415927f) / 180.0f);
-    dir.z = -sinf((D_80129210.yaw * 3.1415927f) / 180.0f);
-    dir.y = 0.0f;
-    lbvector_Scale(&dir, -D_80129210.eyeDistance);
-    lbvector_Add(&dir, (Vector *) &D_80129330.focusX);
-    lbvector_Diff(&diff, (Vector *) &D_80129330.focusX, &dir);
-    vec3_normalized_cross_product(&cam->viewMtx.lookAt.up, &diff, &axis);
-    func_800191F8(&diff, &axis, ((D_80129210.pitch - 90.0f) * 3.1415927f) / 180.0f);
-    D_80129330.rawEyeX = D_80129330.focusX - diff.x;
-    D_80129330.rawEyeY = D_80129330.focusY - diff.y;
-    D_80129330.rawEyeZ = D_80129330.focusZ - diff.z;
-    func_800FA7EC(0, &D_80129210, &D_80129330);
-    func_800FA92C(0, &D_80129210, &D_80129330);
-    D_801292B0.atX = D_80129330.atX;
-    D_801292B0.atY = D_80129330.atY;
-    D_801292B0.atZ = D_80129330.atZ;
-    D_801292B0.eyeX = D_80129330.eyeX;
-    D_801292B0.eyeY = D_80129330.eyeY;
-    D_801292B0.eyeZ = D_80129330.eyeZ;
-}
-#else
 void func_800FBBB8(void) {
     DObj *dobj;
     Vector dir;
@@ -2643,7 +2488,12 @@ void func_800FBBB8(void) {
     lbvector_Scale(&dir, -D_80129210.eyeDistance);
     lbvector_Add(&dir, (Vector *) &D_80129330);
     lbvector_Diff(&diff, (Vector *) &D_80129330, &dir);
+#ifdef PORT
+    /* N64 +0x54 is the camera's up vector; reach it through the host Camera layout. */
+    vec3_normalized_cross_product(&((Camera *) dobj)->viewMtx.lookAt.up, &diff, &axis);
+#else
     vec3_normalized_cross_product((Vector *) ((s32) dobj + 0x54), &diff, &axis);
+#endif
     func_800191F8(&diff, &axis, ((D_80129210.pitch - 90.0f) * 3.1415927f) / 180.0f);
     D_80129330.rawEyeX = D_80129330.focusX - diff.x;
     D_80129330.rawEyeY = D_80129330.focusY - diff.y;
@@ -2657,7 +2507,6 @@ void func_800FBBB8(void) {
     D_801292B0.eyeY = D_80129330.eyeY;
     D_801292B0.eyeZ = D_80129330.eyeZ;
 }
-#endif
 
 
 void func_800FBDE8() {

@@ -710,124 +710,6 @@ void func_801DD588_ovl14(GObj *arg0) {
 
 }
 
-#ifdef PORT
-/* PORT: behavioural port of the listing.  Two things diverge from the N64 arm:
-   the generator/emitter node offsets (the host's 8-byte `next` pointer moves
-   the emitter pointer from +0x4C to +0x58 and the vectors from +0x4/+0x10 to
-   +0x8/+0x14 -- the LP64 view ovl1_2_2.c pins with pc_gennode_check), and
-   D_800EC4A0 is a 4-byte slot, so the handle is stored as the tree's
-   deliberately truncated sub-4GiB pointer.  The N64 code dereferences the
-   generator unchecked; this arm guards NULL. */
-struct PcOvl14Emitter {
-    struct PcOvl14Emitter *next;
-    Vector pos;
-    Vector angle;
-};
-
-struct PcOvl14Gen {
-    u8 pad0[0x58];
-    struct PcOvl14Emitter *xf;
-};
-
-struct PcOvl14Gen *func_800A8234(s32, s32, s32);
-
-void func_801DD590_ovl14(GObj *arg0) {
-    struct PcOvl14Gen *gen;
-    f32 spin;
-    s32 objId;
-
-    objId = omCurrentObj->objId;
-    D_800DDFD0[objId] = 2;
-    D_800D7098.unk10 = 1;
-    if (arg0->animTimer < 4.0f) {
-        spin = 8.0f;
-    } else if (arg0->animTimer < 8.0f) {
-        spin = 6.0f;
-    } else if (arg0->animTimer < 12.0f) {
-        spin = 4.0f;
-    } else if (arg0->animTimer < 16.0f) {
-        spin = 2.0f;
-    } else if (arg0->animTimer < 20.0f) {
-        spin = 16.0f;
-    } else if (arg0->animTimer < 24.0f) {
-        spin = 14.0f;
-    } else if (arg0->animTimer < 28.0f) {
-        spin = 12.0f;
-    } else {
-        spin = 10.0f;
-    }
-    func_801DF75C_ovl14(spin);
-    func_800AA018(0x1043D);
-    func_800AA018(0x1043E);
-    D_800E9AA0[omCurrentObj->objId] = 3;
-    D_800EA360[omCurrentObj->objId] = (s32) (uintptr_t) &D_801D9D80;
-    ohSleep(0x24);
-    play_sound(0x18A);
-    ohSleep(0xF);
-    gen = func_800A8234(6, 3, 6);
-    D_800EC4A0[omCurrentObj->objId] = (s32) (uintptr_t) gen;
-    if ((gen != NULL) && (gen->xf != NULL)) {
-        gen->xf->pos.x = gEntitiesNextPosXArray[omCurrentObj->objId] + (D_800E6A10[omCurrentObj->objId] * 90.0f);
-        gen->xf->pos.y = gEntitiesNextPosYArray[omCurrentObj->objId] + 170.0f;
-        gen->xf->pos.z = gEntitiesNextPosZArray[omCurrentObj->objId];
-        gen->xf->angle.x = gEntitiesAngleXArray[omCurrentObj->objId];
-        gen->xf->angle.y = gEntitiesAngleYArray[omCurrentObj->objId];
-        gen->xf->angle.z = gEntitiesAngleZArray[omCurrentObj->objId];
-    }
-    func_800AF27C();
-    func_800AA018(0x1043F);
-    func_800AA018(0x10440);
-    func_800AF27C();
-    if (arg0->animTimer < 2.0f) {
-        spin = 16.0f;
-    } else if (arg0->animTimer < 4.0f) {
-        spin = 12.0f;
-    } else if (arg0->animTimer < 6.0f) {
-        spin = 8.0f;
-    } else if (arg0->animTimer < 8.0f) {
-        spin = 4.0f;
-    } else if (arg0->animTimer < 10.0f) {
-        spin = 0.0f;
-    } else if (arg0->animTimer < 12.0f) {
-        spin = 28.0f;
-    } else if (arg0->animTimer < 14.0f) {
-        spin = 24.0f;
-    } else if (arg0->animTimer < 16.0f) {
-        spin = 20.0f;
-    } else if (arg0->animTimer < 18.0f) {
-        spin = 16.0f;
-    } else if (arg0->animTimer < 20.0f) {
-        spin = 12.0f;
-    } else if (arg0->animTimer < 22.0f) {
-        spin = 8.0f;
-    } else if (arg0->animTimer < 24.0f) {
-        spin = 4.0f;
-    } else if (arg0->animTimer < 26.0f) {
-        spin = 0.0f;
-    } else if (arg0->animTimer < 28.0f) {
-        spin = 28.0f;
-    } else if (arg0->animTimer < 30.0f) {
-        spin = 24.0f;
-    } else {
-        spin = 20.0f;
-    }
-    func_801DF580_ovl14(spin);
-    func_800AA018(0x10441);
-    func_800AA018(0x10442);
-    ((s32 *) D_800E9AA0)[omCurrentObj->objId] |= 8;
-    D_800EA360[omCurrentObj->objId] = (s32) (uintptr_t) &D_801D9CCC;
-    play_sound(0x18B);
-    func_800AF27C();
-    func_800AF27C();
-    func_800AF27C();
-    func_800AA018(0x10443);
-    func_800AA018(0x10444);
-    ohSleep(5);
-    ((s32 *) D_800E9AA0)[omCurrentObj->objId] &= ~8;
-    func_800AF27C();
-    gEntityFuncListIDArray[omCurrentObj->objId] = 1;
-}
-#else
 /* MATCHED.  Two spellings are load-bearing and both were paid for:
    - `gen->unk4C->pos.x` must be written
      `gEntitiesNextPosXArray[i] + (D_800E6A10[i] * 90.0f)`, NOT the other way
@@ -842,6 +724,23 @@ void func_801DD590_ovl14(GObj *arg0) {
      `x = x | 8`, `*(s32 *)&D_800E9AA0[i]`, `*((s32 *)D_800E9AA0 + i)`, a u32
      element type, an explicit `s32 *flags` local, declaration reorder) gives
      the identical $a1. */
+#ifdef PORT
+/* The host's 8-byte `next` pointer moves the emitter vectors from +0x4/+0x10
+ * to +0x8/+0x14 and the generator's emitter pointer from +0x4C to +0x58 --
+ * the LP64 view ovl1_2_2.c pins with pc_gennode_check. */
+struct Ovl14GenXform {
+    void *next;
+    Vector pos;
+    Vector angle;
+};
+
+struct Ovl14Generator {
+    u8 filler0[0x58];
+    struct Ovl14GenXform *unk4C;
+};
+
+struct Ovl14Generator *func_800A8234(s32, s32, s32);
+#else
 struct Ovl14GenXform {
     u8 filler0[4];
     Vector pos;
@@ -852,6 +751,7 @@ struct Ovl14Generator {
     u8 filler0[0x4C];
     struct Ovl14GenXform *unk4C;
 };
+#endif
 
 void func_801DD590_ovl14(GObj *arg0) {
     struct Ovl14Generator *gen;
@@ -884,9 +784,18 @@ void func_801DD590_ovl14(GObj *arg0) {
     ohSleep(0x24);
     play_sound(0x18A);
     ohSleep(0xF);
+#ifdef PORT
+    /* D_800EC4A0 is a 4-byte slot: it keeps the tree's truncated sub-4GiB
+     * pointer, and gen keeps the full one. The N64 dereferences the
+     * generator unchecked; guard NULL here. */
+    gen = func_800A8234(6, 3, 6);
+    D_800EC4A0[omCurrentObj->objId] = (s32) (uintptr_t) gen;
+    if ((gen != NULL) && (gen->unk4C != NULL)) {
+#else
     D_800EC4A0[omCurrentObj->objId] = func_800A8234(6, 3, 6);
     gen = (struct Ovl14Generator *) D_800EC4A0[omCurrentObj->objId];
     if (gen->unk4C != NULL) {
+#endif
         gen->unk4C->pos.x = gEntitiesNextPosXArray[omCurrentObj->objId] + (D_800E6A10[omCurrentObj->objId] * 90.0f);
         gen->unk4C->pos.y = gEntitiesNextPosYArray[omCurrentObj->objId] + 170.0f;
         gen->unk4C->pos.z = gEntitiesNextPosZArray[omCurrentObj->objId];
@@ -947,7 +856,6 @@ void func_801DD590_ovl14(GObj *arg0) {
     func_800AF27C();
     gEntityFuncListIDArray[omCurrentObj->objId] = 1;
 }
-#endif
 
 void func_801DDBD0_ovl14(GObj *arg0) {
 
