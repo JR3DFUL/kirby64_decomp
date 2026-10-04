@@ -693,38 +693,15 @@ void func_801DDAA0_ovl10(GObj *arg0) {
 extern s32 D_801F42F0_ovl10[];
 extern s32 random_soft_s32_range(s32);
 
-#ifdef NON_MATCHING
-/* structurally exact, 27 pure regalloc diffs (ROM keeps `temp` in $a1).
- * shapescan.py 2026-08-25: shape distance 0 -- aligndiff finds no
- * insert/delete/replace run that is not a register name, so the 27 is the
- * positional score lying about a whole-body rotation and not 27 defects.
- *
- * The rotation is in the three hoisted base addresses. ROM: $s0 =
- * D_800E9AA0, $s1 = &omCurrentObj, $s2 = D_801F42F0_ovl10. Here: $s0 =
- * D_801F42F0_ovl10, $s1 = D_800E9AA0, $s2 = &omCurrentObj -- which is
- * LAST-USE order (the array only the loop reads dies first and takes $s0),
- * while the ROM's is neither last-use nor first-use order. Every scratch
- * temp and both compare operand orders follow from it.
- *
- * Swept 2026-08-25, all 27 or worse: `temp == D_800E9AA0[...]` instead of
- * `D_800E9AA0[...] == temp` (27, the compare still comes out reversed, so
- * IDO is choosing the operand order and the source is not), and the
- * assignment-in-condition form `while (D_800E9AA0[...] == (temp = ...))`
- * (27). Both do/while forms are 47/48 -- the ROM's loop is a peeled `while`
- * and that half of the shape is settled. Permuter target. */
 void func_801DDAC8_ovl10(s32 arg0) {
-    s32 temp;
+    s32 r;
 
-    temp = D_801F42F0_ovl10[random_soft_s32_range(6)];
-    while (D_800E9AA0[omCurrentObj->objId].as_s32 == temp) {
-        temp = D_801F42F0_ovl10[random_soft_s32_range(6)];
+    r = random_soft_s32_range(6);
+    while (D_800E9AA0[omCurrentObj->objId].as_s32 == D_801F42F0_ovl10[r]) {
+        r = random_soft_s32_range(6);
     }
-    D_800E9AA0[omCurrentObj->objId].as_s32 = temp;
-    gEntityFuncListIDArray[omCurrentObj->objId] = temp;
+    gEntityFuncListIDArray[omCurrentObj->objId] = D_800E9AA0[omCurrentObj->objId].as_s32 = D_801F42F0_ovl10[r];
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl10/ovl10_1/func_801DDAC8_ovl10.s")
-#endif
 void func_800A1F30(void *);
 
 /* 49/204, all of them the same one-slot temp rotation: the ROM uses $a0 as a
@@ -2362,8 +2339,7 @@ void func_801E28A0_ovl10(void) {
 }
 
 #ifdef MIPS_TO_C
-/* FACTORY: 195/195 and 5 instructions short. Small gap; find the repeated load IDO is
- * merging, then the rest is register naming. */
+/* FACTORY: 102/195 words, ent in $v1 not $a2 (measured with the file-scope Ovl10AnimObj2/func_80111C88 decls moved above; in place the block-scope prototypes conflict with them) */
 
 /* Per-tick hitbox registration + hit poll for the boss.  Registers the
  * current frame's collision entry (optionally stamping arg0 as the attack
@@ -2375,11 +2351,11 @@ void func_801E28A0_ovl10(void) {
  * The registered CollSlot is a HOST slot: its last Shape28* sits at byte 48
  * (N64 0x24), and the anim id word at +8 inside the shape is native. */
 s32 func_801E28C8_ovl10(s32 arg0) {
-    struct Ovl10AnimObj2;
+    struct Ovl10AnimObj2 *func_80111C88(s32 *, u32);
+    void func_80111ECC(struct Ovl10AnimObj2 *);
     extern f32 D_800D6E5C;
 
-    struct EnemyRecord *ent;
-    struct Ovl10AnimObj2 *slot;
+    s32 pad1;
     struct {
         u8 unk0;
         u8 unk1;
@@ -2393,16 +2369,23 @@ s32 func_801E28C8_ovl10(s32 arg0) {
         f32 unk14;
         f32 unk18;
     } probe;
+    struct EnemyKindDesc *sp0;
+    struct EnemyRecord *ent;
+    s32 pad2;
+    struct Ovl10AnimObj2 *slot;
 
     ent = D_800E1B50[omCurrentObj->objId];
-    if (ent->unk88 == NULL) {
+    sp0 = ent->unk88;
+    if (sp0 == NULL) {
         return 0;
     }
     func_80111550(omCurrentObj->objId);
+    slot = func_80111C88(ent->unk8C, omCurrentObj->objId);
     if (slot != NULL) {
         if (arg0 != 0) {
-            *(s32 *) (*(u8 **) ((u8 *) slot + 48) + 8) = arg0;
+            *(s32 *) (*(u8 **) ((u8 *) slot + 0x24) + 8) = arg0;
         }
+        func_80111ECC(slot);
     }
     if (func_80110150(&probe) != 0) {
         D_800E83E0[omCurrentObj->objId] = probe.unk2;

@@ -2323,17 +2323,7 @@ s32 func_80155664_ovl3(void) {
 #endif
 
 #ifdef NON_MATCHING
-/* FACTORY: 22/88, register-allocation-cluster floor -- re-confirmed
-   2026-08-23, identical 22/88. Frame, stack layout, control flow and the
-   FP block are all exact. Residue is one register-allocation cluster: the
-   ROM puts the D_800E0490 element in $a1 and its ->[1] deref in $a0, which
-   frees $t8 and leaves every later objId temp one slot lower (t8/t9/t0/t1
-   vs t9/t0/t1/t2), plus a tail scheduling difference (the ROM hoists
-   `or $v1, zero, zero` above the branch and reorders the $ra reload
-   against the sp6C/D_800EA... check). Swept: p as a named local (in and
-   out of the 4-scalar block), obj hoisted vs omCurrentObj inline, ternary
-   vs if/else vs pre-initialised temp, all four tail shapes. Good permuter
-   seed. */
+/* FACTORY: 6/88 words, one-slot rotation (ROM rec in $a1, rec[1] in $a0; here $a0/$v1) */
 s32 func_801556D8_ovl3(f32 arg0) {
     s32 sp6C;
     GObj *obj;
@@ -2345,9 +2335,17 @@ s32 func_801556D8_ovl3(f32 arg0) {
     s32 d0;
     s32 d1;
     s32 d2;
+    f32 **rec;
+    f32 *fr;
 
     obj = omCurrentObj;
-    temp = (D_800E0490[obj->objId] != NULL) ? D_800E0490[obj->objId][1][0] : 0.0f;
+    rec = D_800E0490[obj->objId];
+    if (rec != NULL) {
+        fr = rec[1];
+        temp = fr[0];
+    } else {
+        temp = 0.0f;
+    }
     sp3C[2] = 0.0f;
     sp3C[0] = 0.0f;
     sp48[0] = gEntitiesNextPosXArray[obj->objId];
@@ -2360,10 +2358,10 @@ s32 func_801556D8_ovl3(f32 arg0) {
     sp6C = func_80103EA0(sp54, sp48, sp3C, 0, 0, 0, 0, 0);
     sp3C[1] = -1.0f;
     sp48[1] = sp54[1] - arg0;
-    if (func_80103EA0(sp54, sp48, sp3C, 0, 0, 0, 0, 0) != 0) {
+    d0 = func_80103EA0(sp54, sp48, sp3C, 0, 0, 0, 0, 0);
+    ret = 0;
+    if (d0 != 0) {
         ret = 1;
-    } else {
-        ret = 0;
     }
     if (sp6C != 0) {
         ret |= 2;
