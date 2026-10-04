@@ -1769,88 +1769,6 @@ void func_8015A31C_ovl3(s32 arg0) {
     }
 }
 
-#ifdef PORT
-/* PORT: level-entry drop-in coroutine (via m2c). Seats the player fresh
- * (no track callback, zeroed turn/inhale state, camera reset via
- * func_8011E234, tick rates from gameTicksPerDraw), then lands: in water,
- * tilt 15deg, sink at -0.4 for one animation beat, then surface-idle; on
- * land, tilt 22.5deg, fall at terminal 16 until the ground pass grounds
- * the entity, then play the landing pair. Arms the 30-frame door lockout
- * (D_800E9720) and signals the per-frame handler through unk30. */
-void func_8015A44C_ovl3(s32 arg0) {
-    s32 id;
-
-    gKirbyState.unk30 = 0;
-    D_800DDFD0[omCurrentObj->objId] = 0x45;
-    func_80157C5C_ovl3(arg0);
-    D_800DF310[omCurrentObj->objId] = NULL;
-    gEntitiesAngleXArray[omCurrentObj->objId] = 0.0f;
-    D_800D6F10 = 0;
-    gKirbyState.isTurning = 0;
-    gKirbyState.unk7 = 0;
-    gKirbyState.isInhaling = 0;
-    D_800E8060[omCurrentObj->objId] = -1;
-    gKirbyState.unk4 = 0;
-    gKirbyState.unkD = -3;
-    func_8011E234();
-    gKirbyState.unk7C = 0.0f;
-    gKirbyState.unk78 = -D_800E6A10[omCurrentObj->objId];
-    gKirbyState.unk80 = 0.0f;
-    func_800AECC0(gameTicksPerDraw);
-    func_800AED20(gameTicksPerDraw);
-    id = omCurrentObj->objId;
-    if (D_800E8AE0[id] & 6) {
-        D_800EA6E0[id] = 0.2617994f;
-        D_800E6690[id] = 0.0f;
-        D_800E64D0[id] = 0.0f;
-        D_800E6850[id] = 65535.0f;
-        D_800E3750[id] = -0.4f;
-        D_800E3C90[id] = 1.0f;
-        if (gKirbyState.previousAction == 0x1B) {
-            func_800AA78C(0x20089, 0x20007, 6.0f);
-        }
-        func_801230E8(0x20089, 0x2008A, 0);
-        while (gKirbyState.unk14 == 1) {
-            ohSleep(1);
-        }
-        id = omCurrentObj->objId;
-        D_800E3750[id] = 0.0f;
-        D_800E3210[id] = 0.0f;
-        D_800E3C90[id] = 65535.0f;
-        func_800AA78C(0x200A7, 0x20007, 6.0f);
-        func_801230E8(0x200A7, 0x200A8, 1);
-        func_801230E8(0x200A9, 0x200AA, 0);
-    } else {
-        D_800EA6E0[id] = 0.3926991f;
-        D_800E6690[id] = 0.0f;
-        D_800E64D0[id] = 0.0f;
-        D_800E6850[id] = 65535.0f;
-        if (D_800E8920[id] == 0) {
-            D_800E3750[id] = -0.980665f;
-            D_800E3C90[id] = 16.0f;
-            func_800AA78C(0x20089, 0x20007, 3.0f);
-            func_801230E8(0x20089, 0x2008A, 0);
-            while (D_800E8920[omCurrentObj->objId] == 0) {
-                ohSleep(1);
-            }
-        }
-        func_80122B40();
-        func_801230E8(0x200B5, 0x200B6, 1);
-        if (gKirbyState.unk14 != 2) {
-            func_801230E8(0x2009B, 0x2009C, 0);
-            while (gKirbyState.unk14 == 1) {
-                ohSleep(1);
-            }
-        }
-        func_800AA78C(0x200A3, 0x20007, 6.0f);
-        func_801230E8(0x200A3, 0x200A4, 1);
-        func_801230E8(0x200A5, 0x200A6, 0);
-    }
-    D_800E9720[omCurrentObj->objId] = 0x1E;
-    gKirbyState.unk30 += 1;
-    curObjSleepForever();
-}
-#else
 void func_8015A44C_ovl3(s32 arg0) {
     gKirbyState.unk30 = 0;
     D_800DDFD0[omCurrentObj->objId] = 0x45;
@@ -1919,7 +1837,6 @@ void func_8015A44C_ovl3(s32 arg0) {
     gKirbyState.unk30 += 1;
     curObjSleepForever();
 }
-#endif
 
 void func_8015A92C_ovl3(s32 arg0) {
     if (!(D_800E8AE0[omCurrentObj->objId] & 6)) {

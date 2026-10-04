@@ -693,59 +693,14 @@ void func_801F0DD0_ovl10(struct GObj *arg0) {
     func_800FF200(D_800EA520[omCurrentObj->objId]);
 }
 
-#ifdef PORT
-/* Roulette hit poll: distance from Kirby's dive body (D_800DE350[0] node) to
- * every live wheel item in the D_801F4D68 slot registry (contiguous s32[7]
- * run); returns the nearest slot when it is within 34 units, else 8.
- * The ROM left the distance of an empty slot as stack garbage and relied on
- * the slot-occupied guards; the PC build seeds them with 65535 so an empty
- * slot can never win the compare chain or pass the 34-unit gate. */
-s32 func_801F0EC8_ovl10(GObj *arg0) {
-    Vector kirby;
-    Vector item;
-    f32 dist[7];
-    f32 best;
-    f32 dx;
-    f32 dy;
-    f32 dz;
-    s32 i;
-    s32 bestSlot;
-
-    for (i = 0; i < 7; i++) {
-        dist[i] = 65535.0f;
-        if (D_801F4D68_ovl10[i] != 0) {
-            func_800B2340(&kirby, D_800DE350[0]->data.dobj, 0);
-            func_800B2340(&item, D_800DE350[D_801F4D68_ovl10[i]]->data.dobj, D_801F4D68_ovl10[i]);
-            dx = item.x - kirby.x;
-            dy = item.y - kirby.y;
-            dz = item.z - kirby.z;
-            dist[i] = sqrtf((dx * dx) + (dy * dy) + (dz * dz));
-        }
-    }
-    bestSlot = 0;
-    if ((D_801F4D68_ovl10[1] != 0) && (dist[1] < dist[0])) {
-        bestSlot = 1;
-    }
-    if ((D_801F4D68_ovl10[2] != 0) && (dist[2] < dist[bestSlot])) {
-        bestSlot = 2;
-    }
-    best = dist[bestSlot];
-    for (i = 3; i < 7; i++) {
-        if ((D_801F4D68_ovl10[i] != 0) && (dist[i] < best)) {
-            bestSlot = i;
-            best = dist[i];
-        }
-    }
-    return (best < 34.0f) ? bestSlot : 8;
-}
-#else
 /* Roulette hit poll: distance from Kirby's dive body (D_800DE350[0] node) to
  * every live wheel item in the D_801F4D68 slot registry (contiguous s32[7]
  * run); returns the nearest slot when it is within 34 units, else 8.
  * An empty slot's dist[] entry is deliberately left uninitialised, exactly as the
  * ROM does -- the slot-occupied guards are what keep it out of the compare chain.
- * (The PORT arm seeds those entries with 65535; that is a host-side hardening and
- * must NOT be carried into the N64 draft.) */
+ * (The PORT build seeds those entries with 65535 so an empty slot can never win
+ * the compare chain or pass the 34-unit gate; that host-side hardening must NOT
+ * be carried into the N64 code.) */
 s32 func_801F0EC8_ovl10(GObj *arg0) {
     f32 dist[7];
     s32 slot;
@@ -756,6 +711,9 @@ s32 func_801F0EC8_ovl10(GObj *arg0) {
     f32 best;
 
     for (i = 0; i < 7; i++) {
+#ifdef PORT
+        dist[i] = 65535.0f;
+#endif
         if (D_801F4D68_ovl10[i] != 0) {
             func_800B2340(&kirby, D_800DE350[0]->data.dobj, 0);
             slot = D_801F4D68_ovl10[i];
@@ -775,7 +733,6 @@ s32 func_801F0EC8_ovl10(GObj *arg0) {
     }
     return 8;
 }
-#endif
 
 extern u8 D_800D6C10;
 extern u8 D_800D6C11[];
@@ -807,69 +764,7 @@ s32 func_801F111C_ovl10(void) {
  * 100.0f and 2.0f. */
 #ifdef PORT
 #include "unk_structs/D_800D79D8.h"
-extern u32 D_801F4670_ovl10[];
-
-/* Prize-wheel object main: claims the wheel track id (D_801F4D60), drops
- * its sparkle, spawns the three walking prizes (states 0..2, mount 1..3 via
- * D_800E9AA0), moves onto DL bucket 0x14, runs the intro camera spline
- * D_801F4670 on camera 0x10 and records the spline's end eye position into
- * D_801F4D88 (f32 x/y/z, 4-byte stride) as the crowd focus point, spawns
- * the wheel items (states 6..0xC; the file-complete bonus slot 0xC only
- * when func_801F111C says the save file still has room), then keeps
- * stepping the camera; once Kirby's controller reaches phase 5
- * (D_800E9C60[0]) it just idles the camera forever.
- * 0x42C80000 / 0x40000000 passed to the f32 camera params are float bits:
- * 100.0f and 2.0f. */
-void func_801F11A8_ovl10(GObj *arg0) {
-    struct EnemyRecord *ent;
-    s32 i;
-    s32 t;
-
-    D_801F4D60_ovl10 = omCurrentObj->objId;
-    D_800DF150[omCurrentObj->objId] = func_801F1454_ovl10;
-    ent = D_800E1B50[omCurrentObj->objId];
-    D_800DEF90[omCurrentObj->objId] = func_800B4954;
-    func_800FF1CC(ent->unk80);
-    ent->unk80 = NULL;
-    gEntitiesScaleXArray[omCurrentObj->objId] = 1.3f;
-    gEntitiesScaleYArray[omCurrentObj->objId] = 1.0f;
-    gEntitiesScaleZArray[omCurrentObj->objId] = 1.3f;
-    gEntitiesNextPosYArray[omCurrentObj->objId] = 0.0f;
-    func_800AF7A0(0x2C);
-    for (i = 0; i < 3; i++) {
-        t = request_track_general(0x29, 0x1E, 0x50);
-        D_800E98E0[t] = i;
-        D_800E9AA0[t].as_s32 = i + 1;
-    }
-    omGMoveObjDL(arg0, arg0->dl_link, 0x14);
-    func_800FA414(1);
-    func_800B2F54(0x10, D_801F4670_ovl10, 100.0f);
-    func_800A71A0(0x10);
-    D_801F4D88_ovl10[0] = func_800A6F40(0x10)->unk3C;
-    D_801F4D88_ovl10[1] = func_800A6F40(0x10)->unk40;
-    D_801F4D88_ovl10[2] = func_800A6F40(0x10)->unk44;
-    func_800B2F54(0x10, D_801F4670_ovl10, 0.0f);
-    func_800B3070(0x10, 2.0f);
-    func_800A71A0(0x10);
-    ohSleep(1);
-    for (i = 6; i < 0xD; i++) {
-        if ((i != 0xC) || (func_801F111C_ovl10() == 0)) {
-            D_800E98E0[request_track_general(0x29, 0x1E, 0x50)] = i;
-        }
-    }
-    for (i = 0; i != 0x23; i++) {
-        func_800A71A0(0x10);
-        ohSleep(1);
-    }
-    while (D_800E9C60[0] != 5) {
-        ohSleep(1);
-    }
-    while (1) {
-        func_800A71A0(0x10);
-        ohSleep(1);
-    }
-}
-#else
+#endif
 void func_801F11A8_ovl10(GObj *arg0) {
     extern u32 D_801F4670_ovl10[];
     extern u32 D_801F4D60_ovl10;
@@ -899,9 +794,17 @@ void func_801F11A8_ovl10(GObj *arg0) {
     func_800FA414(1);
     func_800B2F54(0x10, D_801F4670_ovl10, 100.0f);
     func_800A71A0(0x10);
+#ifdef PORT
+    /* camera eye: N64 +0x3C, but the LP64 Camera moved it (pointers ahead
+     * of it grew) -- unk_structs/D_800D79D8.h pads it onto the host offset */
+    D_801F4D88_ovl10[0] = func_800A6F40(0x10)->unk3C;
+    D_801F4D88_ovl10[1] = func_800A6F40(0x10)->unk40;
+    D_801F4D88_ovl10[2] = func_800A6F40(0x10)->unk44;
+#else
     D_801F4D88_ovl10[0] = ((f32 *) func_800A6F40(0x10))[15];
     D_801F4D88_ovl10[1] = ((f32 *) func_800A6F40(0x10))[16];
     D_801F4D88_ovl10[2] = ((f32 *) func_800A6F40(0x10))[17];
+#endif
     func_800B2F54(0x10, D_801F4670_ovl10, 0.0f);
     func_800B3070(0x10, 2.0f);
     func_800A71A0(0x10);
@@ -923,7 +826,6 @@ void func_801F11A8_ovl10(GObj *arg0) {
         ohSleep(1);
     }
 }
-#endif
 
 /* 1/64.  Was 11/64 with the three constants as `extern f32`; this TU's rodata
    is MIGRATED, and writing them as literals fixed the load scheduling that the
@@ -982,40 +884,6 @@ void func_801F1454_ovl10(struct GObj *arg0)
   }
 
 }
-#ifdef PORT
-extern u32 D_801F4D60_ovl10;
-
-/* Snaps this track's position and angles onto mount node 1/2/3 of the
- * D_801F4D60 wheel object, picked by arg1 (0..2); other values are a no-op.
- * D_800DFBD0 rows are native DObj** on the PC build. */
-void func_801F1554_ovl10(GObj *arg0, s32 arg1) {
-    Vector pos;
-    Vector ang;
-    struct DObj *node;
-
-    switch (arg1) {
-    case 0:
-        node = D_800DFBD0[D_801F4D60_ovl10][1];
-        break;
-    case 1:
-        node = D_800DFBD0[D_801F4D60_ovl10][2];
-        break;
-    case 2:
-        node = D_800DFBD0[D_801F4D60_ovl10][3];
-        break;
-    default:
-        return;
-    }
-    func_800B2340(&pos, node, D_801F4D60_ovl10);
-    gEntitiesNextPosXArray[omCurrentObj->objId] = pos.x;
-    gEntitiesNextPosYArray[omCurrentObj->objId] = pos.y;
-    gEntitiesNextPosZArray[omCurrentObj->objId] = pos.z;
-    func_800B26D8(&ang, node, D_801F4D60_ovl10);
-    gEntitiesAngleXArray[omCurrentObj->objId] = ang.x;
-    gEntitiesAngleYArray[omCurrentObj->objId] = ang.y;
-    gEntitiesAngleZArray[omCurrentObj->objId] = ang.z;
-}
-#else
 /* Snaps this track's position and angles onto mount node 1/2/3 of the
  * D_801F4D60 wheel object, picked by arg1 (0..2); other values are a no-op. */
 void func_801F1554_ovl10(GObj *arg0, s32 arg1) {
@@ -1056,7 +924,6 @@ void func_801F1554_ovl10(GObj *arg0, s32 arg1) {
         break;
     }
 }
-#endif
 
 extern s32 D_800D6B98;
 extern s32 D_800D6B9C;
@@ -1110,60 +977,6 @@ s32 func_801F19DC_ovl10(s32 arg0, s32 arg1) {
     return D_800D6BE0[arg0 * 6 + arg1] & 3;
 }
 
-#ifdef PORT
-extern u32 D_801F48F4_ovl10[];
-extern u32 D_801F4818_ovl10[];
-extern u32 D_801F4884_ovl10[];
-extern u32 D_801F48BC_ovl10[];
-extern u32 D_801F48D8_ovl10[];
-
-/* Wheel-item setup for the walking prizes (arg2 = 1 waddle dee, 2 adeleine,
- * 3 king dedede; other kinds skip the model swap): stops the track's music
- * cue when the prize kind is locked out (func_801F1934), loads the model +
- * path table, spawns the escort track (state 3/4/5), plays one of the two
- * D_801F4818[arg2] anim pairs at random, scales to 0.2, snaps onto wheel
- * mount arg1, and attaches the sparkle particle. */
-void func_801F1A24_ovl10(GObj *arg0, s32 arg1, s32 arg2) {
-    s32 r;
-    s32 second;
-    void *particle;
-
-    if (func_801F1934_ovl10(arg2) == 0) {
-        func_800B1900((u16) omCurrentObj->objId);
-    }
-    switch (arg2) {
-    case 1:
-        func_800A9864(D_801F48F4_ovl10[arg2], 0x2C, 0x10);
-        D_800E0490[omCurrentObj->objId] = (f32 **) D_801F4884_ovl10;
-        D_800E98E0[request_track_general(0x29, 0x1E, 0x50)] = 3;
-        break;
-    case 2:
-        func_800A9864(D_801F48F4_ovl10[arg2], 0x2C, 0x10);
-        D_800E0490[omCurrentObj->objId] = (f32 **) D_801F48D8_ovl10;
-        D_800E98E0[request_track_general(0x29, 0x1E, 0x50)] = 4;
-        break;
-    case 3:
-        func_800A9864(D_801F48F4_ovl10[arg2], 0x2C, 0x10);
-        D_800E0490[omCurrentObj->objId] = (f32 **) D_801F48BC_ovl10;
-        D_800E98E0[request_track_general(0x29, 0x1E, 0x50)] = 5;
-        break;
-    }
-    r = random_soft_s32_range(2);
-    func_800AA018(D_801F4818_ovl10[(arg2 * 4) + (r * 2)]);
-    second = D_801F4818_ovl10[(arg2 * 4) + (r * 2) + 1];
-    if (second != 0) {
-        func_800AA018(second);
-    }
-    gEntitiesScaleXArray[omCurrentObj->objId] = 0.2f;
-    gEntitiesScaleYArray[omCurrentObj->objId] = 0.2f;
-    gEntitiesScaleZArray[omCurrentObj->objId] = 0.2f;
-    func_801F1554_ovl10(arg0, arg1);
-    particle = func_800FF144();
-    D_800EA520[omCurrentObj->objId] = (s32) (uintptr_t) particle;
-    func_801F0014_ovl10(particle);
-    curObjSleepForever();
-}
-#else
 /* Wheel-item setup for the walking prizes (arg2 = 1 waddle dee, 2 adeleine,
  * 3 king dedede; other kinds skip the model swap): stops the track's music
  * cue when the prize kind is locked out (func_801F1934), loads the model +
@@ -1215,7 +1028,6 @@ void func_801F1A24_ovl10(GObj *arg0, s32 arg1, s32 arg2) {
     func_801F0014_ovl10(particle);
     curObjSleepForever();
 }
-#endif
 
 /* D_801F4CA8_ovl10 = 0.2f : now emitted by this TU */
 extern s32 D_801F4908_ovl10[];
@@ -1610,111 +1422,6 @@ void func_801F28AC_ovl10(GObj *arg0) {
     curObjSleepForever();
 }
 
-#ifdef PORT
-extern Gfx *gDisplayListHeads[4];
-s32 func_800AB0F4(GObj *);
-void func_800AB120(GObj *);
-void func_800AB174(GObj *);
-void func_800AB1F0(GObj *);
-void func_800AB244(GObj *);
-void renderDrawDObjFromGObj(GObj *);
-void renderDrawObject_TypeD(GObj *);
-void func_8001585C(GObj *);
-void func_80015BCC(GObj *);
-extern u32 D_801F4750_ovl10[];
-extern u32 D_801F4758_ovl10[];
-extern u8 D_801F4D98_ovl10[];
-extern u8 D_801F4DA0_ovl10[];
-
-static void pc_ovl10_gfx(s32 head, uintptr_t w0, uintptr_t w1) {
-    Gfx *g = gDisplayListHeads[head];
-
-    gDisplayListHeads[head] = g + 1;
-    g->words.w0 = w0;
-    g->words.w1 = w1;
-}
-
-/* gsSPNumLights(1) + the two G_MOVEMEM light loads (light + ambient). */
-static void pc_ovl10_lights(s32 head, void *light, void *ambient) {
-    pc_ovl10_gfx(head, 0xDB020000, 0x18);
-    pc_ovl10_gfx(head, 0xDC08060A, (uintptr_t) light);
-    pc_ovl10_gfx(head, 0xDC08090A, (uintptr_t) ambient);
-}
-
-/* Goal-game render callback: per render-mode (func_800AB0F4 19..30) sets
- * the track's segment-4 base, swaps in the goal-game light pair
- * D_801F4DA0/D_801F4D98, draws with the mode's renderer, and restores the
- * stage light pair D_801F4758/D_801F4750.  Even modes 20..30 render on
- * both display-list heads. */
-void func_801F2964_ovl10(GObj *arg0) {
-    switch (func_800AB0F4(arg0)) {
-    case 19:
-        pc_ovl10_gfx(0, 0xDB060010, (uintptr_t) gSegment4StartArray[arg0->objId]);
-        pc_ovl10_lights(0, D_801F4DA0_ovl10, D_801F4D98_ovl10);
-        func_800AB120(arg0);
-        pc_ovl10_lights(0, D_801F4758_ovl10, D_801F4750_ovl10);
-        break;
-    case 21:
-        pc_ovl10_gfx(0, 0xDB060010, (uintptr_t) gSegment4StartArray[arg0->objId]);
-        pc_ovl10_lights(0, D_801F4DA0_ovl10, D_801F4D98_ovl10);
-        func_800AB1F0(arg0);
-        pc_ovl10_lights(0, D_801F4758_ovl10, D_801F4750_ovl10);
-        break;
-    case 23:
-    case 25:
-        pc_ovl10_gfx(0, 0xDB060010, (uintptr_t) gSegment4StartArray[arg0->objId]);
-        pc_ovl10_lights(0, D_801F4DA0_ovl10, D_801F4D98_ovl10);
-        renderDrawDObjFromGObj(arg0);
-        pc_ovl10_lights(0, D_801F4758_ovl10, D_801F4750_ovl10);
-        break;
-    case 27:
-    case 29:
-        pc_ovl10_gfx(0, 0xDB060010, (uintptr_t) gSegment4StartArray[arg0->objId]);
-        pc_ovl10_lights(0, D_801F4DA0_ovl10, D_801F4D98_ovl10);
-        func_8001585C(arg0);
-        pc_ovl10_lights(0, D_801F4758_ovl10, D_801F4750_ovl10);
-        break;
-    case 20:
-        pc_ovl10_gfx(0, 0xDB060010, (uintptr_t) gSegment4StartArray[arg0->objId]);
-        pc_ovl10_gfx(1, 0xDB060010, (uintptr_t) gSegment4StartArray[arg0->objId]);
-        pc_ovl10_lights(0, D_801F4DA0_ovl10, D_801F4D98_ovl10);
-        pc_ovl10_lights(1, D_801F4DA0_ovl10, D_801F4D98_ovl10);
-        func_800AB174(arg0);
-        pc_ovl10_lights(0, D_801F4758_ovl10, D_801F4750_ovl10);
-        pc_ovl10_lights(1, D_801F4758_ovl10, D_801F4750_ovl10);
-        break;
-    case 22:
-        pc_ovl10_gfx(0, 0xDB060010, (uintptr_t) gSegment4StartArray[arg0->objId]);
-        pc_ovl10_gfx(1, 0xDB060010, (uintptr_t) gSegment4StartArray[arg0->objId]);
-        pc_ovl10_lights(0, D_801F4DA0_ovl10, D_801F4D98_ovl10);
-        pc_ovl10_lights(1, D_801F4DA0_ovl10, D_801F4D98_ovl10);
-        func_800AB244(arg0);
-        pc_ovl10_lights(0, D_801F4758_ovl10, D_801F4750_ovl10);
-        pc_ovl10_lights(1, D_801F4758_ovl10, D_801F4750_ovl10);
-        break;
-    case 24:
-    case 26:
-        pc_ovl10_gfx(0, 0xDB060010, (uintptr_t) gSegment4StartArray[arg0->objId]);
-        pc_ovl10_gfx(1, 0xDB060010, (uintptr_t) gSegment4StartArray[arg0->objId]);
-        pc_ovl10_lights(0, D_801F4DA0_ovl10, D_801F4D98_ovl10);
-        pc_ovl10_lights(1, D_801F4DA0_ovl10, D_801F4D98_ovl10);
-        renderDrawObject_TypeD(arg0);
-        pc_ovl10_lights(0, D_801F4758_ovl10, D_801F4750_ovl10);
-        pc_ovl10_lights(1, D_801F4758_ovl10, D_801F4750_ovl10);
-        break;
-    case 28:
-    case 30:
-        pc_ovl10_gfx(0, 0xDB060010, (uintptr_t) gSegment4StartArray[arg0->objId]);
-        pc_ovl10_gfx(1, 0xDB060010, (uintptr_t) gSegment4StartArray[arg0->objId]);
-        pc_ovl10_lights(0, D_801F4DA0_ovl10, D_801F4D98_ovl10);
-        pc_ovl10_lights(1, D_801F4DA0_ovl10, D_801F4D98_ovl10);
-        func_80015BCC(arg0);
-        pc_ovl10_lights(0, D_801F4758_ovl10, D_801F4750_ovl10);
-        pc_ovl10_lights(1, D_801F4758_ovl10, D_801F4750_ovl10);
-        break;
-    }
-}
-#else
 /* Goal-game render callback: per render mode (func_800AB0F4 19..30) sets the
  * track's segment-4 base, swaps in the goal-game light pair
  * D_801F4DA0/D_801F4D98, draws with that mode's renderer, then restores the stage
@@ -1868,5 +1575,4 @@ void func_801F2964_ovl10(GObj *arg0) {
         break;
     }
 }
-#endif
 

@@ -682,29 +682,6 @@ end:
 #pragma GLOBAL_ASM("asm/nonmatchings/ovl2/ovl2_2/func_800F72B0.s")
 #endif
 
-#ifdef PORT
-/* PORT: unpack the save-file's 64 "permanently collected" bits for this area
- * into one byte per entity. The matching body walks from &D_800D6C94[0x3C]
- * to the ABSOLUTE N64 address 0x800D6D10 (== D_800D6C94 + 0x7C there); on
- * the host that literal never terminates the loop, so the bound is spelled
- * as the two 32-bit words it really is. D_800D6C94[0x3C..0x7B] is the
- * canonical byte range for these flags -- the same one the matching
- * func_800F7484 packs from and func_800F753C (PORT arm above) sets. */
-extern u8 D_800D6C94[];
-
-void func_800F7404(s32 arg0) {
-    s32 w;
-    s32 i;
-
-    for (w = 0; w < 2; w++) {
-        u32 val = D_800D6D10[arg0][w];
-        for (i = 0; i < 0x20; i++) {
-            D_800D6C94[0x3C + w * 0x20 + i] = val & 1;
-            val >>= 1;
-        }
-    }
-}
-#else
 void func_800F7404(s32 arg0) {
     extern u8 D_800D6C94[];
     s32 w;
@@ -721,31 +698,7 @@ void func_800F7404(s32 arg0) {
         }
     }
 }
-#endif
 
-#ifdef PORT
-/* PORT: inverse of func_800F7404 above -- pack the 64 per-entity flag bytes
- * back into the two save words. Same absolute-bound problem, same canonical
- * D_800D6C94[0x3C..0x7B] range. Reached from compiled code TODAY:
- * func_800F6AD4 (scene create) calls this before the matching build's
- * initializer has ever populated the byte range, exactly as on console. */
-void func_800F7484(s32 arg0) {
-    s32 w;
-    s32 i;
-    extern u8 D_800D6C94[];
-
-    for (w = 0; w < 2; w++) {
-        u32 val = 0;
-        for (i = 0; i < 0x20; i++) {
-            val >>= 1;
-            if (D_800D6C94[0x3C + w * 0x20 + i] & 1) {
-                val |= 0x80000000;
-            }
-        }
-        D_800D6D10[arg0][w] = val;
-    }
-}
-#else
 void func_800F7484(s32 arg0) {
     extern u8 D_800D6C94[];
     s32 w;
@@ -767,35 +720,26 @@ void func_800F7484(s32 arg0) {
         ((u32 *) D_800D6D10)[arg0 * 2 + w] = val;
     }
 }
-#endif
 
+void func_800F753C(void) {
+    s32 temp_v0;
+
+    temp_v0 = D_800E76C0[omCurrentObj->objId];
+    if ((temp_v0 >= 0) && (temp_v0 < 0x40)) {
 #ifdef PORT
-/* PORT: D_800D6C68 + 0x68 is the N64 address 0x800D6CD0 -- a byte INSIDE
- * D_800D6C94's block (offset 0x3C), not inside D_800D6C68's own 0x28-byte
- * object. splat split that bss run into separate symbols, so on the host
- * the cross-object spelling writes past D_800D6C68[] into unrelated storage.
- * D_800D6C94[0x3C + i] is the canonical host spelling: it is the byte the
- * compiled func_800F7404/func_800F7484 (PORT arms below) and the spawner
- * func_800F7578 read for the same flag. */
-void func_800F753C(void) {
-    extern u8 D_800D6C94[];
-    s32 temp_v0;
+        /* D_800D6C68 + 0x68 is N64 0x800D6CD0, a byte INSIDE D_800D6C94's
+         * block (offset 0x3C). The PC generator emits each splat splinter as
+         * its own (doubled) array, so the cross-object spelling lands
+         * elsewhere; D_800D6C94[0x3C + i] is the byte func_800F7404/
+         * func_800F7484 and the spawner read for the same flag. */
+        extern u8 D_800D6C94[];
 
-    temp_v0 = D_800E76C0[omCurrentObj->objId];
-    if ((temp_v0 >= 0) && (temp_v0 < 0x40)) {
         D_800D6C94[temp_v0 + 0x3C] = 1;
-    }
-}
 #else
-void func_800F753C(void) {
-    s32 temp_v0;
-
-    temp_v0 = D_800E76C0[omCurrentObj->objId];
-    if ((temp_v0 >= 0) && (temp_v0 < 0x40)) {
         D_800D6C68[temp_v0 + 0x68] = 1;
+#endif
     }
 }
-#endif
 
 #ifdef MIPS_TO_C
 /* FACTORY: 93/179 instructions match (86 diffs). Frame 0x68, the whole
@@ -1580,69 +1524,21 @@ void func_800F78E4(void) {
 #pragma GLOBAL_ASM("asm/nonmatchings/ovl2/ovl2_2/func_800F78E4.s")
 #endif
 
-#ifdef PORT
-/* PORT: spawn-entry state from the start node's kirby-node blob, from
- * asm/nonmatchings/ovl2/ovl2_2/func_800F8078.s. The node record is the
- * NATIVE array this file's func_800F78E4 arm builds; unk0 is the kirby-node
- * blob whose u16 at +2 was byteswapped by pc_lvl_swap_kirby_node, so the
- * ROM's byte reads become sub-word extraction: lbu +3 (MapIn action) is the
- * low byte, lbu +2 (flag bits OR'd into D_800BE514) the high byte. lh +0xE
- * (flags) is the same native s16. */
 void func_800F8078(void) {
-    struct PcSpawnKirbyNode {
-        u8 unk0;
-        u8 unk1;
-        u16 unk2;
-        u8 pad4[0xA];
-        s16 unkE;
-    } *node;
-    extern u32 D_800BE514;
-    u8 action;
-
-    node = (struct PcSpawnKirbyNode *) D_80129114->unk4[D_800BE50C].unk0;
-    D_800BE514 = 0;
-    D_800BE510 = 0.0f;
-    switch (D_800BE4FC) {
-        case 0:
-            D_800BE4FC = 0;
-            break;
-        case 1:
-            D_800BE4FC = 1;
-            break;
-        case 2:
-            action = (u8) (node->unk2 & 0xFF);
-            switch (action) {
-                case 0:
-                    break;
-                case 1:
-                    D_800BE514 = 0x80000000;
-                    D_800BE510 = 1.0f;
-                    break;
-                case 2:
-                    D_800BE514 = 0x80000000;
-                    break;
-                case 3:
-                    D_800BE510 = 1.0f;
-                    break;
-            }
-            D_800BE514 |= (u8) (node->unk2 >> 8);
-            break;
-    }
-    if (!(node->unkE & 4)) {
-        D_800BE518 = D_800BE4FC;
-        D_800BE51C = D_800BE508;
-        D_800BE520 = D_800BE50C;
-        D_800BE524 = D_800BE510;
-    }
-}
-#else
-void func_800F8078(void) {
+#ifndef PORT
     extern void *D_80129114;
+#endif
     extern u32 D_800BE514;
     u8 *temp_v0;
     u32 temp_a0;
 
+#ifdef PORT
+    /* the node array is the NATIVE struct Unk80129114_4[] (24-byte records,
+     * kirby-node pointer at +0) that func_800F78E4's PORT arm builds */
+    temp_v0 = (u8 *) D_80129114->unk4[D_800BE50C].unk0;
+#else
     temp_v0 = *(u8 **) (*(u8 **) ((u8 *) D_80129114 + 4) + D_800BE50C * 0x10);
+#endif
     D_800BE510 = 0.0f;
     D_800BE514 = 0;
     switch (D_800BE4FC) {
@@ -1653,7 +1549,13 @@ void func_800F8078(void) {
             D_800BE4FC = 1;
             break;
         case 2:
+#ifdef PORT
+            /* pc_lvl_swap_kirby_node made the u16 at +2 native: the ROM's
+             * lbu +3 (MapIn action) is its low byte */
+            temp_a0 = *(u16 *) (temp_v0 + 2) & 0xFF;
+#else
             temp_a0 = temp_v0[3];
+#endif
             switch (temp_a0) {
                 case 0:
                     break;
@@ -1668,7 +1570,11 @@ void func_800F8078(void) {
                     D_800BE510 = 1.0f;
                     break;
             }
+#ifdef PORT
+            D_800BE514 |= *(u16 *) (temp_v0 + 2) >> 8; /* lbu +2: high byte */
+#else
             D_800BE514 |= temp_v0[2];
+#endif
             break;
     }
     if (!(*(s16 *) (temp_v0 + 0xE) & 4)) {
@@ -1678,7 +1584,6 @@ void func_800F8078(void) {
         D_800BE524 = D_800BE510;
     }
 }
-#endif
 
 void func_800F81A4(void) {
     extern s32 D_801290D0, D_801290D4, D_8012B9B0;
@@ -1854,31 +1759,23 @@ void func_800F8378(void) {
 #endif /* PORT */
 
 #ifdef PORT
-/* PORT: loader for a standalone OBJECT-collision blob (destructible level
- * pieces; ovl2_10's func_80114DBC allocates the 0x48-byte destination and
- * func_80114A14 -- compiled -- reads it back as PACKED s32 WORDS, so unlike
- * D_80129418 above this one keeps the N64 word layout, with in-arena
- * addresses that fit s32). The blob is raw BE cartridge bytes: word +0 is
- * the header offset, the 17 header words are decoded on read, and the
+/* PORT: the object-collision blob (destructible level pieces; ovl2_10's
+ * func_80114DBC allocates the 0x48-byte destination and func_80114A14 reads
+ * it back as PACKED s32 WORDS, so the N64 word layout is kept) is raw BE
+ * cartridge bytes. Word +0 is the header offset; the 17 header words are
+ * decoded into *hdr (the blob's own copy is left as loaded), and the
  * collision arrays are byteswapped with the same region machinery the level
- * loader uses (boundaries = every offset the header names + blob size). */
-void func_800F8464(s32 arg0, struct UnkStruct80129418 *dst) {
-    u8 *base;
-    u32 nbytes;
-    struct BankHeader *bank;
-    u32 *entry;
-    u32 h[17];
-    u32 hdrOff;
+ * loader uses (boundaries = every offset the header names + blob size).
+ * In-arena addresses fit s32 (the arena sits below 2 GiB). */
+static struct UnkStruct80129418 *pc_objcol_decode(s32 arg0, u8 *base,
+                                                  struct UnkStruct80129418 *hdr) {
+    struct BankHeader *bank = D_800D0184[(u32) arg0 >> 16];
+    u32 *entry = bank->miscBlockTable + ((u32) arg0 & 0xFFFF);
+    u32 nbytes = ((entry[1] - entry[0]) + 3) & 0xFFFFFC;
+    u32 *h = (u32 *) hdr;
+    u32 hdrOff = pc_rd32(base);
     u32 i;
-    s32 ibase;
 
-    bank = D_800D0184[(u32)arg0 >> 16];
-    entry = bank->miscBlockTable + ((u32)arg0 & 0xFFFF);
-    nbytes = ((entry[1] - entry[0]) + 3) & 0xFFFFFC;
-    base = (u8 *) func_800A9AA8(arg0, 3);
-    ibase = (s32)(uintptr_t)base;
-
-    hdrOff = pc_rd32(base);
     for (i = 0; i < 17; i++) {
         h[i] = pc_rd32(base + hdrOff + i * 4);
     }
@@ -1886,30 +1783,18 @@ void func_800F8464(s32 arg0, struct UnkStruct80129418 *dst) {
     pc_lvl_bound(hdrOff);
     pc_lvl_collect_collision(base, h);
     pc_lvl_swap_regions(base);
-
-    dst->unk0 = 0;
-    dst->unk4 = (s32)h[0] + ibase;
-    dst->unk8 = (s32)h[1];
-    dst->unkC = (s32)h[2] + ibase;
-    dst->unk10 = (s32)h[3];
-    dst->unk14 = (s32)h[4] + ibase;
-    dst->unk18 = (s32)h[5];
-    dst->unk1C = (s32)h[6] + ibase;
-    dst->unk20 = (s32)h[7];
-    dst->unk24 = (s32)h[8] + ibase;
-    dst->unk28 = (s32)h[9];
-    dst->unk2C = (s32)h[10];
-    dst->unk30 = (s32)h[11] + ibase;
-    dst->unk34 = (s32)h[12] + ibase;
-    dst->unk38 = (h[13] != 0) ? (s32)h[13] + ibase : 0;
-    dst->unk3C = (s32)h[14];
-    dst->unk40 = (h[15] != 0) ? (s32)h[15] + ibase : 0;
-    dst->unk44 = (s32)h[16];
+    return hdr;
 }
-#else
+#endif
+
 void func_800F8464(s32 arg0, struct UnkStruct80129418 *dst) {
     s32 base = (s32) func_800A9AA8(arg0, 3);
+#ifdef PORT
+    struct UnkStruct80129418 hdr;
+    struct UnkStruct80129418 *src = pc_objcol_decode(arg0, (u8 *) (uintptr_t) base, &hdr);
+#else
     struct UnkStruct80129418 *src = (struct UnkStruct80129418 *) (*(s32 *) base + base);
+#endif
     s32 temp;
 
     dst->unk0 = 0;
@@ -1941,7 +1826,6 @@ void func_800F8464(s32 arg0, struct UnkStruct80129418 *dst) {
     }
     dst->unk44 = src->unk40;
 }
-#endif /* PORT */
 
 
 
@@ -2162,31 +2046,6 @@ void func_800F8570(s32 arg0) {
 #pragma GLOBAL_ASM("asm/nonmatchings/ovl2/ovl2_2/func_800F8570.s")
 #endif
 
-#ifdef PORT
-/* PORT: convert a moving-platform world delta into track progress for
- * entity arg0, from the matched N64 body below with the node access respelled
- * for the NATIVE records (see the func_800F78E4 arm). Projects the XZ
- * delta onto the normalized track tangent, advances D_800E6BD0 by the
- * projected distance, and returns it (ovl1_8's func_800B531C stores it as
- * the knockback carry-over). func_800F8570 (grouped-follower update) is
- * still asm-only; its weak stub logs once under KIRBY_PC_TRACE. */
-f32 func_800F8728(u32 arg0, f32 arg1, f32 arg2) {
-    struct Unk80129114_4_4 *footer;
-    Vector tang;
-    f32 inv;
-    f32 dist;
-
-    footer = D_80129114->unk4[D_800E5F90[arg0]].footer;
-    func_8001E344(&tang, footer, D_800E6BD0[arg0]);
-    inv = 1.0f / sqrtf((tang.x * tang.x) + (tang.z * tang.z));
-    tang.x *= inv;
-    tang.z *= inv;
-    dist = (tang.x * arg1) + (tang.z * arg2);
-    D_800E6BD0[arg0] += (dist / footer->length) * 0.1f;
-    func_800F8570(arg0);
-    return dist;
-}
-#else
 /* Matched. Two levers are load-bearing and must be kept: the two symbol reads
  * in the sp34 expression are written in the REVERSE of the ROM's evaluation
  * order (D_800E5F90 first in source, so D_80129114 is evaluated first and
@@ -2203,7 +2062,9 @@ f32 func_800F8728(u32 arg0, f32 arg1, f32 arg2) {
  * the real path verify.py prints MATCH; measure_seeds.py now passes
  * VERIFY_SECBASE_SRC so it does too.) */
 f32 func_800F8728(u32 arg0, f32 arg1, f32 arg2) {
+#ifndef PORT
     extern void *D_80129114;
+#endif
     extern s32 D_800E5F90[];
     extern f32 D_800E6BD0[];
     void *sp34;
@@ -2211,19 +2072,29 @@ f32 func_800F8728(u32 arg0, f32 arg1, f32 arg2) {
     f32 *sp1C;
     f32 sp20;
 
+#ifdef PORT
+    /* NATIVE node records (see the func_800F78E4 arm): 24-byte stride,
+     * footer at +8 */
+    sp34 = D_80129114->unk4[D_800E5F90[arg0]].footer;
+#else
     sp34 = *(void **) (D_800E5F90[arg0] * 0x10
                        + (u8 *) *(void **) ((u8 *) D_80129114 + 4) + 4);
+#endif
     sp1C = &D_800E6BD0[arg0];
     func_8001E344(&sp28, sp34, *sp1C);
     sp20 = 1.0f / sqrtf((sp28.x * sp28.x) + (sp28.z * sp28.z));
     sp28.x = sp28.x * sp20;
     sp28.z = sp28.z * sp20;
     sp20 = (sp28.x * arg1) + (sp28.z * arg2);
+#ifdef PORT
+    /* LP64 footer: length sits at +0x10, behind the 8-byte points pointer */
+    *sp1C = ((sp20 / ((struct Unk80129114_4_4 *) sp34)->length) * 0.1f) + *sp1C;
+#else
     *sp1C = ((sp20 / *(f32 *) ((u8 *) sp34 + 0xC)) * 0.1f) + *sp1C;
+#endif
     func_800F8570(arg0);
     return sp20;
 }
-#endif
 
 f32 func_800F8824(Vector *vec, f32 angle) {
     if (vec != NULL) {

@@ -3390,71 +3390,6 @@ void func_80228874_ovl19(GObj *arg0) {
     func_800FF200(D_8022FAB0_ovl19);
 }
 
-#ifdef PORT
-/* PORT: behavioral port from
- * asm/nonmatchings/ovl19/ovl19_2/func_8022889C_ovl19.s -- the swimming
- * leg's outro cutscene coroutine (sibling of func_80227F90_ovl19).
- * Kirby double at y=38.1, geo 0x20066, hooks func_80228C44_ovl19 /
- * func_800B4954, spawns two helper tracks (funclists 1 and 0, stage
- * id 2), plays D_8022F578_ovl19[0], waits for D_800E98E0[objId] == 2,
- * then plays record [1] to completion (func_800AA154 blocks), flips
- * D_8012E7FC[2] = 2, sleeps 2 and kills the two helpers and itself.
- * m2c's extra call arguments are leftover registers. */
-void func_8022889C_ovl19(GObj *arg0) {
-    extern struct Ovl19_2Struct D_8022F578_ovl19[];
-    struct Ovl19_2Struct *rec;
-    s32 track1;
-    s32 track2;
-
-    D_800E98E0[omCurrentObj->objId] = 0;
-    func_800AECC0(gameTicksPerDraw);
-    func_800AED20(gameTicksPerDraw);
-    D_800DF150[omCurrentObj->objId] = func_80228C44_ovl19;
-    D_800E6A10[omCurrentObj->objId] = 1.0f;
-    D_800DEF90[omCurrentObj->objId] = func_800B4954;
-    gEntitiesNextPosYArray[omCurrentObj->objId] = 38.1f;
-    gEntitiesScaleXArray[omCurrentObj->objId] = 0.2f;
-    gEntitiesScaleYArray[omCurrentObj->objId] = 0.2f;
-    gEntitiesScaleZArray[omCurrentObj->objId] = 0.2f;
-    func_800A9864(0x20066, 0x20, 0x10);
-    track1 = request_track_general(0x13, 0x3C, 0x4A);
-    D_800E98E0[track1] = 0;
-    gEntityFuncListIDArray[track1] = 1;
-    D_800E8220[track1] = 2;
-    track2 = request_track_general(0x13, 0x3C, 0x4A);
-    gEntityFuncListIDArray[track2] = 0;
-    D_800E8220[track2] = 2;
-    D_800E9AA0[omCurrentObj->objId] = (struct EntityThing800E9AA0 *)(uintptr_t)track2;
-    D_800E5F90[omCurrentObj->objId] = 0;
-    D_800E6D90[omCurrentObj->objId] = 0.0f;
-    D_800E6BD0[omCurrentObj->objId] = D_800E6D90[omCurrentObj->objId];
-    D_800E64D0[omCurrentObj->objId] = 0.0f;
-    D_800E6690[omCurrentObj->objId] = 0.0f;
-    D_800E6850[omCurrentObj->objId] = 0.0f;
-    rec = &D_8022F578_ovl19[0];
-    D_800EC2E0[track1].as_u32 = rec->unk8;
-    D_800EC4A0[track1] = rec->unkC;
-    D_800EC2E0[track2].as_u32 = rec->unk10;
-    D_800EC4A0[track2] = rec->unk14;
-    gKirbyState.unk3C = 0;
-    func_800AA018(rec->unk0);
-    while (D_800E98E0[omCurrentObj->objId] != 2) {
-        ohSleep(1);
-    }
-    gKirbyState.unk3C = 1;
-    rec = &D_8022F578_ovl19[1];
-    D_800EC2E0[track1].as_u32 = rec->unk8;
-    D_800EC4A0[track1] = rec->unkC;
-    D_800EC2E0[track2].as_u32 = rec->unk10;
-    D_800EC4A0[track2] = rec->unk14;
-    func_800AA154(rec->unk0); /* blocks until the anim ends */
-    D_8012E7FC[2] = 2;
-    ohSleep(2);
-    func_800B1900(track1);
-    func_800B1900(track2);
-    func_800B1900(omCurrentObj->objId);
-}
-#else
 void func_8022889C_ovl19(GObj *arg0) {
     extern struct Ovl19_2Struct D_8022F578_ovl19[];
     s32 track1;
@@ -3506,7 +3441,6 @@ void func_8022889C_ovl19(GObj *arg0) {
     func_800B1900(track2);
     func_800B1900(omCurrentObj->objId);
 }
-#endif
 
 /* Per-frame main for the boss's grabbed-Kirby states, driven by
  * D_800E98E0[objId]:
@@ -3521,56 +3455,9 @@ void func_8022889C_ovl19(GObj *arg0) {
  *                  mirror the position into gKirbyState.unk144..14C and kick
  *                  func_80121A04; above that, park D_800EA6E0[objId].
  * Every arm re-reads omCurrentObj->objId, as the listing does. */
-#ifdef PORT
 void func_80228C44_ovl19(GObj *arg0) {
-    /* In-body, not at file scope: both arms are invisible to the N64 build
-     * and a file-scope declaration would re-type this TU's other calls. */
-    void func_80121A04(void);
-    Vector sp2C;
-
-    gEntitiesAngleYArray[omCurrentObj->objId] = D_800E17D0[omCurrentObj->objId];
-    switch (D_800E98E0[omCurrentObj->objId]) {
-    case 0:
-        if ((D_800E5F90[0] == 0xA) && (gKirbyState.unk17 == 0)) {
-            D_800E6D90[omCurrentObj->objId] = 0.0f;
-            D_800E6BD0[omCurrentObj->objId] = D_800E6D90[omCurrentObj->objId];
-            D_800E6850[omCurrentObj->objId] = 0.0f;
-            D_800E64D0[omCurrentObj->objId] = D_800E6690[omCurrentObj->objId] =
-                D_800E6850[omCurrentObj->objId];
-            D_800E0D50[0] = omCurrentObj->objId;
-            gKirbyState.unk17 = 1;
-            gKirbyState.abilityState = 0x4C;
-        }
-        break;
-    case 1:
-        if (0.3650000095f < D_800E6BD0[0]) {
-            gKirbyState.unk44 = 1;
-            D_800E98E0[omCurrentObj->objId] = 2;
-            D_800E8AE0[omCurrentObj->objId] = 1;
-            D_800EA6E0[omCurrentObj->objId] = D_800EA6E0[0];
-        }
-        break;
-    case 2:
-        func_800B2340(&sp2C, D_800DFBD0[(s32) (uintptr_t) D_800E9AA0[omCurrentObj->objId]][1], 0xFFFF);
-        *((u8 *) D_8012E944 + 0x20) = 0;
-        D_8012E944->unk4 = sp2C.x;
-        D_8012E944->unk8 = gEntitiesNextPosYArray[omCurrentObj->objId];
-        D_8012E944->unkC = sp2C.z;
-        if (sp2C.y < 40.0f) {
-            gKirbyState.unk144 = sp2C.x;
-            gKirbyState.unk148 = D_800EA6E0[omCurrentObj->objId];
-            gKirbyState.unk14C = sp2C.z;
-            func_80121A04();
-        } else {
-            D_800EA6E0[omCurrentObj->objId] = 0.0f;
-        }
-        break;
-    }
-}
-#else
-void func_80228C44_ovl19(GObj *arg0) {
-    /* In-body, not at file scope: both arms are invisible to the N64 build
-     * and a file-scope declaration would re-type this TU's other calls. */
+    /* In-body, not at file scope: a file-scope declaration would re-type
+     * this TU's other calls. */
     void func_80121A04(void);
     Vector sp2C;
 
@@ -3617,7 +3504,6 @@ void func_80228C44_ovl19(GObj *arg0) {
         break;
     }
 }
-#endif
 
 void func_80228EF4_ovl19(GObj *arg0) {
     setProcessMain(gEntityGObjProcessArray5[omCurrentObj->objId], &procMainStub);

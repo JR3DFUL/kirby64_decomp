@@ -267,72 +267,6 @@ void func_8015CD00_ovl5(GObj *arg0) {
 void func_8015CE6C_ovl5(void) {
 }
 
-#ifdef PORT
-/* Round-banner thread: spawns the "round N" banner sprite pair for stage
- * D_8018E258_ovl5 (index 3 gets a two-part banner at y=10, the others a
- * single banner at y=60 recolored from D_80186240_ovl5), then wobbles the
- * banner x offset forever while D_8018E220_ovl5 (round running) is set. */
-void func_8015CE74_ovl5(GObj *arg0) {
-    extern void *D_80185FA0_ovl5[];
-    extern struct UnkStruct8015C740 D_80186220_ovl5;
-    extern struct UnkStruct8015C740 D_801862E4_ovl5;
-    extern u16 D_80186240_ovl5[];
-    struct UnkStruct8015C740 *tbl[4];
-    SPObj *sp1 = NULL;
-    SPObj *sp2 = NULL;
-    SPObj *t;
-    s32 i;
-
-    for (i = 0; i < 4; i++) {
-        tbl[i] = D_80185FA0_ovl5[i];
-    }
-    D_800DEF90[omCurrentObj->objId] = NULL;
-    setProcessMain(gEntityGObjProcessArray5[omCurrentObj->objId], procMainStub);
-    omLinkGObjDL(arg0, (void (*)(GObj *)) func_800AD1A0, 0x12, 0x80000000, 0x12);
-    if (D_8018E258_ovl5 == 3) {
-        func_8015C740_ovl5(arg0, tbl[D_8018E258_ovl5]);
-        t = func_8015C740_ovl5(arg0, tbl[D_8018E258_ovl5]);
-        t->unk5A |= 1;
-        t->unkBA |= 1;
-        t->xOffset = 160.0f;
-        t->yOffset = 10.0f;
-        sp1 = func_8015C740_ovl5(arg0, &D_801862E4_ovl5);
-        sp2 = func_8015C740_ovl5(arg0, &D_801862E4_ovl5);
-        sp2->unk5A |= 1;
-        sp2->unkBA |= 1;
-        sp2->xOffset = sp1->xOffset + (f32) sp1->width;
-    } else {
-        func_8015C740_ovl5(arg0, tbl[D_8018E258_ovl5]);
-        t = func_8015C740_ovl5(arg0, tbl[D_8018E258_ovl5]);
-        t->unk5A |= 1;
-        t->unkBA |= 1;
-        t->xOffset = 160.0f;
-        t->yOffset = 60.0f;
-        sp1 = func_8015C740_ovl5(arg0, &D_80186220_ovl5);
-        sp1->primColorRed = D_80186240_ovl5[D_8018E258_ovl5 * 6 + 0];
-        sp1->primColorGreen = D_80186240_ovl5[D_8018E258_ovl5 * 6 + 1];
-        sp1->primColorBlue = D_80186240_ovl5[D_8018E258_ovl5 * 6 + 2];
-        sp1->envColorRed = D_80186240_ovl5[D_8018E258_ovl5 * 6 + 3];
-        sp1->envColorGreen = D_80186240_ovl5[D_8018E258_ovl5 * 6 + 4];
-        sp1->envColorBlue = D_80186240_ovl5[D_8018E258_ovl5 * 6 + 5];
-    }
-    while (1) {
-        if (D_8018E220_ovl5 != 0) {
-            if (D_8018E258_ovl5 == 3) {
-                for (i = 0; i < 1; i++) { sp1->xOffset += 2.0f; sp2->xOffset += 2.0f; ohSleep(1); }
-                for (i = 0; i < 2; i++) { sp1->xOffset -= 2.0f; sp2->xOffset -= 2.0f; ohSleep(1); }
-                for (i = 0; i < 1; i++) { sp1->xOffset += 2.0f; sp2->xOffset += 2.0f; ohSleep(1); }
-            } else {
-                for (i = 0; i < 1; i++) { sp1->xOffset += 1.0f; ohSleep(1); }
-                for (i = 0; i < 2; i++) { sp1->xOffset -= 1.0f; ohSleep(1); }
-                for (i = 0; i < 1; i++) { sp1->xOffset += 1.0f; ohSleep(1); }
-            }
-        } else {
-            ohSleep(1);
-        }
-    }
-}
-#else
 void func_8015CE74_ovl5(GObj *arg0) {
     typedef struct { struct UnkStruct8015C740 *e[4]; } Tbl4;
     extern Tbl4 D_80185FA0_ovl5;
@@ -392,7 +326,6 @@ void func_8015CE74_ovl5(GObj *arg0) {
         }
     }
 }
-#endif
 
 extern void *D_8018666C_ovl5[][2];
 extern void *D_8018668C_ovl5[][2];
@@ -1307,132 +1240,6 @@ s32 func_8015EAB4_ovl5(s32 arg0) {
 #pragma GLOBAL_ASM("asm/nonmatchings/ovl5/ovl5_2/func_8015EAB4_ovl5.s")
 #endif
 
-#ifdef PORT
-/* Per-tick CPU brain for racer arg0: ticks down the action timer, refreshes
- * the left/right neighbour bytes, and when idle rolls a new action from the
- * personality row (rest, walk toward the item picked by func_8015EAB4_ovl5,
- * or wander); then applies the current action to D_800EA6E0/D_800E9C60. */
-void func_8015ED9C_ovl5(s32 arg0) {
-    RacerAI *rec = &D_8018E228_ovl5[arg0];
-    s32 idx = D_8018E224_ovl5[arg0];
-    f32 speed;
-    s32 i;
-    s32 t;
-
-    t = rec->timer;
-    if (t != 0) {
-        t -= 1;
-        rec->timer = t;
-        if (t == 0) {
-            rec->action = 0;
-        }
-    }
-    rec->left = 0xFF;
-    rec->right = 0xFF;
-    for (i = 0; i < 4; i++) {
-        if ((i != arg0) && (func_801612D0_ovl5(arg0, i) != 0)) {
-            if (gEntitiesNextPosXArray[omCurrentObj->objId] < gEntitiesNextPosXArray[D_8018E030_ovl5[i]]) {
-                rec->right = i;
-            } else {
-                rec->left = i;
-            }
-        }
-    }
-    if (D_8018E1E0_ovl5[arg0] >= 0xA) {
-        speed = 24.0f;
-    } else if (D_8018E1E0_ovl5[arg0] >= 5) {
-        speed = 32.0f;
-    } else {
-        speed = 40.0f;
-    }
-    if (rec->action == 0) {
-        rec->timer = random_soft_s32_range(5) + 1;
-        if (random_soft_s32_range(0x10) < ovl5_pers_(idx * 6)) {
-            rec->action = 3;
-            rec->timer = random_soft_s32_range(6) + 5;
-            return;
-        }
-        t = func_8015EAB4_ovl5(arg0);
-        if (t != 0xFF) {
-            rec->target = t;
-            if (D_800E9C60[D_8018E050_ovl5[t]] == 0) {
-                func_8015F67C_ovl5(arg0);
-            } else {
-                func_8015F804_ovl5(arg0);
-            }
-        } else {
-            if (random_soft_s32_range(2) != 0) {
-                rec->action = 2;
-            } else {
-                rec->action = 1;
-            }
-            rec->timer = random_soft_s32_range(6) + 5;
-        }
-    }
-    switch (rec->action) {
-        case 2:
-            D_800EA6E0[omCurrentObj->objId] = gEntitiesNextPosXArray[omCurrentObj->objId] + speed;
-            if (D_800EA6E0[omCurrentObj->objId] > 900.0f) {
-                D_800EA6E0[omCurrentObj->objId] = 900.0f;
-            }
-            D_800E9C60[omCurrentObj->objId] = 2;
-            return;
-        case 1:
-            D_800EA6E0[omCurrentObj->objId] = gEntitiesNextPosXArray[omCurrentObj->objId] - speed;
-            if (D_800EA6E0[omCurrentObj->objId] < -900.0f) {
-                D_800EA6E0[omCurrentObj->objId] = -900.0f;
-            }
-            D_800E9C60[omCurrentObj->objId] = 1;
-            return;
-        case 4:
-            D_800E9FE0[omCurrentObj->objId].as_u32 = 1;
-            if (random_soft_s32_range(2) != 0) {
-                D_800E9C60[omCurrentObj->objId] = 2;
-            } else {
-                D_800E9C60[omCurrentObj->objId] = 1;
-            }
-            rec->action = 0;
-            return;
-        case 7:
-            if (rec->side == 1) {
-                rec->action = 2;
-            } else {
-                rec->action = 1;
-            }
-            rec->timer = random_soft_s32_range(0xA) + 6;
-            return;
-        case 6:
-            if (((rec->side == 1) && (func_801608BC_ovl5(rec->right) != 0)) ||
-                ((rec->side == 0) && (func_801608BC_ovl5(rec->left) != 0))) {
-                rec->action = 0;
-                return;
-            }
-            if (rec->side == 1) {
-                rec->action = 2;
-            } else {
-                rec->action = 1;
-            }
-            rec->timer = random_soft_s32_range(0xA) + 6;
-            return;
-        case 8:
-            if (random_soft_s32_range(0x10) < ovl5_pers_(idx * 6 + 3)) {
-                if (((rec->side == 1) && (func_801608BC_ovl5(rec->right) != 0)) ||
-                    ((rec->side == 0) && (func_801608BC_ovl5(rec->left) != 0))) {
-                    D_800E9FE0[omCurrentObj->objId].as_u32 = 1;
-                    if (rec->side == 1) {
-                        D_800E9C60[omCurrentObj->objId] = 2;
-                    } else {
-                        D_800E9C60[omCurrentObj->objId] = 1;
-                    }
-                }
-            }
-            rec->action = 0;
-            return;
-        default:
-            return;
-    }
-}
-#else
 void func_8015ED9C_ovl5(s32 arg0) {
     void func_8015F67C_ovl5(s32);
     void func_8015F804_ovl5(s32);
@@ -1467,7 +1274,13 @@ void func_8015ED9C_ovl5(s32 arg0) {
     }
     if (D_8018E228_ovl5[arg0].action == 0) {
         D_8018E228_ovl5[arg0].timer = random_soft_s32_range(5) + 1;
+#ifdef PORT
+        /* the personality table is split into separate host objects (see
+         * ovl5_pers_ at the top of this file) */
+        if (random_soft_s32_range(0x10) < ovl5_pers_(idx * 6)) {
+#else
         if (random_soft_s32_range(0x10) < D_80186918_ovl5[idx * 6]) {
+#endif
             D_8018E228_ovl5[arg0].action = 3;
             D_8018E228_ovl5[arg0].timer = random_soft_s32_range(6) + 5;
             return;
@@ -1527,7 +1340,11 @@ void func_8015ED9C_ovl5(s32 arg0) {
             D_8018E228_ovl5[arg0].timer = random_soft_s32_range(0xA) + 6;
             return;
         case 8:
+#ifdef PORT
+            if (random_soft_s32_range(0x10) < ovl5_pers_(idx * 6 + 3)) {
+#else
             if (random_soft_s32_range(0x10) < D_80186918_ovl5[idx * 6 + 3]) {
+#endif
                 if (((D_8018E228_ovl5[arg0].side == 1) && (func_801608BC_ovl5(D_8018E228_ovl5[arg0].right) != 0)) ||
                     ((D_8018E228_ovl5[arg0].side == 0) && (func_801608BC_ovl5(D_8018E228_ovl5[arg0].left) != 0))) {
                     D_800E9FE0[omCurrentObj->objId].as_s32 = 1;
@@ -1548,7 +1365,6 @@ void func_8015ED9C_ovl5(s32 arg0) {
             return;
     }
 }
-#endif
 
 // 8 diffs: $s6/$s7 are swapped -- the ROM gives $s7 to the CSE'd
 // &D_8018E030_ovl5[arg0] base and $s6 to `dir`; IDO does the reverse.
@@ -4299,106 +4115,6 @@ void func_801649CC_ovl5(void)
     }
   }
 }
-#ifdef PORT
-/* Pause-menu thread (near-clone of func_8016EF78_ovl5 in ovl5_4 and
- * func_80176170_ovl5 in ovl5_5): draws the pause panel and the four menu
- * entries, moves the cursor sprite along D_801865C4_ovl5 with C-up/C-down,
- * and on A/Start resumes (0), quits to 0x1F (1), the option screen 0x1B (2)
- * or the sound room 0xA (3). */
-void func_80164A34_ovl5(GObj *arg0) {
-    extern struct UnkStruct8015C740 D_801864C4_ovl5;
-    extern struct UnkStruct8015C740 D_801864E4_ovl5;
-    extern struct UnkStruct8015C740 D_80186504_ovl5;
-    extern struct UnkStruct8015C740 D_80186524_ovl5;
-    extern struct UnkStruct8015C740 D_80186544_ovl5;
-    extern struct UnkStruct8015C740 D_80186564_ovl5;
-    extern struct UnkStruct8015C740 D_80186584_ovl5;
-    extern struct UnkStruct8015C740 D_801865A4_ovl5;
-    extern f32 D_801865C4_ovl5[];
-    extern u8 D_8018E259_ovl5;
-    void func_80164DB0_ovl5(void);
-    SPObj *panel;
-    SPObj *cursor;
-    s32 counter;
-
-    D_800DEF90[omCurrentObj->objId] = NULL;
-    setProcessMain(gEntityGObjProcessArray5[omCurrentObj->objId], procMainStub);
-    D_8018E259_ovl5 = 0;
-    omLinkGObjDL(arg0, (void (*)(GObj *)) func_800AD1A0, 0xA, 0x80000000, 0xA);
-    func_800BB3F0();
-    panel = func_8015C740_ovl5(arg0, &D_80186544_ovl5);
-    panel->xScale = 52.0f;
-    panel->yScale = 1.33f;
-    func_8015C740_ovl5(arg0, &D_801864C4_ovl5);
-    func_8015C740_ovl5(arg0, &D_801864E4_ovl5);
-    func_8015C740_ovl5(arg0, &D_80186504_ovl5);
-    func_8015C740_ovl5(arg0, &D_80186524_ovl5);
-    func_8015C740_ovl5(arg0, &D_80186564_ovl5);
-    func_8015C740_ovl5(arg0, &D_80186584_ovl5);
-    cursor = func_8015C740_ovl5(arg0, &D_801865A4_ovl5);
-    cursor->xOffset = D_801865C4_ovl5[D_8018E259_ovl5 * 2];
-    cursor->yOffset = D_801865C4_ovl5[D_8018E259_ovl5 * 2 + 1];
-    ohSleep(6);
-    counter = 5;
-    while (1) {
-        if (counter != 0) {
-            counter--;
-            if ((gPlayerControllers[0].buttonHeld & 0xF00) == 0) {
-                counter = 0;
-            }
-        } else {
-            if (gPlayerControllers[0].buttonPressed & 0x9000) {
-                extern u32 D_800D7178_words_[] __asm__("D_800D7178");
-
-                D_800D7178_words_[0x1E] = 1;
-                switch (D_8018E259_ovl5) {
-                    case 0:
-                        D_800D7178_words_[0x1E] = 2;
-                        play_sound(0x113);
-                        func_800ACBDC(arg0);
-                        func_800B1900((u16) omCurrentObj->objId);
-                        break;
-                    case 1:
-                        play_sound(0xED);
-                        gGameState = 0x1F;
-                        break;
-                    case 2:
-                        play_sound(0xED);
-                        D_800D6B68 = gGameState;
-                        gGameState = 0x1B;
-                        break;
-                    case 3:
-                        play_sound(0x2B);
-                        D_800D6B68 = gGameState;
-                        gGameState = 0xA;
-                        break;
-                }
-                func_80164DB0_ovl5();
-                curObjSleepForever();
-            } else if (gPlayerControllers[0].buttonHeld & 0x800) {
-                play_sound(0x113);
-                counter = 5;
-                if (D_8018E259_ovl5 == 0) {
-                    D_8018E259_ovl5 = 3;
-                } else {
-                    D_8018E259_ovl5--;
-                }
-            } else if (gPlayerControllers[0].buttonHeld & 0x400) {
-                play_sound(0x113);
-                counter = 5;
-                if (D_8018E259_ovl5 == 3) {
-                    D_8018E259_ovl5 = 0;
-                } else {
-                    D_8018E259_ovl5++;
-                }
-            }
-            cursor->xOffset = D_801865C4_ovl5[D_8018E259_ovl5 * 2];
-            cursor->yOffset = D_801865C4_ovl5[D_8018E259_ovl5 * 2 + 1];
-        }
-        ohSleep(1);
-    }
-}
-#else
 void func_80164A34_ovl5(GObj *arg0) {
     extern struct UnkStruct8015C740 D_801864C4_ovl5;
     extern struct UnkStruct8015C740 D_801864E4_ovl5;
@@ -4447,7 +4163,12 @@ void func_80164A34_ovl5(GObj *arg0) {
                         ((s32 *) D_800D7178)[0x1E] = 2;
                         play_sound(0x113);
                         func_800ACBDC(arg0);
+#ifdef PORT
+                        /* +2 is objId's low half only on big-endian */
+                        func_800B1900((u16) omCurrentObj->objId);
+#else
                         func_800B1900(*(u16 *)((u8 *)omCurrentObj + 2));
+#endif
                         break;
                     case 1:
                         play_sound(0xED);
@@ -4489,7 +4210,6 @@ void func_80164A34_ovl5(GObj *arg0) {
         ohSleep(1);
     }
 }
-#endif
 
 void func_80164DB0_ovl5(void) {
     func_800BB3F0();

@@ -1212,49 +1212,15 @@ void func_801DF5F0_ovl12(struct Ovl12AnimInfo *arg0) {
 }
 
 #ifdef PORT
+/* The N64 build calls these undeclared (implicit int); on LP64 that would
+ * truncate func_80111C88's pointer result, so the host declares them. */
 s32 func_80110B00(struct Ovl12AnimInfo *);
 s32 func_80110FD4(struct Ovl12AnimInfo *);
 s32 func_80110150(struct Ovl12AnimInfo *);
 void *func_80111C88(void *, s32);
 void func_80111ECC(void *);
 void func_80111550(s32);
-
-s32 func_801DF758_ovl12(void) {
-    struct Ovl12AnimInfo sp38;
-    struct EnemyRecord *rec;
-
-    rec = D_800E1B50[omCurrentObj->objId];
-    if (rec->unk8C == NULL) {
-        return 0;
-    }
-    D_800EB160[omCurrentObj->objId] = D_800E7B20[omCurrentObj->objId];
-    func_80111550(omCurrentObj->objId);
-    func_80111ECC(func_80111C88(rec->unk8C, omCurrentObj->objId));
-    if (func_80110B00(&sp38) != 0) {
-        D_800E83E0[omCurrentObj->objId] = sp38.unk2;
-        rec->unk43 = sp38.unk3;
-    } else if (func_80110FD4(&sp38) != 0) {
-        D_800E83E0[omCurrentObj->objId] = sp38.unk2;
-        rec->unk43 = sp38.unk3;
-    } else if (func_80110150(&sp38) != 0) {
-        D_800E83E0[omCurrentObj->objId] = sp38.unk2;
-        rec->unk43 = sp38.unk3;
-    } else {
-        D_800E83E0[omCurrentObj->objId] = 0;
-        rec->unk43 = 0;
-    }
-    switch (D_800E83E0[omCurrentObj->objId]) {
-    case 1:
-        func_801DF394_ovl12();
-        return 1;
-    case 2:
-        func_801DF5F0_ovl12(&sp38);
-        return 1;
-    default:
-        return 0;
-    }
-}
-#else
+#endif
 s32 func_801DF758_ovl12(void) {
     struct Ovl12AnimInfo sp38;
     struct EnemyRecord *rec;
@@ -1293,7 +1259,6 @@ s32 func_801DF758_ovl12(void) {
         return 0;
     }
 }
-#endif
 
 struct Ovl12Color {
     u8 r;

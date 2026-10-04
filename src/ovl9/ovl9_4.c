@@ -262,99 +262,6 @@ void func_801E1AB0_ovl9(struct GObj *arg0) {
     gEntityFuncListIDArray[omCurrentObj->objId] = 4;
 }
 
-#ifdef PORT
-extern f32 D_8021BE60_ovl9[];
-extern s32 random_soft_s32_range(s32);
-extern f32 func_800F9828(s32, s32);
-extern f32 func_8019AAD0_ovl7(f32, f32, f32);
-extern float atan2f(float, float);
-void func_800A9EA4(s32);
-void func_801A2ADC_ovl7(void *);
-void ohSleep(s32);
-/* Swooper attack flight: switch to the attack hitbox/palette pair,
- * set the 3.0 speed clamps, play cue 0x101AF, then roll one of ten
- * behaviors -- 0: home on Kirby with constant-sign 0.25 acceleration
- * per axis; 1: accelerate along the exact bearing to Kirby (0.25); 2:
- * fly straight at 3.0 along the bearing sampled per tick; 3..9: fixed
- * heading sampled once, steered toward Kirby each tick by the roll-
- * specific turn rate from D_8021BE60 (sign from func_8019AAD0) --
- * every tick until the D_800E98E0 countdown runs out, then hand off
- * to state 8. */
-void func_801E1E24_ovl9(struct GObj *arg0) {
-    u32 id;
-    s32 roll;
-    s32 turnIdx = 0;
-    f32 heading = 0.0f;
-
-    D_800DDFD0[omCurrentObj->objId] = 2;
-    D_800E0490[omCurrentObj->objId] = &D_801CA9F8_ovl7;
-    func_801A2ADC_ovl7(&D_801CA9F8_ovl7);
-    D_800E1B50[omCurrentObj->objId]->unk98 = &D_801CBA10;
-    D_800E6850[omCurrentObj->objId] = 3.0f;
-    D_800E3C90[omCurrentObj->objId] = 3.0f;
-    func_800A9EA4(0x101AF);
-    roll = random_soft_s32_range(0xA);
-    if (roll >= 3) {
-        turnIdx = roll - 3;
-        heading = atan2f(func_800F9828(omCurrentObj->objId, 0),
-                         gEntitiesNextPosYArray[0] - gEntitiesNextPosYArray[omCurrentObj->objId]);
-        roll = 3;
-    }
-    D_800E98E0[omCurrentObj->objId]--;
-    id = omCurrentObj->objId;
-    while (D_800E98E0[id] >= 0) {
-        switch (roll) {
-            case 0:
-                if (func_800F9828(id, 0) > 0.0f) {
-                    D_800E6690[omCurrentObj->objId] = 0.25f;
-                } else {
-                    D_800E6690[omCurrentObj->objId] = -0.25f;
-                }
-                id = omCurrentObj->objId;
-                if (gEntitiesNextPosYArray[id] < gEntitiesNextPosYArray[0]) {
-                    D_800E3750[id] = 0.25f;
-                } else {
-                    D_800E3750[id] = -0.25f;
-                }
-                break;
-            case 1:
-                heading = atan2f(func_800F9828(id, 0),
-                                 gEntitiesNextPosYArray[0] - gEntitiesNextPosYArray[omCurrentObj->objId]);
-                D_800E6690[omCurrentObj->objId] = sinf(heading) * 0.25f;
-                D_800E3750[omCurrentObj->objId] = cosf(heading) * 0.25f;
-                break;
-            case 2:
-                heading = atan2f(func_800F9828(id, 0),
-                                 gEntitiesNextPosYArray[0] - gEntitiesNextPosYArray[omCurrentObj->objId]);
-                D_800E64D0[omCurrentObj->objId] = sinf(heading) * 3.0f;
-                D_800E3210[omCurrentObj->objId] = cosf(heading) * 3.0f;
-                break;
-            case 3: {
-                f32 side = func_8019AAD0_ovl7(heading, 0.0f, 0.0f);
-
-                if (side != 0.0f) {
-                    f32 turn = D_8021BE60_ovl9[turnIdx];
-
-                    heading += (side > 0.0f) ? turn : -turn;
-                    while (heading >= 6.2831855f) {
-                        heading -= 6.2831855f;
-                    }
-                    while (heading < 0.0f) {
-                        heading += 6.2831855f;
-                    }
-                }
-                D_800E64D0[omCurrentObj->objId] = sinf(heading) * 3.0f;
-                D_800E3210[omCurrentObj->objId] = cosf(heading) * 3.0f;
-                break;
-            }
-        }
-        ohSleep(1);
-        D_800E98E0[omCurrentObj->objId]--;
-        id = omCurrentObj->objId;
-    }
-    gEntityFuncListIDArray[id] = 8;
-}
-#else
 void func_801E1E24_ovl9(struct GObj *arg0) {
     extern f32 D_8021BE60_ovl9[];
     extern s32 random_soft_s32_range(s32);
@@ -427,7 +334,6 @@ void func_801E1E24_ovl9(struct GObj *arg0) {
     }
     gEntityFuncListIDArray[omCurrentObj->objId] = 8;
 }
-#endif
 
 extern s32 D_8012E850;
 extern struct GObjProcess *gEntityGObjProcessArray[];
@@ -925,84 +831,6 @@ void func_801E3578_ovl9(struct GObj *arg0) {
 #pragma GLOBAL_ASM("asm/nonmatchings/ovl9/ovl9_4/func_801E3578_ovl9.s")
 #endif
 
-#ifdef PORT
-extern s32 D_801C36F4;
-extern f32 *D_801CAA34_ovl7;
-extern void func_80198880_ovl7(void *);
-extern void func_800A9760(s32);
-extern s32 func_800F98EC(s32, f32);
-extern void func_8019D958_ovl7(u16);
-void func_801E3DA8_ovl9(struct GObj *);
-void func_801E34F8_ovl9(struct GObj *);
-/* Leader-half init for the paired enemy: install draw/mover hooks and
- * the shared state thread, switch to the pair hitbox set, spawn the
- * follower half (kind 0x44/4) and register it on both this track and
- * its parent (killing this half via the ovl7 path when the spawn
- * fails), copy the facing to the follower and sink it 20 units, then
- * probe the rail 60 units ahead (func_800F98EC); if blocked, release
- * the follower slot and kill both links.  Finishes by zeroing the
- * bob-phase params, freezing physics and playing the facing-specific
- * intro animation into state 0. */
-void func_801E38F0_ovl9(struct GObj *arg0) {
-    EnemyRecord *rec;
-    s32 spawned;
-    u32 id;
-    s32 anim;
-
-    rec = D_800E1B50[omCurrentObj->objId];
-    func_80198880_ovl7(&D_801C36F4);
-    D_800DEF90[omCurrentObj->objId] = func_800B6B8C;
-    D_800DF150[omCurrentObj->objId] = func_801E3DA8_ovl9;
-    func_800A9760(0x10011);
-    func_801A0D50_ovl7(func_801E34F8_ovl9);
-    func_801A2ADC_ovl7((void *) (uintptr_t) D_800E1B50[omCurrentObj->objId]->unk88->unk10);
-    rec->unk39 = -1;
-    D_800E0490[omCurrentObj->objId] = &D_801CAA34_ovl7;
-    func_801A2ADC_ovl7(&D_801CAA34_ovl7);
-    D_800E8920[omCurrentObj->objId] = 1;
-    id = omCurrentObj->objId;
-    if (D_800E7880[id] & 1) {
-        D_800E6A10[id] = -1.0f;
-    } else {
-        D_800E6A10[id] = 1.0f;
-    }
-    spawned = func_8019DD78_ovl7(0x44, 4);
-    D_800EBDA0[omCurrentObj->objId] = spawned;
-    D_800EBDA0[D_800E0D50[omCurrentObj->objId]] = spawned;
-    if (spawned == -1) {
-        rec->unk40 = 1;
-        func_801A3E80_ovl7(arg0);
-    }
-    id = omCurrentObj->objId;
-    D_800EA6E0[id] = D_800E6A10[id];
-    D_800E6A10[spawned] = D_800E6A10[id];
-    gEntitiesNextPosYArray[spawned] -= 20.0f;
-    gEntitiesPosYArray[omCurrentObj->objId] = gEntitiesNextPosYArray[spawned];
-    D_800E98E0[spawned] = 0;
-    D_800E98E0[omCurrentObj->objId] = 0;
-    id = omCurrentObj->objId;
-    if (func_800F98EC(id, D_800E6A10[id] * 60.0f) != 0) {
-        func_8019D958_ovl7((u16) spawned);
-        rec->unk40 = 1;
-        func_801A3E80_ovl7(arg0);
-        D_800EBBE0[D_800E0D50[omCurrentObj->objId]] = -1;
-        D_800EBDA0[D_800E0D50[omCurrentObj->objId]] = -1;
-    }
-    D_800EADE0[omCurrentObj->objId] = -0.027777778f;
-    D_800EAFA0[omCurrentObj->objId] = 0.0f;
-    D_800EB320[omCurrentObj->objId] = 0.0f;
-    id = omCurrentObj->objId;
-    D_800EB160[id] = D_800EB320[id];
-    func_800AECC0(0.0f);
-    func_800AED20(0.0f);
-    anim = 0x10048;
-    if (D_800E6A10[omCurrentObj->objId] == 1.0f) {
-        anim = 0x10047;
-    }
-    func_800A9EA4(anim);
-    gEntityFuncListIDArray[omCurrentObj->objId] = 0;
-}
-#else
 void func_801E38F0_ovl9(struct GObj *arg0) {
     extern s32 D_801C36F4;
     extern f32 *D_801CAA34_ovl7;
@@ -1056,7 +884,6 @@ void func_801E38F0_ovl9(struct GObj *arg0) {
     func_800A9EA4((D_800E6A10[omCurrentObj->objId] == 1.0f) ? 0x10047 : 0x10048);
     gEntityFuncListIDArray[omCurrentObj->objId] = 0;
 }
-#endif
 
 extern f32 *D_801CAAD4_ovl7;
 void func_800B68AC(s32);
@@ -1543,59 +1370,6 @@ f32 func_801E4F18_ovl9(void) {
     return -temp;
 }
 
-#ifdef PORT
-extern void func_800B68AC(s32);
-extern s32 D_801C8640_ovl7;
-extern s32 D_801CBAA0;
-extern s32 func_8019A900_ovl7(s32 *);
-extern f32 func_8019B608_ovl7(s32);
-extern f32 func_8019DA50_ovl7(void);
-/* Lurker arming state: install the projectile-capable mover and anim
- * state 3 with the ovl7 hit table pair, play the ready animation
- * 0x10229 and clear the shot counter, then sleep until Kirby's
- * approach side (camera heading or explicit path direction) matches
- * this entity's facing AND Kirby is within 280 units laterally;
- * finally trigger the attack state 5. */
-void func_801E4F88_ovl9(struct GObj *arg0) {
-    s32 sp38;
-    f32 v;
-
-    D_800DEF90[omCurrentObj->objId] = func_800B68AC;
-    D_800DDFD0[omCurrentObj->objId] = 3;
-    D_800E1B50[omCurrentObj->objId]->unk8C = &D_801C8640_ovl7;
-    D_800E1B50[omCurrentObj->objId]->unk98 = &D_801CBAA0;
-    func_800B33F4();
-    func_800AECC0(gameTicksPerDraw);
-    func_800AED20(gameTicksPerDraw);
-    func_800A9EA4(0x10229);
-    D_800E98E0[omCurrentObj->objId] = 0;
-    if (func_8019A900_ovl7(&sp38) != 0) {
-        v = sp38;
-    } else {
-        v = func_8019B608_ovl7(0);
-    }
-    while (v != D_800E6A10[omCurrentObj->objId]) {
-        ohSleep(1);
-        if (func_8019A900_ovl7(&sp38) != 0) {
-            v = sp38;
-        } else {
-            v = func_8019B608_ovl7(0);
-        }
-    }
-    v = func_8019DA50_ovl7();
-    if (v < 0.0f) {
-        v = -v;
-    }
-    while (v > 280.0f) {
-        ohSleep(1);
-        v = func_8019DA50_ovl7();
-        if (v < 0.0f) {
-            v = -v;
-        }
-    }
-    gEntityFuncListIDArray[omCurrentObj->objId] = 5;
-}
-#else
 void func_801E4F88_ovl9(struct GObj *arg0) {
     extern void func_800B68AC(s32);
     extern s32 D_801C8640_ovl7;
@@ -1622,7 +1396,6 @@ void func_801E4F88_ovl9(struct GObj *arg0) {
     }
     gEntityFuncListIDArray[omCurrentObj->objId] = 5;
 }
-#endif
 
 extern s32 func_800B3234(f32, f32, f32);
 extern void func_8019D8A0(u16);

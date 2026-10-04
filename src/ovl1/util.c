@@ -714,29 +714,18 @@ s32 utilResetRect(void) {
 /* Every caller passes its GObj thread arg (the DObj typing only worked on N64
  * because GObj.unk4C and DObj.unk4C share raw offset 0x4C), and GObj.unk4C
  * holds the object's SPObj (func_800AF920's PORT arm documents the same
- * contract). Raw offsets 0x14../0x18.. are the N64 SPObj prim/env colors;
- * write the LP64 fields. */
+ * contract). Raw offsets 0x14../0x18.. are the N64 SPObj prim/env colors, so
+ * the host rebases `store` to put those offsets on the LP64 color fields. */
 #include "SPObj.h"
+#define PC_SPOBJ_STORE(gobj, field, n64off) \
+    ((u8 *) ((SPObj *) ((GObj *) (gobj))->unk4C) + __builtin_offsetof(SPObj, field) - (n64off))
+#endif
 void func_800A5B14(DObj *arg0, u8 arg1, u8 arg2, u8 arg3, u8 arg4) {
-    SPObj *sp = (SPObj *)((GObj *)arg0)->unk4C;
-
-    sp->primColorRed = arg1;
-    sp->primColorGreen = arg2;
-    sp->primColorBlue = arg3;
-    sp->primColorAlpha = arg4;
-}
-
-void func_800A5B3C(DObj *arg0, u8 arg1, u8 arg2, u8 arg3, u8 arg4) {
-    SPObj *sp = (SPObj *)((GObj *)arg0)->unk4C;
-
-    sp->envColorRed = arg1;
-    sp->envColorGreen = arg2;
-    sp->envColorBlue = arg3;
-    sp->envColorAlpha = arg4;
-}
+#ifdef PORT
+    u8 *store = PC_SPOBJ_STORE(arg0, primColorRed, 0x14);
 #else
-void func_800A5B14(DObj *arg0, u8 arg1, u8 arg2, u8 arg3, u8 arg4) {
     u8 *store = (u8 *)arg0->unk4C;
+#endif
 
     store[0x14] = arg1;
     store[0x15] = arg2;
@@ -745,14 +734,17 @@ void func_800A5B14(DObj *arg0, u8 arg1, u8 arg2, u8 arg3, u8 arg4) {
 }
 
 void func_800A5B3C(DObj *arg0, u8 arg1, u8 arg2, u8 arg3, u8 arg4) {
+#ifdef PORT
+    u8 *store = PC_SPOBJ_STORE(arg0, envColorRed, 0x18);
+#else
     u8 *store = (u8 *)arg0->unk4C;
+#endif
 
     store[0x18] = arg1;
     store[0x19] = arg2;
     store[0x1A] = arg3;
     store[0x1B] = arg4;
 }
-#endif
 
 f32 func_800A5B64(f32 arg0) {
     u16 idx = (s32)(arg0 * 651.8986f) & 0xFFF;
@@ -957,49 +949,6 @@ void func_800A5D88(DObj *arg0, f32 *m) {
 #pragma GLOBAL_ASM("asm/nonmatchings/ovl1/util/func_800A5D88.s")
 #endif
 
-#ifdef PORT
-/* Entity-array variant of func_800A5D88 (draft above): same RST build from
- * the per-entity angle/scale/next-pos SoA arrays. */
-void func_800A5F94(s32 arg0, f32 *m) {
-    f32 sx = func_800A5B64(gEntitiesAngleXArray[arg0]);
-    f32 cx = func_800A5BDC(gEntitiesAngleXArray[arg0]);
-    f32 sy = func_800A5B64(gEntitiesAngleYArray[arg0]);
-    f32 cy = func_800A5BDC(gEntitiesAngleYArray[arg0]);
-    f32 sz = func_800A5B64(gEntitiesAngleZArray[arg0]);
-    f32 cz = func_800A5BDC(gEntitiesAngleZArray[arg0]);
-    f32 t;
-
-    m[0] = cy * cz;
-    m[1] = cy * sz;
-    m[2] = -sy;
-    t = sx * sy;
-    m[3] = (t * cz) - (cx * sz);
-    m[5] = sx * cy;
-    m[4] = (t * sz) + (cx * cz);
-    t = cx * sy;
-    m[6] = (t * cz) + (sx * sz);
-    m[8] = cx * cy;
-    m[7] = (t * sz) - (sx * cz);
-    if (gEntitiesScaleXArray[arg0] != 1.0f) {
-        m[0] *= gEntitiesScaleXArray[arg0];
-        m[1] *= gEntitiesScaleXArray[arg0];
-        m[2] *= gEntitiesScaleXArray[arg0];
-    }
-    if (gEntitiesScaleYArray[arg0] != 1.0f) {
-        m[3] *= gEntitiesScaleYArray[arg0];
-        m[4] *= gEntitiesScaleYArray[arg0];
-        m[5] *= gEntitiesScaleYArray[arg0];
-    }
-    if (gEntitiesScaleZArray[arg0] != 1.0f) {
-        m[6] *= gEntitiesScaleZArray[arg0];
-        m[7] *= gEntitiesScaleZArray[arg0];
-        m[8] *= gEntitiesScaleZArray[arg0];
-    }
-    m[9] = gEntitiesNextPosXArray[arg0];
-    m[10] = gEntitiesNextPosYArray[arg0];
-    m[11] = gEntitiesNextPosZArray[arg0];
-}
-#else
 void func_800A5F94(s32 arg0, f32 *m) {
     f32 cx;
     f32 sy;
@@ -1042,7 +991,6 @@ void func_800A5F94(s32 arg0, f32 *m) {
     m[10] = gEntitiesNextPosYArray[arg0];
     m[11] = gEntitiesNextPosZArray[arg0];
 }
-#endif
 
 void func_800A6208(f32 m[4][3], Vector *v) {
     Vector sp4;
