@@ -85,7 +85,7 @@ Vector *func_801659DC_ovl5(Vector *, s32);
    WHITESPACE ONLY (it joins `v = ...;` and the `for` header onto one line),
    so it is a permuter-baseline artifact and there is nothing to transcribe;
    do not re-harvest it. */
-/* FACTORY: 4/146, one-slot scheduling. */
+/* FACTORY: 4/146 words, extern ldc1 scheduling; exact with literals 0.1/65535.0f, but ovl5_4 rodata is an undotted blob */
 #ifdef NON_MATCHING
 extern s32 D_8018736C_ovl5[];
 extern u8 D_8018E298_ovl5;
@@ -368,59 +368,16 @@ s32 func_8016725C_ovl5(s32 arg0, s32 arg1) {
     return 0;
 }
 
-/* FACTORY: 176/183 -> 107/183, word count exact and EVERY `NN($sp)` on the
- * ROM's slot (frame 0x48, x/y/z at 0x3C/0x40/0x44, the pointer spill at 0x2C,
- * $s0-$s3 and $ra where the ROM puts them).  Four separate defects, in the
- * order they paid:
- *   1. IT RETURNS s32, NOT void.  Every exit sets $v0: `or $v0,$zero,$zero`
- *      before the epilogue on both restore paths and `addiu $v0,$zero,0x1`
- *      when the four-racer loop runs out.  Both call sites discard it, which
- *      is why the wrong type survived.  The two file-scope prototypes further
- *      down this TU had to move with it (sha1 unchanged by that, LEVER 55).
- *   2. THE CALL ARITY WAS m2c FICTION.  The draft carried its own
- *      `s32 func_80165FB8_ovl5(s32, f32 *, s32 *)` and passed three arguments.
- *      The real callee is `s32 func_80165FB8_ovl5(s32)` and is already MATCHED
- *      in src/ovl5/ovl5_3.c:370 -- m2c had read the live $a2/$a3 (which the
- *      allocator happened to park the X pointer and the D_8018E268_ovl5
- *      pointer in) as arguments.  Worth 181 -> 116 on its own.
- *   3. THE SECOND SWITCH'S ARMS ARE IN SOURCE ORDER 1, 2, 0, 3.  IDO lays
- *      switch BODIES out in source order while testing in value order, and
- *      the ROM's bodies run z-25, x+25, z+25, x-25.  Writing the cases in
- *      that order is what makes the two chains align (aligndiff run count
- *      drops by a whole 7-word block).
- *   4. THE RE-READ INDEX IS ONE LOCAL (LEVER 11).  `D_8018E268_ovl5[arg0]`
- *      written inline at all three restore stores makes IDO reload it per
- *      array, because each store may alias the next load; `e = ...` once and
- *      three subscripts of `e` is the ROM's single `lw`+`sll`.  170/192 with
- *      the wrong word count -> 181/184.
- * Frame arithmetic that got the slots exact, for the next lane: the local
- * region is align8(0x28 + 4*(ndecl+ntemp)) and the ROM's is 7 words, so the
- * spill lands on the LAST slot at 0x2C.  Six declarations gave 8 words and put
- * it at 0x28; the word that had to go was the `s32 *p` pointer local --
- * spelling `D_8018E268_ovl5[arg0]` inline instead leaves IDO's own temp
- * holding the pointer and drops the count to seven (109 -> 107).  Measured and
- * REJECTED on the way: merging `e` into `r` (174/183 -- it also costs the 4th
- * saved register, $s3 for arg0 becomes $s2), `u16 r` (151/184), `u16 e`
- * (inert), initialised `f32 *px/*pz` pointer locals (116/183), all six
- * permutations of the x/y/z read order (all exactly 109 -- IDO reschedules
- * them), and all six positions for the `s32 *p` declaration (116/114/111/109
- * /109/109 -- a pointer that is spilled does not use its home slot).
- * WHAT IS LEFT is the prologue: the ROM issues `swc1 $f2,0x3C($sp)` and
- * `swc1 $f0,0x44($sp)` immediately after the three loads, where IDO defers
- * both to just before the func_80165FB8_ovl5 call, and the Y base is
- * materialised one slot earlier.  Scheduling, not shape. */
-#ifdef NON_MATCHING
-s32 func_80165FB8_ovl5(s32);
-extern f32 D_8018D6D8_ovl5;
-extern f32 D_8018D6DC_ovl5;
-extern f32 D_8018D6E0_ovl5;
-
 s32 func_80167374_ovl5(s32 arg0, s32 arg1) {
+    s32 func_80165FB8_ovl5(s32);
+    extern f32 D_8018D6D8_ovl5;
+    extern f32 D_8018D6DC_ovl5;
+    extern f32 D_8018D6E0_ovl5;
     f32 z;
     f32 y;
     f32 x;
     s32 r;
-    s32 e;
+    s32 pad;
 
     x = gEntitiesNextPosXArray[D_8018E268_ovl5[arg0]];
     y = gEntitiesNextPosYArray[D_8018E268_ovl5[arg0]];
@@ -441,60 +398,44 @@ s32 func_80167374_ovl5(s32 arg0, s32 arg1) {
     }
     switch (arg1) {
         case 1:
-            gEntitiesNextPosZArray[D_8018E268_ovl5[arg0]] = z - 25.0f;
+            gEntitiesNextPosZArray[D_8018E268_ovl5[arg0]] -= 25.0f;
             break;
         case 2:
-            gEntitiesNextPosXArray[D_8018E268_ovl5[arg0]] = x + 25.0f;
+            gEntitiesNextPosXArray[D_8018E268_ovl5[arg0]] += 25.0f;
             break;
         case 0:
-            gEntitiesNextPosZArray[D_8018E268_ovl5[arg0]] = z + 25.0f;
+            gEntitiesNextPosZArray[D_8018E268_ovl5[arg0]] += 25.0f;
             break;
         case 3:
-            gEntitiesNextPosXArray[D_8018E268_ovl5[arg0]] = x - 25.0f;
+            gEntitiesNextPosXArray[D_8018E268_ovl5[arg0]] -= 25.0f;
             break;
     }
     r = func_80165FB8_ovl5(arg0);
     if ((r != 0x29A) && ((func_80165900_ovl5(r) != 0) || (D_800E9C60[D_8018E2A0_ovl5[r]] != 0))) {
         for (r = 0; r < 4; r++) {
             if ((D_8018E3C0_ovl5[r] != 0) && (arg0 != r) && (func_8016725C_ovl5(arg0, r) != 0)) {
-                e = D_8018E268_ovl5[arg0];
-                gEntitiesNextPosXArray[e] = x;
-                gEntitiesNextPosYArray[e] = y;
-                gEntitiesNextPosZArray[e] = z;
+                gEntitiesNextPosXArray[D_8018E268_ovl5[arg0]] = x;
+                gEntitiesNextPosYArray[D_8018E268_ovl5[arg0]] = y;
+                gEntitiesNextPosZArray[D_8018E268_ovl5[arg0]] = z;
                 return 0;
             }
         }
         return 1;
     }
-    e = D_8018E268_ovl5[arg0];
-    gEntitiesNextPosXArray[e] = x;
-    gEntitiesNextPosYArray[e] = y;
-    gEntitiesNextPosZArray[e] = z;
+    gEntitiesNextPosXArray[D_8018E268_ovl5[arg0]] = x;
+    gEntitiesNextPosYArray[D_8018E268_ovl5[arg0]] = y;
+    gEntitiesNextPosZArray[D_8018E268_ovl5[arg0]] = z;
     return 0;
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl5/ovl5_4/func_80167374_ovl5.s")
-#endif
 
-#ifdef NON_MATCHING
-// 52/145, one instruction short. Case bodies are already in the ROM's
-// 0,1,3,2 source order. Residue: each arm's `A && B` -- the ROM zeroes $v0
-// first and sets 1 only on the fully-taken path, then normalises 0/1 a
-// second time; IDO short-circuits with an optimistic `li $v0,1`.
-// `!= 0`, `? 1 : 0` and an explicit flag local all measure worse (56/78/102).
-// Re-swept 2026-08-24, all four arms rewritten uniformly, nothing below 52:
-// `if (A && B) return 1; return 0;` 89, nested ifs 89, `if(!A) return 0;
-// if(!B) return 0; return 1;` 83, `(A&&B) != 0` 56, `(A&&B) ? 1 : 0` 78,
-// `!(!A || !B)` 52 (byte-identical to `A && B`). The dispatch is a beq CHAIN,
-// not a jump table, and the case BODY order 0,1,3,2 is already the ROM's, so
-// LEVERS lever 21/24 does not apply here. Permuter seed.
-s32 func_80165900_ovl5(s32);
-Vector *func_801659DC_ovl5(Vector *, s32);
+#ifdef PORT
 Vector *func_8016596C_ovl5(Vector *, s32);
-s32 func_80165AD0_ovl5(s32);
-s32 func_8016A61C_ovl5(s32, s32);
-
+#endif
 s32 func_80167650_ovl5(s32 arg0) {
+    s32 func_80165900_ovl5(s32);
+    Vector *func_8016596C_ovl5(Vector *, s32);
+    s32 func_80165AD0_ovl5(s32);
+    s32 func_8016A61C_ovl5(s32, s32);
     s32 a;
     s32 w;
     s32 b;
@@ -513,19 +454,28 @@ s32 func_80167650_ovl5(s32 arg0) {
     func_8016596C_ovl5(&sp24, a);
     switch (b) {
     case 0:
-        return (sp24.z + 150.0f) - 30.0f <= sp30.z && sp30.z <= sp24.z + 150.0f;
+        if (((sp24.z + 150.0f) - 30.0f <= sp30.z && sp30.z <= sp24.z + 150.0f) ? 1 : 0) {
+            return 1;
+        }
+        break;
     case 1:
-        return sp24.z - 150.0f <= sp30.z && sp30.z <= (sp24.z - 150.0f) + 30.0f;
+        if ((sp24.z - 150.0f <= sp30.z && sp30.z <= (sp24.z - 150.0f) + 30.0f) ? 1 : 0) {
+            return 1;
+        }
+        break;
     case 3:
-        return sp24.x - 150.0f <= sp30.x && sp30.x <= (sp24.x - 150.0f) + 30.0f;
+        if ((sp24.x - 150.0f <= sp30.x && sp30.x <= (sp24.x - 150.0f) + 30.0f) ? 1 : 0) {
+            return 1;
+        }
+        break;
     case 2:
-        return (sp24.x + 150.0f) - 30.0f <= sp30.x && sp30.x <= sp24.x + 150.0f;
+        if (((sp24.x + 150.0f) - 30.0f <= sp30.x && sp30.x <= sp24.x + 150.0f) ? 1 : 0) {
+            return 1;
+        }
+        break;
     }
     return 0;
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl5/ovl5_4/func_80167650_ovl5.s")
-#endif
 
 s32 func_80167898_ovl5(s32 arg0) {
     s32 temp;
@@ -1202,61 +1152,49 @@ s32 func_80168A44_ovl5(s32 arg0, s32 arg1) {
     return 0;
 }
 
-/* FACTORY: 192/193, STRUCTURAL -- measured 2026-08-23, correcting a stale
- * note (previously read "1/193", which does not match this draft: the
- * PORT-seeded body compiles but diverges from word 0 -- different frame
- * size (0x48 vs ROM's 0x40), different register set (t6/t8/s1-s5 vs the
- * ROM's fp/s6/s7/s1/s2/s4/s5 with a callee-saved $fp), and what looks
- * like a materially different addressing/loop shape, not a residue fixable
- * by any single LEVERS substitution. Needs a fresh m2c pass off the
- * listing rather than further tweaks to this PORT-derived body. */
+/* FACTORY: 19/193 words, t-register numbering off by one from word 41 */
 #ifdef MIPS_TO_C
 s32 func_80168B30_ovl5(s32 arg0) {
-    /* D_8018E3D0_ovl5: array of 0x14-byte per-mole planner records (typed
-     * Unk14Ent elsewhere in this file); accessed here as raw bytes since
-     * only byte 0 and byte 8 are read/written. */
     typedef struct { u8 b[0x14]; } MoleRec;
     extern MoleRec D_8018E3D0_ovl5[];
-    u8 *rec = D_8018E3D0_ovl5[arg0].b;
+    extern u8 D_80187184_ovl5[];
     s32 mycell = func_80165F1C_ovl5(arg0);
-    s32 lvl = D_8018E3C8_ovl5[arg0];
+    u8 *rec = D_8018E3D0_ovl5[arg0].b;
     s32 i;
+    s32 cell;
+    u8 r0;
 
     for (i = 0; i < 4; i++) {
-        s32 cell = func_80165F1C_ovl5(i);
-        u8 roll;
-
+        cell = func_80165F1C_ovl5(i);
         if ((i == arg0) || (D_8018E3C0_ovl5[i] == 0) || (cell == 0x29A)) {
             continue;
         }
         if (func_80168A04_ovl5(mycell, cell) != 0) {
-            if (i == rec[0]) {
-                roll = ovl5_4_molepers_(lvl * 0xD + ((D_8018E425_ovl5 == 2) ? 0xB : 1));
-            } else {
-                roll = ovl5_4_molepers_(lvl * 0xD);
-            }
-            if (random_soft_s32_range(0x10) < roll) {
+            if (i == (r0 = rec[0])) {
+                if (random_soft_s32_range(0x10) < ((D_8018E425_ovl5 == 2) ? D_80187184_ovl5[D_8018E3C8_ovl5[arg0] * 0xD + 0xB] : D_80187184_ovl5[D_8018E3C8_ovl5[arg0] * 0xD + 1])) {
+                    rec[8] = (cell < mycell) ? 8 : 7;
+                    return 1;
+                }
+            } else if (random_soft_s32_range(0x10) < D_80187184_ovl5[D_8018E3C8_ovl5[arg0] * 0xD]) {
                 rec[8] = (cell < mycell) ? 8 : 7;
                 return 1;
             }
-            continue;
-        }
-        if (func_80168A44_ovl5(mycell, cell) != 0) {
-            if (i == rec[0]) {
-                roll = ovl5_4_molepers_(lvl * 0xD + ((D_8018E425_ovl5 == 2) ? 0xB : 1));
-            } else {
-                roll = ovl5_4_molepers_(lvl * 0xD);
-            }
-            if (random_soft_s32_range(0x10) < roll) {
-                rec[8] = (mycell < cell) ? 9 : 0xA;
+        } else {
+            if (func_80168A44_ovl5(mycell, cell) != 0) {
+                if (i == rec[0]) {
+                    if (random_soft_s32_range(0x10) < ((D_8018E425_ovl5 == 2) ? D_80187184_ovl5[D_8018E3C8_ovl5[arg0] * 0xD + 0xB] : D_80187184_ovl5[D_8018E3C8_ovl5[arg0] * 0xD + 1])) {
+                        rec[8] = (mycell < cell) ? 9 : 0xA;
+                        return 1;
+                    }
+                } else if (random_soft_s32_range(0x10) < D_80187184_ovl5[D_8018E3C8_ovl5[arg0] * 0xD]) {
+                    rec[8] = (mycell < cell) ? 9 : 0xA;
+                    return 1;
+                }
+            } else if (random_soft_s32_range(0x10) < ((D_8018E425_ovl5 == 2) ? D_80187184_ovl5[D_8018E3C8_ovl5[arg0] * 0xD + 0xC] : D_80187184_ovl5[D_8018E3C8_ovl5[arg0] * 0xD + 2])) {
+                rec[8] = 4;
                 return 1;
             }
-            continue;
-        }
-        roll = ovl5_4_molepers_(lvl * 0xD + ((D_8018E425_ovl5 == 2) ? 0xC : 2));
-        if (random_soft_s32_range(0x10) < roll) {
-            rec[8] = 4;
-            return 1;
+            do { } while (0);
         }
     }
     rec[8] = 0xB;
@@ -1333,97 +1271,78 @@ Unk2Bytes func_80168E34_ovl5(s32 arg1) {
     return sp4;
 }
 
-#ifdef NON_MATCHING
-/* 114/155: frame 0x60 vs 0x50 (locals block sits 0x10 high). */
-typedef struct Unk14Ent {
-    u8 unk0;
-    u8 filler1[0xF];
-    u8 unk10;
-    u8 unk11;
-    u8 filler12[2];
-} Unk14Ent;
-
-extern Unk14Ent D_8018E3D0_ovl5[];
-
-#define B0(x) (*(u8 *) &(x))
-#define B1(x) (*((u8 *) &(x) + 1))
-
 void func_80168E84_ovl5(s32 arg0) {
+    typedef struct Unk14Ent {
+        u8 unk0;
+        u8 filler1[0xF];
+        u8 unk10;
+        u8 unk11;
+        u8 filler12[2];
+    } Unk14Ent;
+    extern Unk14Ent D_8018E3D0_ovl5[];
     Unk2Bytes sp4C;
     Unk2Bytes sp48;
-    Unk14Ent *p;
-    s32 dx;
-    s32 dy;
-    s32 lim;
 
     sp4C = func_80168E34_ovl5(func_80165F1C_ovl5(arg0));
-    p = &D_8018E3D0_ovl5[arg0];
-    if (func_80165F1C_ovl5(p->unk0) == 0x29A) {
-        p->unk10 = random_soft_s32_range(4);
-        p->unk11 = random_soft_s32_range(4);
+    if (func_80165F1C_ovl5(D_8018E3D0_ovl5[arg0].unk0) == 0x29A) {
+        D_8018E3D0_ovl5[arg0].unk10 = random_soft_s32_range(4);
+        D_8018E3D0_ovl5[arg0].unk11 = random_soft_s32_range(4);
         return;
     }
-    sp48 = func_80168E34_ovl5(func_80165F1C_ovl5(p->unk0));
-    if ((B0(sp48) == B0(sp4C)) && (B1(sp48) == B1(sp4C))) {
-        p->unk10 = random_soft_s32_range(4);
-        p->unk11 = random_soft_s32_range(4);
+    sp48 = func_80168E34_ovl5(func_80165F1C_ovl5(D_8018E3D0_ovl5[arg0].unk0));
+    if ((*(u8 *) &sp48 == *(u8 *) &sp4C) && (*((u8 *) &sp48 + 1) == *((u8 *) &sp4C + 1))) {
+        D_8018E3D0_ovl5[arg0].unk10 = random_soft_s32_range(4);
+        D_8018E3D0_ovl5[arg0].unk11 = random_soft_s32_range(4);
         return;
     }
-    dx = B0(sp4C) - B0(sp48);
-    dy = B1(sp4C) - B1(sp48);
-    if (((dx >= 0) ? dx : -dx) < ((dy >= 0) ? dy : -dy)) {
-        lim = (D_8018E425_ovl5 == 2) ? 2 : 3;
-        if (lim < ((dy >= 0) ? dy : -dy)) {
-            if (B0(sp48) < B0(sp4C)) {
-                if (B1(sp48) < B1(sp4C)) {
-                    p->unk10 = 3;
-                    p->unk11 = 1;
+    if (ABS(*(u8 *) &sp4C - *(u8 *) &sp48) < ABS(*((u8 *) &sp4C + 1) - *((u8 *) &sp48 + 1))) {
+        if (ABS(*((u8 *) &sp4C + 1) - *((u8 *) &sp48 + 1)) <= ((D_8018E425_ovl5 == 2) ? 2 : 3)) {
+            D_8018E3D0_ovl5[arg0].unk10 = random_soft_s32_range(4);
+            D_8018E3D0_ovl5[arg0].unk11 = random_soft_s32_range(4);
+        } else {
+            if (*(u8 *) &sp48 < *(u8 *) &sp4C) {
+                if (*((u8 *) &sp48 + 1) < *((u8 *) &sp4C + 1)) {
+                    D_8018E3D0_ovl5[arg0].unk10 = 3;
+                    D_8018E3D0_ovl5[arg0].unk11 = 1;
                 } else {
-                    p->unk10 = 3;
-                    p->unk11 = 0;
+                    D_8018E3D0_ovl5[arg0].unk10 = 3;
+                    D_8018E3D0_ovl5[arg0].unk11 = 0;
                 }
             } else {
-                if (B1(sp48) < B1(sp4C)) {
-                    p->unk10 = 2;
-                    p->unk11 = 1;
+                if (*((u8 *) &sp48 + 1) < *((u8 *) &sp4C + 1)) {
+                    D_8018E3D0_ovl5[arg0].unk10 = 2;
+                    D_8018E3D0_ovl5[arg0].unk11 = 1;
                 } else {
-                    p->unk10 = 2;
-                    p->unk11 = 0;
+                    D_8018E3D0_ovl5[arg0].unk10 = 2;
+                    D_8018E3D0_ovl5[arg0].unk11 = 0;
                 }
             }
-        } else {
-            p->unk10 = random_soft_s32_range(4);
-            p->unk11 = random_soft_s32_range(4);
         }
     } else {
-        lim = (D_8018E425_ovl5 == 2) ? 2 : 3;
-        if (lim < ((dx >= 0) ? dx : -dx)) {
-            if (B1(sp48) < B1(sp4C)) {
-                if (B0(sp48) < B0(sp4C)) {
-                    p->unk10 = 1;
-                    p->unk11 = 3;
+        if (ABS(*(u8 *) &sp4C - *(u8 *) &sp48) <= ((D_8018E425_ovl5 == 2) ? 2 : 3)) {
+            D_8018E3D0_ovl5[arg0].unk10 = random_soft_s32_range(4);
+            D_8018E3D0_ovl5[arg0].unk11 = random_soft_s32_range(4);
+        } else {
+            if (*((u8 *) &sp48 + 1) < *((u8 *) &sp4C + 1)) {
+                if (*(u8 *) &sp48 < *(u8 *) &sp4C) {
+                    D_8018E3D0_ovl5[arg0].unk10 = 1;
+                    D_8018E3D0_ovl5[arg0].unk11 = 3;
                 } else {
-                    p->unk10 = 1;
-                    p->unk11 = 2;
+                    D_8018E3D0_ovl5[arg0].unk10 = 1;
+                    D_8018E3D0_ovl5[arg0].unk11 = 2;
                 }
             } else {
-                if (B0(sp48) < B0(sp4C)) {
-                    p->unk10 = 0;
-                    p->unk11 = 3;
+                if (*(u8 *) &sp48 < *(u8 *) &sp4C) {
+                    D_8018E3D0_ovl5[arg0].unk10 = 0;
+                    D_8018E3D0_ovl5[arg0].unk11 = 3;
                 } else {
-                    p->unk10 = 0;
-                    p->unk11 = 2;
+                    D_8018E3D0_ovl5[arg0].unk10 = 0;
+                    D_8018E3D0_ovl5[arg0].unk11 = 2;
                 }
             }
-        } else {
-            p->unk10 = random_soft_s32_range(4);
-            p->unk11 = random_soft_s32_range(4);
         }
     }
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl5/ovl5_4/func_80168E84_ovl5.s")
-#endif
 
 /* FACTORY: 309/309 [was noted 0/309], UNCERTAIN -- PORT-seeded, time-boxed. Fixed the
  * `__asm__("...")` alias (same as this file's other mole-brain
@@ -3428,16 +3347,7 @@ void func_8016EF44_ovl5(u8 *arg0, u16 *arg1) {
 }
 
 #ifdef NON_MATCHING
-/* FACTORY: 133/222, residue. Instruction count and structure are exact; the
-   whole callee-saved bank is permuted and one value spills: the ROM keeps the
-   last SPObj* in $s4 and &D_80187094_ovl5 in $s5, and materialises
-   &D_800D6B68 and the constant 3 inline via $at, so its frame is 0x48. IDO
-   hoists both of those into callee-saved regs instead and spills the SPObj*,
-   giving a 0x50 frame. Swept with no effect: a separate local for the first
-   func_8015C740_ovl5 result, declaration order (counter first vs last), and
-   --/++ instead of -1/+1 on D_8018E440_ovl5. Whole-function register
-   permutation -- permuter territory. Siblings func_80164A34_ovl5 (ovl5_2) and
-   func_80176170_ovl5 (ovl5_5) are near-clones of this shape. */
+/* FACTORY: 6/222 words, $v0/$v1 after implicit-int play_sound; MATCH with file-scope void play_sound(s32) */
 extern u8 D_8018E440_ovl5;
 extern f32 D_8018D770_ovl5;
 extern f32 D_80187094_ovl5[][2];
@@ -3454,16 +3364,15 @@ void func_8016F730_ovl5(void);
 void func_8016EF78_ovl5(GObj *arg0) {
     s32 counter;
     SPObj *sp;
-    SPObj *tmp;
 
     D_800DEF90[omCurrentObj->objId] = NULL;
     setProcessMain(gEntityGObjProcessArray5[omCurrentObj->objId], procMainStub);
     D_8018E440_ovl5 = 0;
     omLinkGObjDL(arg0, &func_800AD1A0, 0xA, 0x80000000, 0xA);
     func_800BB3F0();
-    tmp = func_8015C740_ovl5(arg0, &D_80187014_ovl5);
-    tmp->xScale = 52.0f;
-    tmp->yScale = D_8018D770_ovl5;
+    sp = func_8015C740_ovl5(arg0, &D_80187014_ovl5);
+    sp->xScale = 52.0f;
+    sp->yScale = D_8018D770_ovl5;
     func_8015C740_ovl5(arg0, &D_80186F94_ovl5);
     func_8015C740_ovl5(arg0, &D_80186FB4_ovl5);
     func_8015C740_ovl5(arg0, &D_80186FD4_ovl5);
@@ -3510,20 +3419,20 @@ void func_8016EF78_ovl5(GObj *arg0) {
                 curObjSleepForever();
             } else if (gPlayerControllers[0].buttonHeld & 0x800) {
                 play_sound(0x113);
-                counter = 5;
                 if (D_8018E440_ovl5 == 0) {
                     D_8018E440_ovl5 = 3;
                 } else {
                     D_8018E440_ovl5--;
                 }
+                counter = 5;
             } else if (gPlayerControllers[0].buttonHeld & 0x400) {
                 play_sound(0x113);
-                counter = 5;
                 if (D_8018E440_ovl5 == 3) {
                     D_8018E440_ovl5 = 0;
                 } else {
                     D_8018E440_ovl5++;
                 }
+                counter = 5;
             }
             sp->xOffset = D_80187094_ovl5[D_8018E440_ovl5][0];
             sp->yOffset = D_80187094_ovl5[D_8018E440_ovl5][1];
