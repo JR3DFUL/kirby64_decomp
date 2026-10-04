@@ -9,8 +9,10 @@
  * generated data tables (build/pc/data/*.data.c), which keep the N64 WORD
  * values: floats and the joint word (offset 8) carry correct native values,
  * but the shape TYPE byte -- an N64 byte-0 read -- sits in bits 24-31 of the
- * head word at offset 4. Every PORT reader below decodes it as (unk4 >> 24);
- * the u8-at-4 read of the N64 structs would see the always-zero low byte.
+ * head word at offset 4. On the little-endian host that byte lives at
+ * offset 7, so the PORT views below name the u8 at offset 7 `unk4` and the
+ * matched readers' u8 `unk4` reads see the type; the u8-at-4 read of the N64
+ * structs would see the always-zero low byte.
  * unk18 really holds an f32 (the sphere radius; see the MIPS_TO_C note at
  * func_8010E8F0), and IDO only passed it through integer registers, which is
  * bit-identical on o32 but an ABI mismatch on x86-64 -- so the PORT arms use
@@ -22,6 +24,9 @@ struct UnkEA20 {
 };
 
 s32 func_8010E8F0(Vector *, f32, Vector *, f32, Vector *);
+#if !defined(__BYTE_ORDER__) || __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+#error "ovl2_8.c PORT shape views place the N64 type byte at offset 7 (little-endian host)"
+#endif
 #else
 /* Same types as the PORT view above, and that is a CORRECTION. unk18 is the
    sphere radius and the parameters it feeds are floats -- the ROM's
@@ -41,10 +46,22 @@ struct UnkEA20 {
 s32 func_8010E8F0(Vector *, f32, Vector *, f32, Vector *);
 #endif
 
+#ifdef PORT
+/* PORT: the node is really a DObj, and unk14 is DObj.parent with (DObj *) 1
+ * as the root sentinel (src/main/object_manager.c). Five pointers precede it,
+ * so it sits at byte 0x28 on LP64; the N64 view's 0x14 lands in DObj.prev. */
+struct Unk8010E5B0Node {
+    void *pad0[5];
+    struct Unk8010E5B0Node *unk14;
+};
+_Static_assert(__builtin_offsetof(struct Unk8010E5B0Node, unk14) == __builtin_offsetof(struct DObj, parent),
+               "Unk8010E5B0Node.unk14 must be DObj.parent");
+#else
 struct Unk8010E5B0Node {
     u8 pad0[0x14];
     struct Unk8010E5B0Node *unk14;
 };
+#endif
 
 #ifdef PORT
 /* The cache descriptors D_80124990/49A0/49B0 alias into the
@@ -72,12 +89,13 @@ struct Unk8010E5B0Arg3 {
 #endif
 
 #ifdef PORT
-/* Same 40-byte arena entry; unk4 is the whole N64 head word (type in bits
- * 24-31, see the note above). Offsets are unchanged. */
+/* Same 40-byte arena entry; unk4 is the N64 type byte, the top byte of the
+ * native head word at offset 4 (see the note above). Offsets are unchanged. */
 struct Unk8010E740 {
     u8 unk0;
     u8 pad1[3];
-    u32 unk4;
+    u8 pad4[3];
+    u8 unk4;
     s32 unk8;
     Vector unkC;
     Vector unk18;
@@ -105,50 +123,11 @@ void func_800A5F94(s32, void *);
 void func_800A6208(f32 (*)[3], Vector *);
 
 
-#ifdef PORT
-/* PORT: arg1 is really a DObj, and the joint chain is dobj->parent with
- * (DObj *) 1 as the root sentinel (src/main/object_manager.c). The N64 view
- * below read the parent pointer at byte 0x14, which on LP64 lands in the
- * middle of DObj.prev. The node caches (D_8012C8D0/C908/CC18) take 8-byte
- * entries and the matrix runs keep their native 48-byte stride; both fit
- * because gen_data doubles every N64 bss span (D_8012C948's 15-matrix run
- * spills into D_8012C9E4, a label nothing references -- the doubled pair is
- * exactly the doubled N64 run). While func_800A5D88/func_800A5F94
- * (src/ovl1/util.c) remain unimplemented stubs the cached matrices stay
- * zero, so bound shapes transform to the joint-chain translation of a zero
- * matrix; the walk itself, and the cache bookkeeping, are correct. */
-void func_8010E5B0(Vector *arg0, struct Unk8010E5B0Node *arg1, s32 arg2,
-                   struct Unk8010E5B0Arg3 *arg3) {
-    s32 i;
-    f32 (*p)[3];
-    struct DObj *node = (struct DObj *) arg1;
-
-    do {
-        for (i = 0; i < arg3->unk0; i++) {
-            if ((struct DObj *) arg3->unk8[i] == node) {
-                break;
-            }
-        }
-        if (i == arg3->unk0) {
-            if (i == arg3->unk4) {
-                i--;
-            }
-            p = arg3->unkC[i];
-            if (node->parent != (struct DObj *) 1) {
-                func_800A5D88(node, p);
-            } else {
-                func_800A5F94(arg2, p);
-            }
-            arg3->unk8[i] = (struct Unk8010E5B0Node *) node;
-            arg3->unk0 = i + 1;
-        } else {
-            p = arg3->unkC[i];
-        }
-        func_800A6208(p, arg0);
-        node = node->parent;
-    } while (node != (struct DObj *) 1);
-}
-#else
+/* PORT: the node caches (D_8012C8D0/C908/CC18) take 8-byte entries and the
+ * matrix runs keep their native 48-byte stride; both fit because gen_data
+ * doubles every N64 bss span (D_8012C948's 15-matrix run spills into
+ * D_8012C9E4, a label nothing references). The cache descriptor's layout is
+ * fixed by the PORT struct Unk8010E5B0Arg3 above. */
 void func_8010E5B0(Vector *arg0, struct Unk8010E5B0Node *arg1, s32 arg2,
                    struct Unk8010E5B0Arg3 *arg3) {
     s32 i;
@@ -179,7 +158,6 @@ void func_8010E5B0(Vector *arg0, struct Unk8010E5B0Node *arg1, s32 arg2,
         arg1 = arg1->unk14;
     } while (arg1 != (struct Unk8010E5B0Node *) 1);
 }
-#endif
 
 void func_8010E6F0(Vector *arg0, s32 arg1) {
     arg0->x += gEntitiesNextPosXArray[arg1];
@@ -188,102 +166,42 @@ void func_8010E6F0(Vector *arg0, s32 arg1) {
 }
 
 #ifdef NON_MATCHING
+void func_8010E740(struct Unk8010E740 *arg0, s32 arg1) {
+    struct Unk8010E5B0Arg3 *q;
+    struct Unk8010E5B0Node *node;
+    s32 v;
+
+    v = arg0->unk8;
+    if (v == -1) {
+        switch (arg0->unk4) {
+        case 0:
+            break;
+        case 1:
+            break;
+        case 2:
+            break;
+        }
+    } else if (arg0->unk8 == -2) {
+        switch (arg0->unk4) {
+        case 0:
+            func_8010E6F0(&arg0->unkC, arg1);
+            break;
+        case 1:
+            func_8010E6F0(&arg0->unkC, arg1);
+            break;
+        case 2:
+            func_8010E6F0(&arg0->unkC, arg1);
+            func_8010E6F0(&arg0->unk18, arg1);
+            break;
+        }
+    } else {
 #ifdef PORT
-/* PORT copy of the draft below with two LP64/endian fixes: the shape type is
- * decoded from the top byte of the head word (see the file-top note), and
- * the joint value stored in unk8 -- a real pointer on the non -1/-2/-3
- * paths, stored truncated by func_8011D4A4 et al. -- is rebuilt by
- * zero-extension, which is lossless because the -no-pie image keeps
- * everything the game can see below 4 GiB (src/pc/pc_mmio.c). */
-void func_8010E740(struct Unk8010E740 *arg0, s32 arg1) {
-    struct Unk8010E5B0Arg3 *q;
-    struct Unk8010E5B0Node *node;
-    s32 v;
-
-    v = arg0->unk8;
-    if (v == -1) {
-        switch (arg0->unk4 >> 24) {
-        case 0:
-            break;
-        case 1:
-            break;
-        case 2:
-            break;
-        }
-    } else if (arg0->unk8 == -2) {
-        switch (arg0->unk4 >> 24) {
-        case 0:
-            func_8010E6F0(&arg0->unkC, arg1);
-            break;
-        case 1:
-            func_8010E6F0(&arg0->unkC, arg1);
-            break;
-        case 2:
-            func_8010E6F0(&arg0->unkC, arg1);
-            func_8010E6F0(&arg0->unk18, arg1);
-            break;
-        }
-    } else {
+        /* the joint word is a pointer stored truncated by func_8011D4A4 et
+         * al.; zero-extension is lossless under the -no-pie image. */
         node = (struct Unk8010E5B0Node *) (uintptr_t) (u32) v;
-        if (arg0->unk8 == -3) {
-            node = D_800DE350[arg1]->data.ptr;
-        }
-        if (arg1 == D_8012D0C0) {
-            q = &D_801249A0;
-        } else {
-            if (arg1 == D_8012D580) {
-                q = &D_801249B0;
-            } else {
-                q = &D_80124990;
-            }
-            q->unk0 = 0;
-        }
-        switch (arg0->unk4 >> 24) {
-        case 0:
-            func_8010E5B0(&arg0->unkC, node, arg1, q);
-            break;
-        case 1:
-            func_8010E5B0(&arg0->unkC, node, arg1, q);
-            break;
-        case 2:
-            func_8010E5B0(&arg0->unkC, node, arg1, q);
-            func_8010E5B0(&arg0->unk18, node, arg1, q);
-            break;
-        }
-    }
-    arg0->unk0 = 1;
-}
 #else
-void func_8010E740(struct Unk8010E740 *arg0, s32 arg1) {
-    struct Unk8010E5B0Arg3 *q;
-    struct Unk8010E5B0Node *node;
-    s32 v;
-
-    v = arg0->unk8;
-    if (v == -1) {
-        switch (arg0->unk4) {
-        case 0:
-            break;
-        case 1:
-            break;
-        case 2:
-            break;
-        }
-    } else if (arg0->unk8 == -2) {
-        switch (arg0->unk4) {
-        case 0:
-            func_8010E6F0(&arg0->unkC, arg1);
-            break;
-        case 1:
-            func_8010E6F0(&arg0->unkC, arg1);
-            break;
-        case 2:
-            func_8010E6F0(&arg0->unkC, arg1);
-            func_8010E6F0(&arg0->unk18, arg1);
-            break;
-        }
-    } else {
         node = (struct Unk8010E5B0Node *) v;
+#endif
         if (arg0->unk8 == -3) {
             node = D_800DE350[arg1]->data.ptr;
         }
@@ -312,7 +230,6 @@ void func_8010E740(struct Unk8010E740 *arg0, s32 arg1) {
     }
     arg0->unk0 = 1;
 }
-#endif
 #else
 #pragma GLOBAL_ASM("asm/nonmatchings/ovl2/ovl2_8/func_8010E740.s")
 #endif
@@ -413,18 +330,15 @@ s32 func_8010E8F0(Vector *arg0, f32 arg1, Vector *arg2, f32 arg3, Vector *arg4) 
 #pragma GLOBAL_ASM("asm/nonmatchings/ovl2/ovl2_8/func_8010E8F0.s")
 #endif
 
+/* PORT: the out parameter is a pointer; the N64 s32 was an o32
+ * bit-passing trick that truncates on LP64. */
 #ifdef PORT
-/* PORT: same trampoline with the real types (UnkEA20.unk18 is an f32 and
- * the out parameter is a pointer under PORT; the s32s were an o32
- * bit-passing trick, see the file-top note). */
 s32 func_8010EA20(struct UnkEA20 *arg0, struct UnkEA20 *arg1, Vector *arg2) {
-    return func_8010E8F0(&arg0->unkC, arg0->unk18, &arg1->unkC, arg1->unk18, arg2);
-}
 #else
 s32 func_8010EA20(struct UnkEA20 *arg0, struct UnkEA20 *arg1, s32 arg2) {
+#endif
     return func_8010E8F0(&arg0->unkC, arg0->unk18, &arg1->unkC, arg1->unk18, arg2);
 }
-#endif
 
 #ifdef MIPS_TO_C
 /* FACTORY: 229/239 -- see that site's comment. The real draft (guarded the
@@ -555,14 +469,15 @@ void func_8010F964(f32 *arg0, f32 *arg1) {
 }
 
 #ifdef PORT
-/* Full-width view of the 40-byte arena entry: unk4 is the whole N64 head
- * word (type = unk4 >> 24, see the file-top note), unk8 the joint word, and
- * unk24 the capsule radius the N64 struct left as padding. Offsets and size
- * are unchanged. */
+/* Full-width view of the 40-byte arena entry: unk4 is the N64 type byte,
+ * the top byte of the native head word (see the file-top note), unk8 the
+ * joint word, and unk24 the capsule radius the N64 struct left as padding.
+ * Offsets and size are unchanged. */
 struct UnkF9AC {
     /* 0x00 */ u8 unk0;
     /* 0x01 */ char pad1[0x3];
-    /* 0x04 */ u32 unk4;
+    /* 0x04 */ char pad4[0x3];
+    /* 0x07 */ u8 unk4;
     /* 0x08 */ s32 unk8;
     /* 0x0C */ Vector unkC;
     /* 0x18 */ Vector unk18;
@@ -1097,70 +1012,6 @@ s32 func_8010F140(struct UnkF9AC *arg0, struct UnkF9AC *arg1, struct UnkF9AC *ar
     return 0;
 }
 #endif
-#ifdef PORT
-/* PORT copy of the dispatcher below; the only changes are the type decode
- * (unk4 >> 24 -- the u8 read would see the head word's always-zero low
- * byte and route every pair through the 0/0 AABB test), the pointer-true
- * out argument to func_8010EA20 (the (s32) cast truncates on LP64), and an
- * explicit 0 for an out-of-range type pair. */
-s32 func_8010F9AC(struct UnkF9AC *arg0, struct UnkF9AC *arg1, struct UnkF9AC *arg2) {
-    s32 ret;
-
-    switch (arg0->unk4 >> 24) {
-    case 0:
-        switch (arg1->unk4 >> 24) {
-        case 0:
-            return func_8010EE24((struct UnkEE24 *) arg0, (struct UnkEE24 *) arg1);
-        case 1:
-            return func_8010EEE8((struct UnkEE24 *) arg0, (struct UnkEE24 *) arg1);
-        case 2:
-            return func_8010EFA8((struct UnkEE24 *) arg0, (struct UnkEFA8 *) arg1);
-        }
-        break;
-    case 1:
-        switch (arg1->unk4 >> 24) {
-        case 0:
-            return func_8010EEE8((struct UnkEE24 *) arg1, (struct UnkEE24 *) arg0);
-        case 1:
-            ret = func_8010EA20((struct UnkEA20 *) arg0, (struct UnkEA20 *) arg1, (Vector *) arg2);
-            if (ret != 0) {
-                arg2->unkC = arg0->unkC;
-                arg2->unk18 = arg1->unkC;
-            }
-            return ret;
-        case 2:
-            ret = func_8010EA68(arg0, arg1, arg2);
-            if (ret != 0) {
-                arg2->unkC = arg0->unkC;
-                func_8010F964((f32 *) &arg2->unk18, (f32 *) arg1);
-            }
-            return ret;
-        }
-        break;
-    case 2:
-        switch (arg1->unk4 >> 24) {
-        case 0:
-            return func_8010EFA8((struct UnkEE24 *) arg1, (struct UnkEFA8 *) arg0);
-        case 1:
-            ret = func_8010EA68(arg1, arg0, arg2);
-            if (ret != 0) {
-                func_8010F964((f32 *) &arg2->unkC, (f32 *) arg0);
-                arg2->unk18 = arg1->unkC;
-            }
-            return ret;
-        case 2:
-            ret = func_8010F140(arg0, arg1, arg2);
-            if (ret != 0) {
-                func_8010F964((f32 *) &arg2->unkC, (f32 *) arg0);
-                func_8010F964((f32 *) &arg2->unk18, (f32 *) arg1);
-            }
-            return ret;
-        }
-        break;
-    }
-    return 0;
-}
-#else
 s32 func_8010F9AC(struct UnkF9AC *arg0, struct UnkF9AC *arg1, struct UnkF9AC *arg2) {
     s32 ret;
 
@@ -1180,7 +1031,11 @@ s32 func_8010F9AC(struct UnkF9AC *arg0, struct UnkF9AC *arg1, struct UnkF9AC *ar
         case 0:
             return func_8010EEE8((struct UnkEE24 *) arg1, (struct UnkEE24 *) arg0);
         case 1:
+#ifdef PORT
+            ret = func_8010EA20((struct UnkEA20 *) arg0, (struct UnkEA20 *) arg1, (Vector *) arg2);
+#else
             ret = func_8010EA20((struct UnkEA20 *) arg0, (struct UnkEA20 *) arg1, (s32) arg2);
+#endif
             if (ret != 0) {
                 arg2->unkC = arg0->unkC;
                 arg2->unk18 = arg1->unkC;
@@ -1216,8 +1071,11 @@ s32 func_8010F9AC(struct UnkF9AC *arg0, struct UnkF9AC *arg1, struct UnkF9AC *ar
         }
         break;
     }
-}
+#ifdef PORT
+    /* an out-of-range type pair falls off the end on N64 */
+    return 0;
 #endif
+}
 
 #ifdef PORT
 /* These are views over the HOST PlySlot/CollSlot arenas (ovl2_9.c), whose

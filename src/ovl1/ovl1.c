@@ -3732,114 +3732,17 @@ GObj *func_800A04B8(s32 arg0) {
 
 
 #ifdef PORT
-/* Accumulate the local transform of arg2's DObj chain (chain roots carry
- * the sentinel parent == 1, same as the emitter-track walkers above):
- * per node scale * rotation * translation from the DObj itself, then the
- * optional DObjDynamicStore records in kinds[] order -- native record
- * sizes, exactly as omDObjAddMtx walks them in object_manager.c. arg0
- * gets the accumulated translation row; arg1 is transformed in place by
- * the three column-normalized basis vectors (row-vector convention). */
+/* Later PORT code in this TU relies on these prototypes. */
 #include "main/lbmatrix.h"
+#endif
 
-/* FACTORY: 59/277 -- MEASURED 2026-08-25. One saved-register rotation and the
- * FP naming that follows it. The ROM holds `$sp + 0xB8` (the accumulator
- * matrix) in $s5 and the draft holds it in $s4, which also reorders the
- * prologue's seven `sw $sN` because IDO saves them in first-use order. From
- * index 182 on every difference is an $s4/$s5 or $f20/$f22 exchange over
- * identical opcodes and offsets.
- *
- * FRAME AND SLOTS ARE ALREADY RIGHT: `addiu $sN, $sp, 0xB8` appears in both,
- * so the matrices are at the ROM's addresses. The reads at 0xB8 against 0xC8
- * are acc[0][k] versus acc[1][k], i.e. which product of the inner sum IDO
- * evaluates first -- not a layout difference.
- *
- * Measured 2026-08-25 and byte-identical at 59/277, so the source-shape search
- * space here is empty:
- *   - swapping the two Mat4 declarations (addresses do not move -- IDO packs
- *     two 0x40 objects the same way in either order);
- *   - moving `node` first or last among the declarations;
- *   - declaring vy before vx;
- *   - loading vy from arg1[1] before vx from arg1[0];
- *   - writing the transform as ((r0*vx) + (r1*vy)) + (r2*vz) instead of
- *     (r2*vz) + ((r0*vx) + (r1*vy)) -- the diff is IDENTICAL word for word,
- *     so IDO canonicalises the sum order and LEVER 2 does not reach it;
- *   - swapping the inner product to (r1*vy) + (r0*vx), same.
- * Permuter fuel; queued in priority_queue.py's TARGETS. */
-void func_800A0558(f32 *arg0, f32 *arg1, struct DObj *arg2) {
-    Mat4 acc;
-    Mat4 tmp;
-    struct DObj *node = arg2;
-    f32 vx, vy, vz;
-
-    guMtxIdentF(acc);
-    do {
-        if (node->scale.v.x != 1.0f || node->scale.v.y != 1.0f || node->scale.v.z != 1.0f) {
-            HS64_MkScaleMtxF(tmp, node->scale.v.x, node->scale.v.y, node->scale.v.z);
-            guMtxCatF(acc, tmp, acc);
-        }
-        if (node->angle.v.x != 0.0f || node->angle.v.y != 0.0f || node->angle.v.z != 0.0f) {
-            HS64_MkRotationMtxF(tmp, node->angle.v.x, node->angle.v.y, node->angle.v.z);
-            guMtxCatF(acc, tmp, acc);
-        }
-        if (node->pos.v.x != 0.0f || node->pos.v.y != 0.0f || node->pos.v.z != 0.0f) {
-            HS64_MkTranslateMtxF(tmp, node->pos.v.x, node->pos.v.y, node->pos.v.z);
-            guMtxCatF(acc, tmp, acc);
-        }
-        if (node->unk4C != NULL) {
-            uintptr_t csr = (uintptr_t) node->unk4C->data;
-            OMMtxFloat3 *translate = NULL;
-            OMMtxFloat4 *rotate = NULL;
-            OMMtxFloat3 *scale = NULL;
-            s32 i;
-
-            for (i = 0; i < 3; i++) {
-                switch (node->unk4C->kinds[i]) {
-                    case 0:
-                        break;
-                    case 1:
-                        translate = (OMMtxFloat3 *) csr;
-                        csr += sizeof(OMMtxFloat3);
-                        break;
-                    case 2:
-                        rotate = (OMMtxFloat4 *) csr;
-                        csr += sizeof(OMMtxFloat4);
-                        break;
-                    case 3:
-                        scale = (OMMtxFloat3 *) csr;
-                        csr += sizeof(OMMtxFloat3);
-                        break;
-                }
-            }
-            if (scale != NULL && (scale->v.x != 1.0f || scale->v.y != 1.0f || scale->v.z != 1.0f)) {
-                HS64_MkScaleMtxF(tmp, scale->v.x, scale->v.y, scale->v.z);
-                guMtxCatF(acc, tmp, acc);
-            }
-            if (rotate != NULL && (rotate->v.x != 0.0f || rotate->v.y != 0.0f || rotate->v.z != 0.0f)) {
-                HS64_MkRotationMtxF(tmp, rotate->v.x, rotate->v.y, rotate->v.z);
-                guMtxCatF(acc, tmp, acc);
-            }
-            if (translate != NULL && (translate->v.x != 0.0f || translate->v.y != 0.0f || translate->v.z != 0.0f)) {
-                HS64_MkTranslateMtxF(tmp, translate->v.x, translate->v.y, translate->v.z);
-                guMtxCatF(acc, tmp, acc);
-            }
-        }
-        node = node->parent;
-    } while (node != (struct DObj *) 1);
-
-    arg0[0] = acc[3][0];
-    arg0[1] = acc[3][1];
-    arg0[2] = acc[3][2];
-    vx = arg1[0];
-    vy = arg1[1];
-    vz = arg1[2];
-    guNormalize(&acc[0][0], &acc[1][0], &acc[2][0]);
-    guNormalize(&acc[0][1], &acc[1][1], &acc[2][1]);
-    guNormalize(&acc[0][2], &acc[1][2], &acc[2][2]);
-    arg1[0] = (acc[2][0] * vz) + ((acc[0][0] * vx) + (acc[1][0] * vy));
-    arg1[1] = (acc[2][1] * vz) + ((acc[0][1] * vx) + (acc[1][1] * vy));
-    arg1[2] = (acc[2][2] * vz) + ((acc[0][2] * vx) + (acc[1][2] * vy));
-}
-#else
+/* Accumulate the local transform of arg2's DObj chain (chain roots carry
+ * the sentinel parent == 1): per node scale * rotation * translation from
+ * the DObj itself, then the optional DObjDynamicStore records in kinds[]
+ * order. arg0 gets the accumulated translation row; arg1 is transformed in
+ * place by the three column-normalized basis vectors. PORT: the records hold
+ * a leading OMMtx pointer, so they walk at their native LP64 sizes, exactly
+ * as omDObjAddMtx lays them out in object_manager.c. */
 void func_800A0558(f32 *arg0, f32 *arg1, struct DObj *arg2) {
     void guMtxIdentF(f32 m[4][4]);
     void guMtxCatF(f32 m[4][4], f32 n[4][4], f32 r[4][4]);
@@ -3888,15 +3791,27 @@ void func_800A0558(f32 *arg0, f32 *arg1, struct DObj *arg2) {
                     break;
                 case 1:
                     translate = (OMMtxFloat3 *) csr;
+#ifdef PORT
+                    csr += sizeof(OMMtxFloat3);
+#else
                     csr += 0x10;
+#endif
                     break;
                 case 2:
                     rotate = (OMMtxFloat4 *) csr;
+#ifdef PORT
+                    csr += sizeof(OMMtxFloat4);
+#else
                     csr += 0x14;
+#endif
                     break;
                 case 3:
                     scale = (OMMtxFloat3 *) csr;
+#ifdef PORT
+                    csr += sizeof(OMMtxFloat3);
+#else
                     csr += 0x10;
+#endif
                     break;
                 }
                 kinds += 1;
@@ -3928,7 +3843,6 @@ void func_800A0558(f32 *arg0, f32 *arg1, struct DObj *arg2) {
     arg1[1] = (spB8[0][1] * vx) + (spB8[1][1] * vy) + (spB8[2][1] * vz);
     arg1[2] = (spB8[0][2] * vx) + (spB8[1][2] * vy) + (spB8[2][2] * vz);
 }
-#endif
 
 #ifdef PORT
 /* PORT: the LP64 shape of the D_800D6A0C live / D_800D6A08 free generator

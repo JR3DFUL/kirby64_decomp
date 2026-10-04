@@ -2188,72 +2188,55 @@ void func_80155088_ovl3(arg0)
 #pragma GLOBAL_ASM("asm/nonmatchings/ovl3/ovl3_1/func_80155088_ovl3.s")
 #endif
 
-#ifdef PORT
-/* PORT: on N64 these wrappers leave $a0 untouched, so the shot state
- * buffer their callers pass (plyshot's &D_80197F60_ovl3[...]) flows
- * straight into the collision pass; in C that hidden argument has to be
- * forwarded explicitly. */
-s32 func_80155424_ovl3(struct PositionState *arg0) {
-    if (D_800E0490[omCurrentObj->objId] == NULL) {
-        D_800E8920[omCurrentObj->objId] = 0;
-        return 0;
-    }
-    func_80154CFC_ovl3(arg0);
-    return D_800E8920[omCurrentObj->objId];
-}
-
-s32 func_80155498_ovl3(struct PositionState *arg0) {
-    if (D_800E0490[omCurrentObj->objId] == NULL) {
-        D_800E8920[omCurrentObj->objId] = 0;
-        return 0;
-    }
-    func_801548DC_ovl3(arg0);
-    return D_800E8920[omCurrentObj->objId];
-}
-#else
 /* The N64 arms of func_80155424_ovl3 / func_80155498_ovl3 / func_80155664_ovl3
  * take NO parameter: the shot's state buffer arrives in $a0 and is threaded
  * untouched into the K&R-declared collision passes above. Their callers in
  * plyshot.c therefore prototype them with one argument, and that mismatch is
  * deliberate -- see the note on func_80154CFC_ovl3 at the top of this file.
- * Do not "reconcile" either side in isolation. */
+ * Do not "reconcile" either side in isolation.
+ * PORT: in C that hidden argument has to be forwarded explicitly, so the
+ * port spells the parameter (plyshot's &D_80197F60_ovl3[...]) out. */
+#ifdef PORT
+s32 func_80155424_ovl3(struct PositionState *arg0) {
+#else
 s32 func_80155424_ovl3(void) {
-    if (D_800E0490[omCurrentObj->objId] == NULL) {
-        D_800E8920[omCurrentObj->objId] = 0;
-        return 0;
-    }
-    func_80154CFC_ovl3();
-    return D_800E8920[omCurrentObj->objId];
-}
-
-s32 func_80155498_ovl3(void) {
-    if (D_800E0490[omCurrentObj->objId] == NULL) {
-        D_800E8920[omCurrentObj->objId] = 0;
-        return 0;
-    }
-    func_801548DC_ovl3();
-    return D_800E8920[omCurrentObj->objId];
-}
 #endif
+    if (D_800E0490[omCurrentObj->objId] == NULL) {
+        D_800E8920[omCurrentObj->objId] = 0;
+        return 0;
+    }
+#ifdef PORT
+    func_80154CFC_ovl3(arg0);
+#else
+    func_80154CFC_ovl3();
+#endif
+    return D_800E8920[omCurrentObj->objId];
+}
 
 #ifdef PORT
-/* PORT: arg0 is the shot state buffer (a pointer the matched C narrows to
- * s32 -- an LP64 shear), forwarded into the contact sweep. */
-s32 func_8015550C_ovl3(struct PositionState *arg0, s32 arg1) {
-    f32 sp20[4];
-
+s32 func_80155498_ovl3(struct PositionState *arg0) {
+#else
+s32 func_80155498_ovl3(void) {
+#endif
     if (D_800E0490[omCurrentObj->objId] == NULL) {
         D_800E8920[omCurrentObj->objId] = 0;
         return 0;
     }
-    sp20[0] = gEntitiesNextPosXArray[omCurrentObj->objId];
-    sp20[1] = gEntitiesNextPosYArray[omCurrentObj->objId];
-    sp20[2] = gEntitiesNextPosZArray[omCurrentObj->objId];
-    func_80154CFC_ovl3(arg0);
-    return func_80155C68_ovl3(arg1, sp20);
+#ifdef PORT
+    func_801548DC_ovl3(arg0);
+#else
+    func_801548DC_ovl3();
+#endif
+    return D_800E8920[omCurrentObj->objId];
 }
+
+/* PORT: arg0 is the shot state buffer, a pointer the matched C narrows to
+ * s32 -- an LP64 shear -- before forwarding it into the contact sweep. */
+#ifdef PORT
+s32 func_8015550C_ovl3(struct PositionState *arg0, s32 arg1) {
 #else
 s32 func_8015550C_ovl3(s32 arg0, s32 arg1) {
+#endif
     f32 sp20[4];
 
     if (D_800E0490[omCurrentObj->objId] == NULL) {
@@ -2266,36 +2249,9 @@ s32 func_8015550C_ovl3(s32 arg0, s32 arg1) {
     func_80154CFC_ovl3(arg0);
     return func_80155C68_ovl3(arg1, sp20);
 }
-#endif
 
-#ifdef PORT
-/* PORT: arg0 here is really the shot state buffer, not a GObj (hidden-$a0
- * pass-through in the matched C). */
-s32 func_801555B0_ovl3(GObj *arg0, s32 arg1) {
-    s32 ret;
-    Vector sp20;
-
-    if (D_800E0490[omCurrentObj->objId] == NULL) {
-        D_800E8920[omCurrentObj->objId] = 0;
-        return 0;
-    }
-    sp20.x = gEntitiesNextPosXArray[omCurrentObj->objId];
-    sp20.y = gEntitiesNextPosYArray[omCurrentObj->objId];
-    sp20.z = gEntitiesNextPosZArray[omCurrentObj->objId];
-    ret = func_80155C68_ovl3(arg1, &sp20);
-    func_80154CFC_ovl3((struct PositionState *) arg0);
-    return ret;
-}
-
-s32 func_80155664_ovl3(struct PositionState *arg0) {
-    if (D_800E0490[omCurrentObj->objId] == NULL) {
-        D_800E8920[omCurrentObj->objId] = 0;
-        return 0;
-    }
-    func_80155088_ovl3(arg0);
-    return D_800E8920[omCurrentObj->objId];
-}
-#else
+/* arg0 here is really the shot state buffer, not a GObj; it is forwarded
+ * through the unprototyped func_80154CFC_ovl3 as a full pointer. */
 s32 func_801555B0_ovl3(GObj *arg0, s32 arg1) {
     s32 ret;
     Vector sp20;
@@ -2312,15 +2268,22 @@ s32 func_801555B0_ovl3(GObj *arg0, s32 arg1) {
     return ret;
 }
 
+#ifdef PORT
+s32 func_80155664_ovl3(struct PositionState *arg0) {
+#else
 s32 func_80155664_ovl3(void) {
+#endif
     if (D_800E0490[omCurrentObj->objId] == NULL) {
         D_800E8920[omCurrentObj->objId] = 0;
         return 0;
     }
+#ifdef PORT
+    func_80155088_ovl3(arg0);
+#else
     func_80155088_ovl3();
+#endif
     return D_800E8920[omCurrentObj->objId];
 }
-#endif
 
 #ifdef NON_MATCHING
 /* FACTORY: 6/88 words, one-slot rotation (ROM rec in $a1, rec[1] in $a0; here $a0/$v1) */

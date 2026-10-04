@@ -1253,46 +1253,12 @@ struct DObj *func_800B1F70(struct DObj *node, struct DObj *stopnode) {
     return node;
 }
 
-#ifdef PORT
-/* Subtree anim-set walker (draft above): walks the DObj tree from arg0,
- * handing each node its slot of the anim-script table (N64 stride 4) and of
- * the 0x2C-byte parameter records. On PC the script table is a widened
- * void*[] -- one 8-byte cell per N64 word -- so that stride is 8; the
- * parameter records are scalar structs at native layout, stride unchanged.
- * Pointers arrive as u32 (the N64 signature); lossless under the -no-pie
- * low-memory invariant. */
-void func_800B1FD0(GObj *arg0, u32 arg1, f32 arg2, u32 arg3, f32 arg4) {
-    DObj *root = omCurrentObj->data.dobj;
-    uintptr_t script = arg1;
-    uintptr_t params = arg3;
-    DObj *node;
-
-    if ((DObj *) arg0 != root) {
-        do {
-            if (script != 0) {
-                script += 8;
-            }
-            if (params != 0) {
-                params += 0x2C;
-            }
-            root = animModelTreeNextNode(root);
-        } while ((DObj *) arg0 != root);
-    }
-    node = root;
-    if (root != NULL) {
-        do {
-            func_8000EC98(node, script, arg2, params, 0, arg4, 0.0f, 0.0f, 0.0f);
-            node = func_800B1F70(node, root);
-            if (script != 0) {
-                script += 8;
-            }
-            if (params != 0) {
-                params += 0x2C;
-            }
-        } while (node != NULL);
-    }
-}
-#else
+/* Subtree anim-set walker: walks the DObj tree from arg0, handing each node
+ * its slot of the anim-script table (N64 stride 4) and of the 0x2C-byte
+ * parameter records. PORT: the script table is a widened void*[] -- one
+ * 8-byte cell per N64 word -- so that stride is 8; the parameter records are
+ * scalar structs at native layout, stride unchanged. Pointers ride in s32
+ * (the N64 signature); lossless under the -no-pie low-memory invariant. */
 void func_800B1FD0(GObj *arg0, s32 arg1, f32 arg2, s32 arg3, f32 arg4) {
     DObj *node;
     DObj *root;
@@ -1307,7 +1273,11 @@ void func_800B1FD0(GObj *arg0, s32 arg1, f32 arg2, s32 arg3, f32 arg4) {
     if ((DObj *) arg0 != root) {
         do {
             if (s3 != 0) {
+#ifdef PORT
+                s3 += 8;
+#else
                 s3 += 4;
+#endif
             }
             if (s4 != 0) {
                 s4 += 0x2C;
@@ -1323,7 +1293,11 @@ void func_800B1FD0(GObj *arg0, s32 arg1, f32 arg2, s32 arg3, f32 arg4) {
             func_8000EC98(node, script, arg2, params, 0, arg4, 0.0f, 0.0f, 0.0f);
             node = func_800B1F70(node, root);
             if (script != 0) {
+#ifdef PORT
+                script += 8;
+#else
                 script += 4;
+#endif
             }
             if (params != 0) {
                 params += 0x2C;
@@ -1331,7 +1305,6 @@ void func_800B1FD0(GObj *arg0, s32 arg1, f32 arg2, s32 arg3, f32 arg4) {
         } while (node != NULL);
     }
 }
-#endif
 
 /* FACTORY: 3/71 words DIFFER (measured with tools/decomp/measure_seeds.py).
  * Semantics are solved: arg1 is the geo blob's texScroll section -- a list of
@@ -1487,54 +1460,6 @@ void func_800B2340(Vector *vec, struct DObj *node, u32 track) {
     vec->z = finalMtx[3][2];
 }
 
-#ifdef PORT
-/* Functional port; the weak stub aborted the world map's travel state the
- * first time the port ever reached it. The asm walks the PARENT chain
- * (lw 0x14 = DObj.parent; the sketch above calls that field `child`, an m2c
- * naming artifact) and the loop processes each node then stops after the one
- * whose parent is the sentinel 1 -- the same shape as the matched
- * func_800B2928 below, with rotation in place of scale. The euler extraction
- * mirrors the matched extractor in src/ovl1/util.c (asinf/atan2f rows). */
-void func_800B26D8(Vector *vec, struct DObj *node, u32 track) {
-    Mat4 finalMtx;
-    Mat4 tmpMtx;
-
-    if (track == 0xFFFF) {
-        track = omCurrentObj->objId;
-    }
-    if (node == NULL) {
-        node = omCurrentObj->data.dobj;
-    }
-    guMtxIdentF(finalMtx);
-    do {
-        if ((u32)(uintptr_t)node->parent != 1) {
-            if ((node->angle.v.x != 0.0f) || (node->angle.v.y != 0.0f) || (node->angle.v.z != 0.0f)) {
-                HS64_MkRotationMtxF(tmpMtx, node->angle.v.x, node->angle.v.y, node->angle.v.z);
-                guMtxCatF(finalMtx, tmpMtx, finalMtx);
-            }
-        } else {
-            if ((gEntitiesAngleXArray[track] != 0.0f) || (gEntitiesAngleYArray[track] != 0.0f) ||
-                (gEntitiesAngleZArray[track] != 0.0f)) {
-                HS64_MkRotationMtxF(tmpMtx, gEntitiesAngleXArray[track], gEntitiesAngleYArray[track],
-                                    gEntitiesAngleZArray[track]);
-                guMtxCatF(finalMtx, tmpMtx, finalMtx);
-            }
-        }
-        node = node->parent;
-    } while ((u32)(uintptr_t)node != 1);
-
-    vec->y = asinf(-finalMtx[0][2]);
-    if ((vec->y == 1.5707964f) || (vec->y == -1.5707964f)) {
-        vec->x = (vec->y == 1.5707964f) ? atan2f(finalMtx[1][0], finalMtx[1][1])
-                                        : atan2f(-finalMtx[1][0], finalMtx[1][1]);
-        vec->z = 0.0f;
-    } else {
-        vec->x = atan2f(finalMtx[1][2], finalMtx[2][2]);
-        vec->z = atan2f(finalMtx[0][1], finalMtx[0][0]);
-    }
-    utilWrapRotation(vec);
-}
-#else
 void func_800B26D8(Vector *vec, struct DObj *node, u32 track) {
     Mat4 finalMtx;
     Mat4 tmpMtx;
@@ -1579,7 +1504,6 @@ void func_800B26D8(Vector *vec, struct DObj *node, u32 track) {
     }
     utilWrapRotation(vec);
 }
-#endif
 
 void func_800B2928(Vector *vec, struct DObj *node, u32 track) {
     Mat4 finalMtx;

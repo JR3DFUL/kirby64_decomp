@@ -121,97 +121,6 @@ void func_801DCE44_ovl9(GObj *arg0) {
     func_801DF454_ovl9(arg0);
 }
 
-#ifdef PORT
-void func_800AA018(s32);
-void ohSleep(s32);
-extern f32 func_8019DA50_ovl7(void);
-extern struct EnemyEventTable D_801CB764;
-/* Ambush spawn state: play the pop-in animation (0x10049) with
- * physics frozen, gate the reveal on the spawn mode (mode 1: wait
- * until Kirby's lateral offset func_8019DA50 changes sign, then 15
- * more ticks; mode 2: wait until Kirby is within 240 units; mode 3 /
- * others: immediately), run one thawed frame, then set the walk speed
- * (halved when flag 1 is set), face the player or path direction, play
- * the reveal cue when grounded and hand off to state 3 (or despawn
- * state 4 when airborne). */
-void func_801DCE6C_ovl9(struct GObj *arg0) {
-    s32 sp48;
-    u32 id;
-
-    D_800DDFD0[omCurrentObj->objId] = 1;
-    D_800E1B50[omCurrentObj->objId]->unk8C = &D_801C8080_ovl7;
-    func_800B33F4();
-    func_800AECC0(0.0f);
-    func_800AED20(0.0f);
-    func_800AA018(0x10049);
-    D_800EB160[omCurrentObj->objId] = 0.0f;
-    D_800E9AA0[omCurrentObj->objId].as_u32 = 0;
-    id = omCurrentObj->objId;
-    switch (D_800E7880[id]) {
-        case 3:
-            break;
-        case 1:
-            D_800EA520[id] = 0;
-            D_800EB320[omCurrentObj->objId] = func_8019DA50_ovl7();
-            id = omCurrentObj->objId;
-            while (D_800EA520[id] == 0) {
-                if (D_800EB320[id] > 0.0f) {
-                    if (func_8019DA50_ovl7() < 0.0f) {
-                        D_800EA520[omCurrentObj->objId] = 1;
-                    }
-                } else if (func_8019DA50_ovl7() > 0.0f) {
-                    D_800EA520[omCurrentObj->objId] = 1;
-                }
-                ohSleep(1);
-                id = omCurrentObj->objId;
-            }
-            ohSleep(0xF);
-            break;
-        case 2: {
-            f32 dist;
-
-            dist = func_8019DA50_ovl7();
-            if (dist < 0.0f) {
-                dist = -dist;
-            }
-            while (dist > 240.0f) {
-                ohSleep(1);
-                dist = func_8019DA50_ovl7();
-                if (dist < 0.0f) {
-                    dist = -dist;
-                }
-            }
-            break;
-        }
-    }
-    func_800AECC0(gameTicksPerDraw);
-    func_800AED20(gameTicksPerDraw);
-    func_800AF27C();
-    func_800AECC0(0.0f);
-    func_800AED20(0.0f);
-    id = omCurrentObj->objId;
-    if (D_800E8920[id] == 0) {
-        D_800EAC20[id] = 0.0f;
-    } else {
-        D_800EAC20[id] = (D_800E8AE0[id] & 1) ? 0.5f : 1.0f;
-    }
-    if (func_8019A900_ovl7(&sp48) != 0) {
-        D_800E6A10[omCurrentObj->objId] = sp48;
-    } else {
-        D_800E6A10[omCurrentObj->objId] = func_8019B608_ovl7(0);
-    }
-    id = omCurrentObj->objId;
-    if (D_800E8920[id] == 1) {
-        play_sound(0xA4);
-        id = omCurrentObj->objId;
-    }
-    if (D_800E8920[id] == 0) {
-        gEntityFuncListIDArray[id] = 4;
-    } else {
-        gEntityFuncListIDArray[id] = 3;
-    }
-}
-#else
 void func_800AA018(s32);
 void ohSleep(s32);
 extern f32 func_8019DA50_ovl7(void);
@@ -281,7 +190,6 @@ void func_801DCE6C_ovl9(struct GObj *arg0) {
         gEntityFuncListIDArray[omCurrentObj->objId] = 3;
     }
 }
-#endif
 
 void func_8019F3F0_ovl7(void);
 void func_801DF454_ovl9(GObj *);
@@ -667,89 +575,6 @@ void func_801DDDD0_ovl9(struct GObj *arg0) {
     gEntityFuncListIDArray[omCurrentObj->objId] = 4;
 }
 
-#ifdef PORT
-extern struct GObjProcess *gEntityGObjProcessArray[];
-extern void assign_new_process_entry(struct GObjProcess *, void (*)(GObj *));
-extern s32 D_801CA550;
-extern s32 D_801CA598;
-extern u8 D_8012E7C5;
-extern u8 D_8012E90C[];
-s32 func_801DF588_ovl9(s32, void *);
-extern void func_80169430_ovl3(s32, s32, s32, s32);
-void func_801DF29C_ovl9(GObj *);
-void func_801DDD44_ovl9(struct GObj *);
-struct PcOvl9AnimInfo {
-    u8 unk0;
-    u8 unk1;
-    u8 unk2;
-    u8 unk3;
-    u8 filler4[8];
-    s32 unkC;
-    u8 filler10[0xC];
-};
-/* Stun-state per-frame hook: age the stun timer D_800E9E20, run the
- * shared mover, and while rising off the ground either shake in place
- * (func_801DF29C) or -- after 5 ticks, or immediately in mode 3 --
- * escalate to state 7 and rebind the thread entry.  Ground modes time
- * out at 166 ticks into state 8 the same way.  When both the entity
- * and Kirby are grounded and the global inhale byte is clear, select
- * the directional hit table (D_801CA550/D_801CA598 by run direction),
- * and if the current animation frame carries an anim event, forward it
- * to the HUD/star handler func_80169430 (kind 7) and clear the
- * one-shot flag; otherwise fall back to the plain table and the ovl7
- * post-move fixup.  Always finishes with the sleep/despawn helpers. */
-void func_801DDF9C_ovl9(GObj *arg0) {
-    struct PcOvl9AnimInfo sp2C;
-    u32 id;
-
-    D_800E9E20[omCurrentObj->objId]++;
-    func_801A0D74_ovl7(arg0);
-    id = omCurrentObj->objId;
-    if (gEntitiesPosYArray[id] < gEntitiesNextPosYArray[id]) {
-        if (D_800E7880[id] == 3) {
-            func_801DF29C_ovl9(arg0);
-        } else if (D_800E9E20[id] >= 5) {
-            gEntityFuncListIDArray[id] = 7;
-            assign_new_process_entry(gEntityGObjProcessArray[omCurrentObj->objId], func_801DCA78_ovl9);
-        } else {
-            func_801DF29C_ovl9(arg0);
-        }
-        id = omCurrentObj->objId;
-    }
-    switch (D_800E7880[id]) {
-        case 3:
-            break;
-        case 0:
-        case 1:
-        case 2:
-            if (D_800E9E20[id] >= 0xA6) {
-                gEntityFuncListIDArray[id] = 8;
-                assign_new_process_entry(gEntityGObjProcessArray[omCurrentObj->objId], func_801DCA78_ovl9);
-                id = omCurrentObj->objId;
-            }
-            break;
-    }
-    if ((D_800E8920[id] == 1) && (D_800E8920[0] == 1) && (D_8012E90C[4] == 0)) {
-        if (D_800E64D0[id] > 0.0f) {
-            D_800E1B50[id]->unk8C = &D_801CA550;
-        } else {
-            D_800E1B50[id]->unk8C = &D_801CA598;
-        }
-        if (func_801DF588_ovl9(0, &sp2C) != 0) {
-            func_80169430_ovl3(sp2C.unkC, sp2C.unk0, sp2C.unk1, 7);
-            D_800EBBE0[omCurrentObj->objId] = 0;
-        } else if (D_8012E7C5 != 0x15) {
-            D_800E1B50[omCurrentObj->objId]->unk8C = &D_801C8080_ovl7;
-            func_8019F3F0_ovl7();
-        }
-    } else {
-        D_800E1B50[id]->unk8C = &D_801C8080_ovl7;
-        func_8019F3F0_ovl7();
-    }
-    func_801DDD44_ovl9(arg0);
-    func_801DF454_ovl9(arg0);
-}
-#else
 extern struct GObjProcess *gEntityGObjProcessArray[];
 extern s32 D_801CA550;
 extern s32 D_801CA598;
@@ -822,7 +647,6 @@ void func_801DDF9C_ovl9(GObj *arg0) {
     func_801DDD44_ovl9(arg0);
     func_801DF454_ovl9(arg0);
 }
-#endif
 
 /* FACTORY: 27/227, callee-saved permutation.  Length, frame, both loops,
    the div.s and every constant are the ROM's.  Residue is a one-slot cyclic

@@ -482,104 +482,33 @@ big:
     D_800EAFA0[omCurrentObj->objId] = D_800EAA60[D_800E0D50[D_800E0D50[omCurrentObj->objId]]];
 }
 
+/* PORT: homing-missile launch state, from asm/nonmatchings/ovl17/ovl17_3/
+ * func_801E1CB4_ovl17.s. Copies the parent boss's (D_800E0D50) orientation
+ * into this track, runs the shared aim pass func_801E23E0 (a bare pragma
+ * on N64; still a weak abort stub on PC until it is ported), spawns the
+ * muzzle-flash generator (effect 6/3, kind 3 or 6 by D_800E7880) and seeds
+ * its emitter with the missile's position and angles -- through the PORT
+ * Ovl1Generator view of ovl1_2_2.c (emitter ptr at +0x58, vectors at
+ * +0x8/+0x14); the N64 code dereferences the generator unchecked, the PC
+ * arm guards NULL -- then launches along local +Z at speed 15 (accel 0.5,
+ * cap |15*dir|), sleeps 45 frames and hands the track to
+ * func_801A3E80_ovl7. D_800E98E0 keeps the generator as a truncated
+ * 32-bit address (established pointer-in-u32 idiom, non-PIE sub-4GiB). */
+void func_801E1CB4_ovl17(struct GObj *arg0) {
 #ifdef PORT
-/* PORT: homing-missile launch state, from asm/nonmatchings/ovl17/ovl17_3/
- * func_801E1CB4_ovl17.s. Copies the parent boss's (D_800E0D50) orientation
- * into this track, runs the shared aim pass func_801E23E0 (a bare pragma
- * on N64; still a weak abort stub on PC until it is ported), spawns the
- * muzzle-flash generator (effect 6/3, kind 3 or 6 by D_800E7880) and seeds
- * its emitter with the missile's position and angles -- through the PORT
- * Ovl1Generator view of ovl1_2_2.c (emitter ptr at +0x58, vectors at
- * +0x8/+0x14); the N64 code dereferences the generator unchecked, the PC
- * arm guards NULL -- then launches along local +Z at speed 15 (accel 0.5,
- * cap |15*dir|), sleeps 45 frames and hands the track to
- * func_801A3E80_ovl7. D_800E98E0 keeps the generator as a truncated
- * 32-bit address (established pointer-in-u32 idiom, non-PIE sub-4GiB). */
-struct PcOvl17Emitter {
-    /* LP64 view of Ovl1Emitter (ovl1_2_2.c PORT arm) */
-    struct PcOvl17Emitter *next;
-    Vector unk4;
-    Vector unk10;
-};
-struct PcOvl17Gen {
-    /* LP64 view of Ovl1Generator: emitter pointer at +0x58 */
-    u8 pad0[0x58];
-    struct PcOvl17Emitter *xf;
-};
-
-void func_801E1CB4_ovl17(struct GObj *arg0) {
-    struct PcOvl17Gen *func_800A8234(s32, s32, s32);
-    void func_801E23E0_ovl17(void);
-    void func_801E343C_ovl17(Vector *);
-    void func_801E2170_ovl17(struct GObj *);
-    struct EnemyRecord *ent;
-    struct PcOvl17Gen *gen;
-    Vector dir;
-    s32 objId;
-    s32 parent;
-    f32 t;
-
-    objId = omCurrentObj->objId;
-    D_800DEF90[objId] = func_800B4924;
-    ent = D_800E1B50[objId];
-    D_800DF150[objId] = func_801E2170_ovl17;
-    D_800E8920[objId] = 0;
-    parent = D_800E0D50[objId];
-    gEntitiesAngleXArray[objId] = gEntitiesAngleXArray[parent];
-    gEntitiesAngleYArray[objId] = gEntitiesAngleYArray[parent];
-    gEntitiesAngleZArray[objId] = gEntitiesAngleZArray[parent];
-    D_800EA6E0[objId] = D_800EA6E0[parent];
-    D_800EA8A0[objId] = D_800EA8A0[parent];
-    D_800EAA60[objId] = D_800EAA60[parent];
-    func_801E23E0_ovl17();
-    if (D_800E7880[objId] == 0) {
-        gen = func_800A8234(6, 3, 3);
-    } else {
-        gen = func_800A8234(6, 3, 6);
-    }
-    D_800E98E0[objId] = (s32) (uintptr_t) gen;
-    if ((gen != NULL) && (gen->xf != NULL)) {
-        gen->xf->unk4.x = gEntitiesNextPosXArray[objId];
-        gen->xf->unk4.y = gEntitiesNextPosYArray[objId];
-        gen->xf->unk4.z = gEntitiesNextPosZArray[objId];
-        gen->xf->unk10.x = gEntitiesAngleXArray[objId];
-        gen->xf->unk10.y = gEntitiesAngleYArray[objId];
-        gen->xf->unk10.z = gEntitiesAngleZArray[objId];
-    }
-    setProcessMain(gEntityGObjProcessArray5[objId], procMainStub);
-    func_800AFBB4(0, omCurrentObj);
-    D_800DDA90[objId] = 0x25;
-    func_801E343C_ovl17(&dir);
-    t = dir.x * 15.0f;
-    D_800E3050[objId] = t;
-    D_800E3590[objId] = dir.x * 0.5f;
-    D_800E3AD0[objId] = (t < 0.0f) ? -t : t;
-    t = dir.y * 15.0f;
-    D_800E3210[objId] = t;
-    D_800E3750[objId] = dir.y * 0.5f;
-    D_800E3C90[objId] = (t < 0.0f) ? -t : t;
-    t = dir.z * 15.0f;
-    D_800E33D0[objId] = t;
-    D_800E3910[objId] = dir.z * 0.5f;
-    D_800E3E50[objId] = (t < 0.0f) ? -t : t;
-    ohSleep(0x2D);
-    ent->unk40 = 1;
-    func_801A3E80_ovl7(arg0);
-}
+    /* LP64 views of Ovl1Emitter / Ovl1Generator (ovl1_2_2.c PORT arm): the
+     * emitter's leading next pointer puts its vectors at +0x8/+0x14, and the
+     * generator's emitter pointer sits at +0x58. */
+    struct Ovl17Emit {
+        void *unk0;
+        Vector unk4;
+        Vector unk10;
+    };
+    struct Ovl17Gen {
+        u8 pad0[0x58];
+        struct Ovl17Emit *unk4C;
+    };
 #else
-/* PORT: homing-missile launch state, from asm/nonmatchings/ovl17/ovl17_3/
- * func_801E1CB4_ovl17.s. Copies the parent boss's (D_800E0D50) orientation
- * into this track, runs the shared aim pass func_801E23E0 (a bare pragma
- * on N64; still a weak abort stub on PC until it is ported), spawns the
- * muzzle-flash generator (effect 6/3, kind 3 or 6 by D_800E7880) and seeds
- * its emitter with the missile's position and angles -- through the PORT
- * Ovl1Generator view of ovl1_2_2.c (emitter ptr at +0x58, vectors at
- * +0x8/+0x14); the N64 code dereferences the generator unchecked, the PC
- * arm guards NULL -- then launches along local +Z at speed 15 (accel 0.5,
- * cap |15*dir|), sleeps 45 frames and hands the track to
- * func_801A3E80_ovl7. D_800E98E0 keeps the generator as a truncated
- * 32-bit address (established pointer-in-u32 idiom, non-PIE sub-4GiB). */
-void func_801E1CB4_ovl17(struct GObj *arg0) {
     struct Ovl17Emit {
         s32 unk0;
         Vector unk4;
@@ -589,6 +518,7 @@ void func_801E1CB4_ovl17(struct GObj *arg0) {
         u8 pad0[0x4C];
         struct Ovl17Emit *unk4C;
     };
+#endif
     struct Ovl17Gen *func_800A8234(s32, s32, s32);
     void func_801E23E0_ovl17(void);
     void func_801E343C_ovl17(Vector *);
@@ -613,8 +543,13 @@ void func_801E1CB4_ovl17(struct GObj *arg0) {
     } else {
         D_800E98E0[omCurrentObj->objId] = (s32) func_800A8234(6, 3, 6);
     }
+#ifdef PORT
+    gen = (struct Ovl17Gen *) (uintptr_t) (u32) D_800E98E0[omCurrentObj->objId];
+    if ((gen != NULL) && (gen->unk4C != NULL)) {
+#else
     gen = (struct Ovl17Gen *) D_800E98E0[omCurrentObj->objId];
     if (gen->unk4C != NULL) {
+#endif
         gen->unk4C->unk4.x = gEntitiesNextPosXArray[omCurrentObj->objId];
         gen->unk4C->unk4.y = gEntitiesNextPosYArray[omCurrentObj->objId];
         gen->unk4C->unk4.z = gEntitiesNextPosZArray[omCurrentObj->objId];
@@ -639,7 +574,6 @@ void func_801E1CB4_ovl17(struct GObj *arg0) {
     ent->unk40 = 1;
     func_801A3E80_ovl7(arg0);
 }
-#endif
 
 void func_801E2170_ovl17(struct GObj *arg0) {
     struct EnemyRecord *temp_v1;

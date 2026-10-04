@@ -1240,133 +1240,27 @@ void func_8011CFF4(GObj *gobj) {
 }
 
 // plyWalk
-#ifdef PORT
-/* PORT: Kirby's onAnimate grab-argument handler, from
- * asm/nonmatchings/ovl2/plylib/func_8011D0FC.s, modeled on the compiled
- * generic handler func_800B0F28 (src/ovl1/ovl1_7.c) which shares every
- * branch shape. arg2 arrives as f32 (see the declaration at the top of the
- * file); cases 12/13 reinterpret its bits like the ROM did.
- *
- * Case 12's ability-voice table is the 0x1C-stride record block at
- * D_80128440: on PC the emitted objects D_80128444/D_80128446 hold only
- * row 0's u16, and every later row lives inside the native-u16 blob
- * D_8012844E (build/pc/data/ovl2_after_spawn.data.c). Row r's D_80128444
- * column is blob cell r*14-5 and its D_80128446 column is r*14-4 (blob
- * base 0x8012844E vs columns 0x80128444/6 + r*0x1C); the blob is a
- * halfword-for-halfword image of the ROM, so u16 reads are exact.
- *
- * Case 13's generator objects come from func_800A19EC (ported in
- * src/ovl1/ovl1.c). On the N64 their +0x48/+0x4C fields coincide with
- * GObj's onAnimate/unk4C, which is why the ROM (and func_800B0F28's
- * compiled PC code, which handles real GObjs) share the spelling; on LP64
- * they do NOT -- the node's two pointers sit at +0x50/+0x58 (struct
- * PcGenNode / Pc2550Obj in ovl1.c), so PcGenNodeRef mirrors just those two
- * slots. PcOMMtxFloat3 is a local mirror of OMMtxFloat3 (include/DObj.h,
- * not included by this TU): pointer then Vector, so the Vector sits at +8
- * on LP64 -- the same shape as UnkEmitter's next pointer followed by its
- * +4/+8/+C position floats, which is what the node's unk4C really is. */
-void func_8011D0FC(struct DObj *arg0, s32 arg1, f32 arg2) {
-    void *func_800A19EC(s32, s32);
-    struct PcOMMtxFloat3 {
-        void *mtx;
-        Vector v;
-    };
-    struct PcGenNodeRef { /* generator node: N64 +0x48/+0x4C on LP64 */
-        u8 pad[80];
-        struct DObj *unk48;
-        void *unk4C;
-    };
-    union {
-        f32 f;
-        s32 w;
-    } bits;
-    Vector sp20;
-    struct PcGenNodeRef *gen;
-    s32 snd;
-    s32 idx;
-
-    switch (arg1) {
-    case 9:
-        func_800BB468((u32) arg2, 0);
-        return;
-    case 12:
-        bits.f = arg2;
-        snd = bits.w;
-        if (snd < 0) {
-            return;
-        }
-        if ((snd == 5) || (snd == 6) || (snd == 0x267)) {
-            s32 flags = D_800E8AE0[omCurrentObj->objId];
-
-            if (flags & 7) {
-                if (flags & 2) {
-                    play_sound(0x10C);
-                } else {
-                    play_sound(9);
-                }
-                return;
-            }
-            if (D_800D6FB2 == 2) {
-                if (gKirbyState.unk7 != 0) {
-                    play_sound(7);
-                } else {
-                    play_sound(8);
-                }
-                return;
-            }
-            {
-                u32 row = gKirbyState.unk10A;
-                const u16 *blob = (const u16 *) D_8012844E;
-                u16 voice;
-
-                if (gKirbyState.unk7 == 0) {
-                    voice = (row == 0) ? D_80128444[0][0] : blob[row * 14 - 5];
-                } else {
-                    voice = (row == 0) ? D_80128446[0][0] : blob[row * 14 - 4];
-                }
-                play_sound(voice);
-            }
-            return;
-        }
-        play_sound(snd);
-        return;
-    case 13:
-        bits.f = arg2;
-        idx = bits.w & 0xFFFF;
-        if (idx >= 0) {
-            gen = func_800A19EC(bits.w >> 0x10, idx);
-            if (gen != NULL) {
-                if (gen->unk4C != NULL) {
-                    func_800B2340(&sp20, arg0, 0xFFFF);
-                    ((struct PcOMMtxFloat3 *) gen->unk4C)->v.x = sp20.x;
-                    ((struct PcOMMtxFloat3 *) gen->unk4C)->v.y = sp20.y;
-                    ((struct PcOMMtxFloat3 *) gen->unk4C)->v.z = sp20.z;
-                    return;
-                }
-                gen->unk48 = arg0;
-                return;
-            }
-        }
-        break;
-    case -1:
-        D_800DD8D0[omCurrentObj->objId] |= 0x40000000;
-        return;
-    case -2:
-        D_800DD8D0[omCurrentObj->objId] |= 0x80000000;
-        return;
-    default:
-        if (D_800DF310[omCurrentObj->objId] != NULL) {
-            D_800DF310[omCurrentObj->objId]((s32) (uintptr_t) arg0, arg1, arg2);
-        }
-        break;
-    }
-}
-#else
 /* Kirby's onAnimate handler: dispatches one animation command. arg1 is the
  * opcode and arg2 its payload, which the ROM passes as an f32 (mtc1 $a2,$f12
  * in the prologue) and then reinterprets as a raw word for the opcodes that
  * carry packed integers. */
 void func_8011D0FC(struct DObj *ln, s32 arg1, f32 arg2) {
+#ifdef PORT
+    /* Case 13's generator objects come from func_800A19EC (src/ovl1/ovl1.c).
+     * On LP64 the node's two pointers sit at +0x50/+0x58 (struct PcGenNode /
+     * Pc2550Obj in ovl1.c), and the xfm is a pointer then a Vector, so pos
+     * sits at +8 -- the same shape as UnkEmitter's next pointer followed by
+     * its position floats, which is what the node's xfm really is. */
+    struct GenNodeXfm {
+        /* 0x00 */ void *flags;
+        /* 0x08 */ Vector pos;
+    };
+    struct GenNode {
+        /* 0x00 */ u8 unk0[0x50];
+        /* 0x50 */ struct DObj *owner;
+        /* 0x58 */ struct GenNodeXfm *xfm;
+    };
+#else
     struct GenNodeXfm {
         /* 0x00 */ u32 flags;
         /* 0x04 */ Vector pos;
@@ -1376,6 +1270,7 @@ void func_8011D0FC(struct DObj *ln, s32 arg1, f32 arg2) {
         /* 0x48 */ struct DObj *owner;
         /* 0x4C */ struct GenNodeXfm *xfm;
     };
+#endif
     struct GenNode *func_800A19EC(s32 group, s32 id);
     f32 soundPayload;
     s32 soundId;
@@ -1412,12 +1307,33 @@ void func_8011D0FC(struct DObj *ln, s32 arg1, f32 arg2) {
                     play_sound(8);
                     return;
                 }
+#ifdef PORT
+                /* The 0x1C-stride voice table at D_80128440: on PC the
+                 * emitted objects D_80128444/D_80128446 hold only row 0's
+                 * u16, and every later row lives inside the native-u16 blob
+                 * D_8012844E (build/pc/data/ovl2_after_spawn.data.c). Row r's
+                 * D_80128444 column is blob cell r*14-5 and its D_80128446
+                 * column is r*14-4 (blob base 0x8012844E vs columns
+                 * 0x80128444/6 + r*0x1C). */
+                {
+                    u32 row = gKirbyState.unk10A;
+                    const u16 *blob = (const u16 *) D_8012844E;
+
+                    if (gKirbyState.unk7 == 0) {
+                        play_sound((row == 0) ? D_80128444[0][0] : blob[row * 14 - 5]);
+                        return;
+                    }
+                    play_sound((row == 0) ? D_80128446[0][0] : blob[row * 14 - 4]);
+                    return;
+                }
+#else
                 if (gKirbyState.unk7 == 0) {
                     play_sound(D_80128444[gKirbyState.unk10A][0]);
                     return;
                 }
                 play_sound(D_80128446[gKirbyState.unk10A][0]);
                 return;
+#endif
             }
             play_sound(soundId);
             return;
@@ -1455,7 +1371,6 @@ void func_8011D0FC(struct DObj *ln, s32 arg1, f32 arg2) {
         break;
     }
 }
-#endif
 
 void func_8011D40C(void) {
     if (D_800D6B54 == 0) {
@@ -1471,94 +1386,47 @@ void func_8011D40C(void) {
     }
 }
 
+void *func_8011D4A4(f32 arg0) {
 #ifdef PORT
-/* PORT: (re)register Kirby's body shapes -- func_80111574 (ovl2_9.c) copies
- * the PlyEntry blob gKirbyState.unk15C points at into the global Shape28
- * arena and hands back the slot; this walks the slot's shape list, scales
- * the geometry by arg0 (Kirby's size factor, gKirbyState.unk158) unless it
- * is exactly 1.0f -- a sphere (type 1) scales only its radius at 0x18, a
- * capsule (type 2) scales all seven floats 0xC..0x24 -- and, when a shape's
- * joint word is 0 and gKirbyState.unk154 names an override joint, binds the
- * shape to DObj D_800DFBD0[objId][unk154]. Ends with the func_80111C4C
- * debug hook (a no-op: func_80110138 is empty) and returns the slot.
- *
- * Provenance, verified: the blob this walks is NATIVE PC memory, not
- * big-endian asset bytes. The shape list lives in the D_8012D198 arena
- * (ovl2_9.c BSS), populated word-by-word by the compiled func_80111574 from
- * the generated tables in build/pc/data/*.data.c (e.g. D_80190358_ovl3 /
- * D_80190334_ovl3 for normal Kirby), which are emitted as native u32 words
- * holding the N64 word VALUES. Float words and the joint word therefore
- * read correctly through native types; the one N64-byte-order residue is
- * the shape type, an N64 byte-0 read that sits in bits 24-31 of the head
- * word (0x01000000 = sphere) -- decoded here with >> 24, the same
- * convention as the func_8010F9AC/func_8010E740 PORT arms in ovl2_8.c and
- * the word-shift rule of func_800F90C0's PORT arm. The joint store
- * truncates a DObj* into the 32-bit unk8 slot; that is the file's
- * established pointer-in-u32 idiom (gKirbyState.unk15C itself) and is
- * lossless under -no-pie (src/pc/pc_mmio.c). The m2c draft above garbles
- * only the func_80111C4C call (one argument, the slot) and the slot walk
- * offsets, which on LP64 sit at 32/40/48 (see the host-slot views in
- * ovl2_8.c). Return is the slot pointer (the N64 tail returns it in $v0);
- * both external callers declare the function void and ignore it. */
-struct PcD4A4Shape {                /* Shape28 arena entry, 40 bytes */
-    u8 unk0;                        /* computed-this-frame flag (native) */
-    u8 pad1[3];
-    u32 unk4;                       /* N64 head word: type in bits 24-31 */
-    s32 unk8;                       /* joint: 0/-1/-2/-3 or truncated DObj* */
-    f32 unkC;
-    f32 unk10;
-    f32 unk14;
-    f32 unk18;
-    f32 unk1C;
-    f32 unk20;
-    f32 unk24;
-};
-struct PcD4A4Slot {                 /* host PlySlot (ovl2_9.c) on LP64 */
-    void *unk0;
-    s32 unk4[5];
-    struct PcD4A4Shape *unk18;
-    s32 unk1C;
-    struct PcD4A4Shape *unk20;
-};
-_Static_assert(sizeof(struct PcD4A4Shape) == 0x28, "shape stride");
-_Static_assert(sizeof(struct PcD4A4Slot) == 56, "host PlySlot size");
-_Static_assert(__builtin_offsetof(struct PcD4A4Slot, unk20) == 48, "shape list");
-
-void *func_8011D4A4(f32 arg0) {
-    void *func_80111574(void *, void *);
-    void func_80111C4C(s32 *);
-    struct PcD4A4Slot *slot;
-    struct PcD4A4Shape *sh;
-    s32 i;
-
-    slot = func_80111574((void *) (uintptr_t) gKirbyState.unk15C,
-                         (void *) (uintptr_t) omCurrentObj->objId);
-    for (i = 0, sh = slot->unk20; i < slot->unk1C; i++, sh++) {
-        if (arg0 != 1.0f) {
-            switch (sh->unk4 >> 24) {
-            case 1:
-                sh->unk18 *= arg0;
-                break;
-            case 2:
-                sh->unkC *= arg0;
-                sh->unk10 *= arg0;
-                sh->unk14 *= arg0;
-                sh->unk18 *= arg0;
-                sh->unk1C *= arg0;
-                sh->unk20 *= arg0;
-                sh->unk24 *= arg0;
-                break;
-            }
-        }
-        if ((sh->unk8 == 0) && (gKirbyState.unk154 != 0)) {
-            sh->unk8 = (s32) (uintptr_t) D_800DFBD0[omCurrentObj->objId][gKirbyState.unk154];
-        }
-    }
-    func_80111C4C((s32 *) slot);
-    return slot;
-}
+    /* PORT: the shape list lives in the D_8012D198 Shape28 arena (ovl2_9.c
+     * BSS), populated word-by-word by func_80111574 from the generated
+     * tables in build/pc/data/*.data.c, which hold the N64 word VALUES as
+     * native u32s. Floats and the joint word therefore read correctly; the
+     * shape type, an N64 byte-4 read, is the top byte of the native head
+     * word, i.e. byte 7 on the little-endian host (the same view as ovl2_8.c).
+     * The slot is the host PlySlot (ovl2_9.c), whose LP64 layout puts the
+     * shape count/list at 40/48. func_80111574 takes (PlyEntry *, void *):
+     * gKirbyState.unk15C is a host pointer held in a u32 (lossless under
+     * -no-pie, src/pc/pc_mmio.c) and the objId rides in the pointer slot. */
+#if !defined(__BYTE_ORDER__) || __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+#error "func_8011D4A4's PORT shape view places the N64 type byte at offset 7 (little-endian host)"
+#endif
+    struct N64Shape28 {
+        /* 0x00 */ u8 unk0;
+        /* 0x01 */ u8 pad1[3];
+        /* 0x04 */ u8 pad4[3];
+        /* 0x07 */ u8 unk4;
+        /* 0x08 */ s32 unk8;
+        /* 0x0C */ f32 unkC;
+        /* 0x10 */ f32 unk10;
+        /* 0x14 */ f32 unk14;
+        /* 0x18 */ f32 unk18;
+        /* 0x1C */ f32 unk1C;
+        /* 0x20 */ f32 unk20;
+        /* 0x24 */ f32 unk24;
+    };
+    struct N64PlySlot {
+        /* 0x00 */ void *unk0;
+        /* 0x08 */ s32 unk4[5];
+        /* 0x20 */ struct N64Shape28 *unk18;
+        /* 0x28 */ s32 unk1C;
+        /* 0x30 */ struct N64Shape28 *unk20;
+    };
+    _Static_assert(sizeof(struct N64Shape28) == 0x28, "shape stride");
+    _Static_assert(sizeof(struct N64PlySlot) == 56, "host PlySlot size");
+    _Static_assert(__builtin_offsetof(struct N64PlySlot, unk20) == 48, "shape list");
+    struct N64PlySlot *func_80111574(void *, void *);
 #else
-void *func_8011D4A4(f32 arg0) {
     struct N64Shape28 {
         /* 0x00 */ u8 unk0;
         /* 0x01 */ u8 pad1[3];
@@ -1579,13 +1447,19 @@ void *func_8011D4A4(f32 arg0) {
         /* 0x20 */ struct N64Shape28 *unk20;
     };
     struct N64PlySlot *func_80111574(s32, s32);
+#endif
     void func_80111C4C(struct N64PlySlot *);
     s32 pad;
     struct N64PlySlot *slot;
     struct N64Shape28 *sh;
     s32 i;
 
+#ifdef PORT
+    slot = func_80111574((void *) (uintptr_t) gKirbyState.unk15C,
+                         (void *) (uintptr_t) omCurrentObj->objId);
+#else
     slot = func_80111574(gKirbyState.unk15C, omCurrentObj->objId);
+#endif
     for (i = 0, sh = slot->unk20; i < slot->unk1C; i++, sh++) {
         if (arg0 != 1.0f) {
             switch (sh->unk4) {
@@ -1610,7 +1484,6 @@ void *func_8011D4A4(f32 arg0) {
     func_80111C4C(slot);
     return slot;
 }
-#endif
 
 void func_8011D614(void) {
     func_8011CF58();
@@ -3009,7 +2882,7 @@ s32 func_8011F690(void) {
  * collision class opens up, then applies the state's vertical velocity /
  * gravity / cap. Returns the new state when it changed, else 0. */
 s32 func_8011F690(void) {
-    s32 func_8010C734(void *);
+    s32 func_8010C734(struct PositionState *);
     u32 func_80121194(void);
     extern u8 D_8012BCA0[168];  /* whole PC block: src/pc/pc_bss_whole.c */
     u32 id;
@@ -4470,54 +4343,6 @@ s32 func_80122460(void) {
     return 0;
 }
 
-#ifdef PORT
-/* PORT: wall-grab probe (action 0xD), from
- * asm/nonmatchings/ovl2/plylib/func_80122558.s. The ROM saves the whole
- * 0x58-byte collision result block D_8012BCA0 around the probe and
- * restores it afterwards; on PC that block is one 168-byte LP64 object
- * (src/pc/pc_bss_whole.c), so the save/restore copies all of it.
- * func_8010C734 takes only &gPositionState (the sketch's extra arguments
- * are jump-table noise); its result flags live in the block's leading
- * native u32. */
-s32 func_80122558(void) {
-    s32 func_8010C734(void *);
-    extern u8 D_8012BCA0[168];  /* whole PC block: src/pc/pc_bss_whole.c */
-    u8 saved[168];
-    s32 grab = 0;
-    f32 dir;
-
-    if (gKirbyState.unk15 != 0) {
-        return 0;
-    }
-    if (gKirbyState.unk4 != 0) {
-        return 0;
-    }
-    if (gKirbyState.isTurning & 5) {
-        return 0;
-    }
-    __builtin_memcpy(saved, D_8012BCA0, sizeof(saved));
-    dir = D_800E6A10[omCurrentObj->objId];
-    if (((dir == 1.0f) && (gKirbyState.rightCollisionNext != 0)) ||
-        ((dir == -1.0f) && (gKirbyState.leftCollisionNext != 0))) {
-        if (func_8010C734(&gPositionState) != 0) {
-            u32 flags = *(u32 *) D_8012BCA0 >> 0x13;
-
-            if (((flags & 7) == 7) || ((flags & 0x38) == 0x38)) {
-                grab = 1;
-            }
-        }
-    }
-    __builtin_memcpy(D_8012BCA0, saved, sizeof(saved));
-    if (grab) {
-        gKirbyState.unk30 = 0;
-        gKirbyState.unk168 = 0.0f;
-        gKirbyState.unk164 = gKirbyState.unk168;
-        set_kirby_action_1(0xD, 0xA);
-        return 1;
-    }
-    return 0;
-}
-#else
 s32 func_80122558(void) {
     /* Whole-block view of the collision result D_8012BCA0 (struct
      * CollisionResult in ovl2_7.c) so the probe below can be run and undone.
@@ -4526,7 +4351,13 @@ s32 func_80122558(void) {
      * full-height wall in front of / behind Kirby. */
     struct ColResultSave {
         /* 0x00 */ u32 flags;
+#ifdef PORT
+        /* PORT: the block is one 168-byte LP64 object
+         * (src/pc/pc_bss_whole.c), so the save/restore covers all of it. */
+        /* 0x04 */ u8 pad4[168 - 4];
+#else
         /* 0x04 */ u8 pad4[0x54];
+#endif
     };
     s32 func_8010C734(struct PositionState *);
     extern u8 D_8012BCA0[];
@@ -4558,7 +4389,6 @@ s32 func_80122558(void) {
     }
     return 0;
 }
-#endif
 
 #ifdef MIPS_TO_C
 /* FACTORY: 161/181 words, register: frame 0x98 and every slot exact, the second == 1.0f compare forked as == 1 and the += written on the array element (permuter find); the CSE'd objId*4 lands in a2 where the ROM keeps v0, rotating the temps of the first grab block */
