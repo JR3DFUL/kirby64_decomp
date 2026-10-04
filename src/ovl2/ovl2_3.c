@@ -525,34 +525,33 @@ s32 func_800F8B1C(s32 arg0) {
 #endif /* PORT */
 
 #ifdef NON_MATCHING
-// close but not matching: stack layout and register allocation differ
+/* FACTORY: 29/127 words, FP register rotation only (stack, GPRs, schedule exact) */
 void func_800F8C70(s32 *arg0) {
+    s32 objId;
     Vector spA;
     Vector spB;
     struct TrackHit *hit;
-    s32 *nodePtr;
+    s32 newNode;
     struct TrackFooter *footer;
-    s32 objId;
-    u16 newNode;
-    u16 cell;
     s32 idx;
     f32 dx;
     f32 dz;
     f32 dist;
+    s32 cell;
     f32 delta;
 
     objId = *arg0;
-    spA.y = spB.y = (gEntitiesPosYArray[objId] + gEntitiesNextPosYArray[objId] + 20.0f) / 2;
+    spB.y = (gEntitiesNextPosYArray[objId] + gEntitiesPosYArray[objId] + 20.0f) / 2;
     spA.x = gEntitiesPosXArray[objId];
     spA.z = gEntitiesPosZArray[objId];
     spB.x = gEntitiesNextPosXArray[objId];
     spB.z = gEntitiesNextPosZArray[objId];
+    spA.y = spB.y;
     if (func_801046A0(&spA, &spB, 0, 0, 0, &hit) == 0) {
         return;
     }
-    nodePtr = &D_800E5F90[objId];
     newNode = hit->unkE;
-    if (newNode == *nodePtr) {
+    if (newNode == D_800E5F90[objId]) {
         return;
     }
 #ifdef PORT
@@ -569,12 +568,13 @@ void func_800F8C70(s32 *arg0) {
     dx = spB.x - footer->points[idx].unk0;
     dz = spB.z - footer->points[idx].unk8;
     dist = sqrtf((dx * dx) + (dz * dz));
-    *nodePtr = newNode;
+    D_800E5F90[objId] = newNode;
     D_800E6BD0[objId] = footer->keyframes[cell];
+    delta = dist / footer->length;
     if (D_800E6A10[objId] >= 0.0f) {
-        delta = (dist / footer->length) * 0.1f;
+        delta *= 0.1f;
     } else {
-        delta = (dist / footer->length) * -0.1f;
+        delta *= -0.1f;
     }
     D_800E6BD0[objId] += delta;
 }
@@ -582,28 +582,20 @@ void func_800F8C70(s32 *arg0) {
 #pragma GLOBAL_ASM("asm/nonmatchings/ovl2/ovl2_3/func_800F8C70.s")
 #endif
 #ifdef MIPS_TO_C
-/* FACTORY: 36/109 -- MEASURED 2026-08-25, and the first measurement this draft
- * has ever had. The note this replaces claimed 73/109; there was no compile
- * behind that number, because un-guarding this draft did not build the TU at
- * all (see the func_8001E344 declaration below). The true residue is half what
- * was claimed, so this one was under-sold rather than over-sold -- both
- * directions happen, and neither is worth anything without the compile.
- * Residue kind as originally described: regalloc (temp rotation v0<->a3, FP
- * load-copy ownership + add.s operand orientation, spill-slot/locals base
- * offsets). */
+/* FACTORY: 22/109 words, v1/a3 swap (D_80129114 value/nodeOfs), add.s operand order, spill temps 0x28/0x30 vs 0x2C/0x34 */
 void func_800F8E6C(GObj *arg0) {
-    s32 objId;
     s32 nodeOfs;
-    s32 *nodeP;
-    f32 *progressP;
-    f32 *angleP;
     struct TrackFooter *footer;
-    f32 old;
-    f32 cur;
-    f32 ang;
+    s32 objId;
+    s32 *nodeP;
     Vector pos;
     Vector tang;
     Vector ref;
+    f32 *progressP;
+    f32 *angleP;
+    f32 old;
+    f32 cur;
+    f32 ang;
     /* Spelled `struct Unk80129114_4_4 *` because that is what the N64 arm of
        func_800F8E6C down at the bottom of this file declares in ITS body, and
        IDO scopes a block-scope extern file-wide: with `struct TrackFooter *`
@@ -616,9 +608,9 @@ void func_800F8E6C(GObj *arg0) {
     objId = arg0->objId;
     nodeP = &D_800E5F90[objId];
     if (*nodeP != -1) {
+        progressP = &D_800E6BD0[objId];
         nodeOfs = *nodeP * 0x10;
         footer = ((struct TrackNodeHeader *) ((s32) D_80129114->unk4 + nodeOfs))->footer;
-        progressP = &D_800E6BD0[objId];
         cur = *progressP;
         old = cur;
         *progressP = ((D_800E64D0[objId] * 0.1f) / footer->length) + cur;
@@ -2775,12 +2767,13 @@ s32 func_800FC03C(f32 *arg0, f32 *arg1, f32 *arg2) {
     return 0;
 }
 #ifdef NON_MATCHING
+/* FACTORY: 54/157 words, frame exact; FP register allocation in the lookAt block, ret in $v1 vs $v0 */
 s32 func_800FC164(struct Ovl2CamState *arg0) {
+    Camera *cam;
     f32 sp30;
     f32 sp2C;
     s32 count;
     s32 ret;
-    Camera *cam;
 
     cam = D_800D799C->data.cam;
     count = 0;

@@ -1862,38 +1862,10 @@ void *func_800A8358(s32);
 void func_80114E80(struct DObj *, s32, f32);
 
 #ifdef NON_MATCHING
-/* 32/174 -- and the SCORE IS MISLEADING, because diff 3 is `addiu $sp, -0x30`
-   against the ROM's -0x28 (LEVERS 69/74/79). Nothing in this body can be scored
-   until the frame is right, and the frame is arithmetic (LEVERS 54/57).
-
-   Measured 2026-08-25, and it names the shape:
-     - the ROM has FIVE declarations and `ret` is the FIRST of them: `ret` sits
-       at 0x24 = frame-4, `$a1`'s home slot is at 0x2C = frame+4, and there is
-       exactly one more slot (0x20) below `ret`. This draft has SIX, so the
-       frame rounds to 0x30 and every sp-relative offset is 8 high.
-     - deleting `e` and writing `((struct Unk80114A14Elem *) m->unk24)[j]` at
-       all three sites puts the frame on the ROM's 0x28 exactly, and moving
-       `ret` ahead of `p` in the declaration list then puts it on 0x24. So the
-       ROM's `e` is a COMPILER TEMP, not a local -- LEVER 60's question,
-       answered.
-     - that variant is ONE WORD LONG (175 against 174) because one of the three
-       inlined `m->unk24` reads is not CSE'd, and its positional score is 104.
-       So it is not a better base to hand on, only a better DIAGNOSIS: what is
-       needed is a spelling of those three uses that IDO folds into one load
-       without a declaration. Reverted to the 32/174 draft on that basis.
-     - `k` cannot be merged into `i` (the first loop's counter is dead before
-       the second loop starts, so it looks free): 112/177, three words long.
-   NEGATIVE, LEVER 77, 2026-08-25: this function is on that entry's list of
-   eight `multu`-against-a-held-size candidates (stride 0x14, one site) and the
-   lever pays NOTHING here -- `VERIFY_MAXDIFF=200` on the draft's own diff
-   contains no `multu` at all, so the stride is already matching. That is
-   exactly the screen LEVER 77's last paragraph asks for, and it costs one
-   command. Of the six that entry still lists, this was the only one whose
-   residue was small enough for the lever to show in. */
+/* FACTORY: 29/174 words, frame exact; prologue schedule, loop-1 m->unk18 in $a1 vs $a3, one addu operand order */
 s32 func_80114A14(struct Unk80114A14Model *m, s32 arg1, s32 arg2) {
-    struct struct8011BA10_temp *p = &D_8012D948[D_8012D940];
-    struct Unk80114A14Elem *e;
     s32 ret;
+    struct struct8011BA10_temp *p = &D_8012D948[D_8012D940];
     u32 i;
     u32 k;
     u32 j;
@@ -1918,7 +1890,8 @@ s32 func_80114A14(struct Unk80114A14Model *m, s32 arg1, s32 arg2) {
     }
     p->unk14 = (u32) func_800A8358((m->unk18 * 4) | 3);
     for (k = 1; k < m->unk18; k++) {
-        e = (struct Unk80114A14Elem *) m->unk24;
+        struct Unk80114A14Elem *e = (struct Unk80114A14Elem *) m->unk24;
+
         for (j = 1; j < m->unk28; j++) {
             if (e[j].unk0 == k) {
                 break;
@@ -2395,10 +2368,12 @@ void func_80115EFC(s32 arg0) {
 }
 
 #ifdef NON_MATCHING
-/* LEFT UN-GUARDED BY A LANE THAT DIED MID-WORK, at 80/133 insns. */
+/* FACTORY: 41/133 words, frame 0x78 vs 0x70 (one word too many with angp declared; without it 59/133 frame-exact) */
 void func_80115F04(s32 arg0) {
     void func_80116118(struct GObj *);
     u8 *sp6C = ((struct GObj *) arg0)->unk4C;
+    f32 ang;
+    f32 *angp;
     Vector sp58;
     Vector sp4C;
     f32 sp48;
@@ -2406,9 +2381,8 @@ void func_80115F04(s32 arg0) {
     f32 sp40;
     f32 sp3C;
     f32 sp38;
-    f32 cy;
     f32 acc;
-    f32 ang;
+    f32 cy;
     s32 id = ((struct GObj *) arg0)->objId;
 
     sp48 = gEntitiesAngleXArray[id];
@@ -2421,6 +2395,7 @@ void func_80115F04(s32 arg0) {
     sp58.y = -sp40;
     sp58.z = sp3C * cy;
     func_8011E31C(&sp4C);
+    angp = &((struct GObj *) arg0)->data.dobj->angle.v.x;
     acc = ((sp58.z * (sp4C.z - gEntitiesNextPosZArray[id])) +
            ((sp58.x * (sp4C.x - gEntitiesNextPosXArray[id])) +
             (sp58.y * (sp4C.y - gEntitiesNextPosYArray[id])))) * 0.00001f + D_800EA6E0[id];
@@ -2429,7 +2404,7 @@ void func_80115F04(s32 arg0) {
     } else if (acc < -0.006f) {
         acc = -0.006f;
     }
-    ang = ((struct GObj *) arg0)->data.dobj->angle.v.x + acc;
+    ang = *angp + acc;
     if (0.4363f < ABSF(ang)) {
         acc = 0.0f;
         if (0.0f < ang) {
@@ -2439,7 +2414,7 @@ void func_80115F04(s32 arg0) {
         }
     }
     D_800EA6E0[id] = acc;
-    ((struct GObj *) arg0)->data.dobj->angle.v.x = ang;
+    *angp = ang;
     if (func_8011E244() != *sp6C) {
         D_800DEF90[omCurrentObj->objId] = func_80116118;
     }

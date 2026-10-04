@@ -840,81 +840,20 @@ s32 func_801DC83C_ovl16(s32 arg0, s32 arg1) {
     return 0;
 }
 
-#ifdef NON_MATCHING
-/* FACTORY: 7/43, decidable +8 frame anomaly -- re-confirmed 2026-08-23
-   (identical 7/43, all 7 diffs are the sp offset shift 0x40/0x48 dragging
-   the three spilled loads/stores along). Every instruction correct, frame
-   0x48 vs 0x40. The ROM declares only
- * sp20 and sp1C (sp1C spilled at 0x1C, BELOW the struct); the anim-object
- * pointer never gets a stack word here. Swept all six declaration orders, a
- * nested block for temp_v0 and a re-call; L is 0x28 (mod 8 == 0) so the frame
- * arithmetic cannot reach 0x40 while three locals are declared.
- * Re-swept: the anim pointer as a SECOND parameter so it homes in the arg area
- * instead of the local area (41/43 -- IDO emits the extra `sw $a1, 0x44($sp)`
- * home store), both pointers inside a nested block (10/43), the entry local
- * retyped s32 with casts at both uses (10/43), and the entry inlined at both
- * uses so IDO would CSE it into a spill temp (43/46 -- IDO will not hoist the
- * load above `jal func_80111550`, so the entry HAS to be a source variable).
- * align8(0x1C + L) = 0x40 needs L in {0x20, 0x24}: with sizeof sp20 == 0x20
- * that is the struct plus AT MOST one 4-byte local, and the function needs the
- * entry, the anim pointer and the struct all live at once. Good permuter
- * seed.
- *
- * 2026-08-24, re-measured 7/43 and the frame model above is now understood
- * one level deeper, from the func_801DEC34_ovl14 closure in src/ovl14/ovl14.c:
- * IDO's locals base is 0x18 (right above $ra at 0x14) and the frame is
- * align8(0x18 + L), where L counts declared locals AND any stack temp the
- * compiler reserves for itself. Writing `f(g(x))` as one nested call reserves
- * such a temp; assigning the intermediate into an already-homed PARAMETER
- * costs nothing and is what matched both ovl14 siblings. That escape does not
- * work here: this function's only parameter, arg0, is still live at the point
- * the anim pointer is needed, so there is no homed slot to borrow. The two
- * remaining shapes to try are a caller-side change (a second parameter that
- * the ROM's callers already pass) or the permuter.
- *
- * 2026-08-25, re-measured 7/43 and the frame is now expressed exactly.
- * ROM: frame 0x40, $ra 0x14, sp1C at 0x1C, the 0x20-byte struct at 0x20..0x40
- * and four bytes of slack at 0x18 -- i.e. TWO declared locals and ZERO
- * compiler temps, align8(0x18 + 0x24) = 0x40. This draft is n=3 (the two
- * pointers plus the struct) and t=2, L=0x30, align8(0x18+0x30) = 0x48, and
- * BOTH extra words have to go, not just the anim pointer's. Swept this pass
- * and all still 0x48: the struct declared first (10/43 -- the frame does not
- * move, only the slot does), the struct first with sp1C initialised at its
- * declaration (10/43), the anim pointer moved into a nested block WITH an
- * initialiser so LEVERS lever 57's "initialised pointer gets no home slot"
- * corollary would apply (10/43 in all three declaration orders), and sp1C
- * initialised at declaration with the struct second (7/43). So the nested
- * initialised pointer does NOT give up its word here, which is a real
- * counter-example to that corollary worth knowing.
- *
- * 2026-08-25, THE TWO EXTRA WORDS ARE NOW ATTRIBUTED, and it is not the third
- * declaration -- LEVER 110's layout law says three declarations FIT in 0x40
- * (struct at 0x20..0x3F, rec at 0x1C, the anim pointer at 0x18, align8(0x18 +
- * 0x28) = 0x40 with no slack).  What does not fit is t=2, and t is bought by
- * the objId CSE ACROSS THE FIRST CALL.  Changing EITHER of the first two reads
- * of `omCurrentObj->objId` to any other value drops the frame to exactly 0x40:
- *     `D_800E1B50[0]`          40/42, FRAME EXACT
- *     `func_80111550(arg0)`    21/43, FRAME EXACT
- * and every spelling that keeps both reads is 0x48, including a named `s32 id`
- * used for both (7/43, 4 decls), `*(D_800E1B50 + objId)`, `&arr[objId][0]`,
- * an `(s32)` cast on the index, on the call argument, and both; retyping the
- * file-scope `void func_80111550(u32)` to `(s32)` (inert, and note ovl13.h and
- * ovl15.h already declare it `s32`); and swapping the two statements (39/42).
- * So the third declaration is a red herring and the question for the next lane
- * is narrow: what source shape reads objId once for BOTH the D_800E1B50 index
- * and the func_80111550 argument without IDO reserving a spill pair for it?
- * The ROM does it in one `lw $a0, 0x0($t6)` feeding both the `sll` and the
- * call, which is exactly what this draft already emits -- instructions 0..13
- * are byte-identical and all 7 diffs are still only the sp offsets. */
 s32 func_801DC8E4_ovl16(s32 arg0) {
+    struct Ovl16AnimInfo sp20;
     struct EnemyRecord *sp1C;
     struct Ovl16AnimObj *temp_v0;
-    struct Ovl16AnimInfo sp20;
 
+#ifdef PORT
     sp1C = D_800E1B50[omCurrentObj->objId];
     func_80111550(omCurrentObj->objId);
-    temp_v0 = func_80111C88(sp1C->unk8C, omCurrentObj->objId);
-    if (temp_v0 != NULL) {
+#else
+    temp_v0 = (struct Ovl16AnimObj *) omCurrentObj->objId;
+    sp1C = D_800E1B50[(u32) temp_v0];
+    func_80111550((u32) temp_v0);
+#endif
+    if ((temp_v0 = func_80111C88(sp1C->unk8C, omCurrentObj->objId)) != NULL) {
         if (arg0 != 0) {
             temp_v0->unk24->unk8 = arg0;
             temp_v0->unk24->unk18 = sp1C->unk80->unk10;
@@ -926,9 +865,6 @@ s32 func_801DC8E4_ovl16(s32 arg0) {
     func_80110150(&sp20);
     return 0;
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl16/ovl16/func_801DC8E4_ovl16.s")
-#endif
 
 /* FACTORY: 6/61, argument-register rotation floor -- re-confirmed
    2026-08-23 (identical 6/61: the ROM keeps sp1C in $a0 through the
@@ -3248,7 +3184,7 @@ void func_801E4148_ovl16(s32 arg0) {
 }
 
 #ifdef MIPS_TO_C
-/* FACTORY: DIFF 5/210, sc lands in $f0 where the ROM has $f2, plus the c.eq.s operand order */
+/* FACTORY: 4/210 words, quotient (lim = ext / shrink) in $f0 where the ROM has $f2 */
 /* Pillar-attack settle tick (after func_801E4148 released the limbs): same
  * squash-back loop as func_801E3CF0, plus a one-shot creak SFX gated on
  * D_800EA360, ending in the plain phase anim instead of the choice pair. */
@@ -3271,7 +3207,7 @@ void func_801E4350_ovl16(s32 arg0) {
         a = D_800DFBD0[omCurrentObj->objId][D_801EF93C_ovl16[limb[i]]];
         b = D_800DFBD0[omCurrentObj->objId][(&D_801EF95C_ovl16)[limb[i]]];
         shrink = 260.0f;
-        if (-9999.0f != (lim = D_801F01B0_ovl16[i])) {
+        if (lim = D_801F01B0_ovl16[i], D_801F01B0_ovl16[i] != -9999.0f) {
             ext = ABS(a->pos.v.y);
             alim = ABS(lim);
             if (ext > 260.0f) {
