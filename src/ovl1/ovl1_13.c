@@ -277,145 +277,7 @@ void draw_pause_bg(GObj *gobj) {
     }
 }
 
-#ifdef MIPS_TO_C
-/* FACTORY: DIFF 236/293, whole-body one-slot shift. The function allocates
- * FIVE callee-saved registers where the ROM uses four (frame 0x50 vs 0x40),
- * so every instruction after the prologue lands one slot off; the bodies
- * agree. The extra register is the loop bound 5, which IDO hoists into $s0
- * while the ROM re-materializes it as `addiu $at, $zero, 5` inside the loop,
- * plus the &gPlayerControllers[1] address, which the ROM re-materializes at
- * each of its three reads. Both are the address/constant-hoisting floor in
- * LEVERS ("IDO folding an address ... where the ROM CSEs it"), and neither
- * moved under u32/s32 counters or an explicitly recomputed byte-offset read.
- * Solved semantics, all measured: D_800D55BC[kind]() indirect dispatch,
- * request_track_3 is 3-arg (the ROM's $a3 is the spilled loop counter, not a
- * fourth argument), the child track's mode is `D_800E9E20[cur] * 3` and must
- * be SPELLED as (x * 4) - x -- written `* 3` IDO hoists the constant into a
- * saved register and emits multu, costing 57 extra diffs -- and the tail call
- * is func_800B1900((u16) omCurrentObj->objId), the low half of objId.
- *
- * LEVER 58: the head really does take a parameter, and declaring it is
- * MEASURED INERT here -- 236/293 before and after, not one instruction moved.
- * Recorded so nobody re-costs it. The evidence for the parameter is real: the
- * `jalr $t9` at 800BCAAC is the first call in the function, nothing has
- * written $a0 on the way to it, its delay slot is a nop, there is no home
- * store anywhere in the 292 words, and all four entries of the table it
- * dispatches through (func_800BC328 / 4C0 / 664 / 800, all matched) are
- * defined as taking an argument. So the parameter is declared and passed,
- * because it is true, not because it pays.
- * The reason it does not pay is that this function's residue is not an
- * argument-register rotation at all: it is the two EXTRA CALLEE-SAVED
- * registers described above, and $a0 was never the contended register. That
- * is the discriminator to check before reaching for 58 -- the lever moves a
- * value out of $a0 and lets everything below fall one slot; where the residue
- * starts in the prologue with a frame-size difference, there is nothing for
- * it to move.
- * (The table's entries type their argument `s32` and then hand it to
- * func_800ACBDC / func_800A5B14 as an object, so `s32` here is copied from
- * the file's existing spelling, not endorsed. Retyping that cluster to
- * GObj * is its own job.) */
-void func_800BCA5C(s32 arg0) {
-    extern void (*D_800D55BC[])(s32);
-    extern u16 gPlayerControllers[];
-    extern f32 gameTicksPerDrawInv;
-    extern s32 D_800D6B6C;
-    extern s32 D_800BE4F8;
-    extern s32 D_800BE544;
-    extern s32 func_800F8560(void);
-    extern void func_800AF9B8(s32, s32);
-    extern void func_80023884(void);
-    extern void func_80023794(void);
-    extern void auSetBGMVolumeSmooth(s32, s32, s32);
-    extern void auStopSong(s32);
-    u32 kind;
-    s32 track;
-    s32 i;
-    u16 buttons;
-    s32 objId;
-
-    kind = D_800EC2E0[omCurrentObj->objId].as_u32;
-    if (kind != 0) {
-        D_800D55BC[kind](arg0);
-    }
-    if (gGameState == 0x21) {
-        D_800E9E20[omCurrentObj->objId] = 2;
-    } else if (func_800F8560() == 9) {
-        D_800E9E20[omCurrentObj->objId] = 1;
-    } else {
-        D_800E9E20[omCurrentObj->objId] = 0;
-    }
-    i = 1;
-    do {
-        track = request_track_3(0x27, 0x3C, 0x50);
-        D_800EC2E0[track].as_u32 = i;
-        i += 1;
-        D_800E9E20[track] = (D_800E9E20[omCurrentObj->objId] * 4) - D_800E9E20[omCurrentObj->objId];
-    } while (i != 5);
-    func_800AF9B8(0x28, 0xE);
-    D_800E98E0[omCurrentObj->objId] = 0;
-    D_800E9C60[omCurrentObj->objId] = 0;
-    D_800E9AA0[omCurrentObj->objId] = NULL;
-    utilSetRectBoundsAndColor(0xA, 0xA, 0x136, 0xB6, 0xF0, 0xD8, 0xA0);
-    utilSpawnRect(0, 0x10, 0);
-    auSetBGMVolumeSmooth(0, 0x5000, 0x10);
-    func_80023884();
-    play_sound(0xED);
-    while (D_800D6B24 != 0) {
-        ohSleep(1);
-    }
-    D_800E9AA0[omCurrentObj->objId] = (struct EntityThing800E9AA0 *) 1;
-    utilSpawnRect(0xFF, -0x10, 0);
-    while (D_800D6B24 != 0) {
-        ohSleep(1);
-    }
-    ohSleep(3.0f * gameTicksPerDrawInv);
-loop14:
-    buttons = gPlayerControllers[1];
-    if (!(buttons & 0x9000)) {
-        if (buttons & 0x800) {
-            play_sound(0x113);
-            D_800E98E0[omCurrentObj->objId] = 0;
-            buttons = gPlayerControllers[1];
-        }
-        if (buttons & 0x400) {
-            play_sound(0x113);
-            D_800E98E0[omCurrentObj->objId] = 1;
-        }
-        ohSleep(1);
-        goto loop14;
-    }
-    play_sound(0xED);
-    objId = omCurrentObj->objId;
-    if ((D_800E98E0[objId] == 1) && (D_800E9E20[objId] != 1)) {
-        if (gGameState == 0x21) {
-            D_800D6B6C = 1;
-        }
-        D_800BE4F8 = 0;
-        utilSetRectColorFullScreen(0, 0, 0);
-        utilSpawnRect(0, 0x20, 2);
-        auSetBGMVolumeSmooth(0, 0, 8);
-        while (D_800D6B24 != 0) {
-            ohSleep(1);
-        }
-        auStopSong(0);
-    } else {
-        utilSpawnRect(0, 0x10, 0);
-        while (D_800D6B24 != 0) {
-            ohSleep(1);
-        }
-        D_800E9AA0[omCurrentObj->objId] = NULL;
-        D_800E9C60[omCurrentObj->objId] = 1;
-        auSetBGMVolumeSmooth(0, 0x7800, 0x10);
-        func_80023794();
-        utilSpawnRect(0xFF, -0x10, 0);
-        while (D_800D6B24 != 0) {
-            ohSleep(1);
-        }
-        D_800BE544 = 0x8000;
-    }
-    func_800B1900((u16) omCurrentObj->objId);
-}
-#elif defined(PORT)
+#ifdef PORT
 /* The PAUSE screen process (draft above). Runs any pending per-track
  * pause callback from D_800D55BC (native void*[] cells, gen_data resolved
  * the function words to host symbols), picks the pause layout mode (0x21
@@ -529,7 +391,99 @@ void func_800BCA5C(void) {
     func_800B1900((u16) objId);
 }
 #else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl1/ovl1_13/func_800BCA5C.s")
+void func_800BCA5C(s32 arg0) {
+    extern void (*D_800D55BC[])(s32);
+    extern u16 gPlayerControllers[];
+    extern f32 gameTicksPerDrawInv;
+    extern s32 D_800D6B6C;
+    extern s32 D_800BE4F8;
+    extern s32 D_800BE544;
+    extern s32 func_800F8560(void);
+    extern void func_800AF9B8(s32, s32);
+    extern void func_80023884(void);
+    extern void func_80023794(void);
+    extern void auSetBGMVolumeSmooth(s32, s32, s32);
+    extern void auStopSong(s32);
+    s32 i;
+    s32 track;
+
+    if (D_800EC2E0[omCurrentObj->objId].as_u32 != 0) {
+        D_800D55BC[D_800EC2E0[omCurrentObj->objId].as_u32](arg0);
+    }
+    if (gGameState == 0x21) {
+        D_800E9E20[omCurrentObj->objId] = 2;
+    } else if (func_800F8560() == 9) {
+        D_800E9E20[omCurrentObj->objId] = 1;
+    } else {
+        D_800E9E20[omCurrentObj->objId] = 0;
+    }
+    for (i = 1; i < 5; i++) {
+        track = request_track_3(0x27, 0x3C, 0x50);
+        D_800EC2E0[track].as_u32 = i;
+        D_800E9E20[track] = D_800E9E20[omCurrentObj->objId] * 3;
+    }
+    func_800AF9B8(0x28, 0xE);
+    D_800E98E0[omCurrentObj->objId] = 0;
+    D_800E9C60[omCurrentObj->objId] = 0;
+    D_800E9AA0[omCurrentObj->objId] = NULL;
+    utilSetRectBoundsAndColor(0xA, 0xA, 0x136, 0xB6, 0xF0, 0xD8, 0xA0);
+    utilSpawnRect(0, 0x10, 0);
+    auSetBGMVolumeSmooth(0, 0x5000, 0x10);
+    func_80023884();
+    play_sound(0xED);
+    while (D_800D6B24 != 0) {
+        ohSleep(1);
+    }
+    D_800E9AA0[omCurrentObj->objId] = (struct EntityThing800E9AA0 *) 1;
+    utilSpawnRect(0xFF, -0x10, 0);
+    while (D_800D6B24 != 0) {
+        ohSleep(1);
+    }
+    ohSleep((s32) (3.0f * gameTicksPerDrawInv));
+    while (1) {
+        if (gPlayerControllers[1] & 0x9000) {
+            play_sound(0xED);
+            break;
+        }
+        if (gPlayerControllers[1] & 0x800) {
+            play_sound(0x113);
+            D_800E98E0[omCurrentObj->objId] = 0;
+        }
+        if (gPlayerControllers[1] & 0x400) {
+            play_sound(0x113);
+            D_800E98E0[omCurrentObj->objId] = 1;
+        }
+        ohSleep(1);
+    }
+    if ((D_800E98E0[omCurrentObj->objId] == 1) && (D_800E9E20[omCurrentObj->objId] != 1)) {
+        if (gGameState == 0x21) {
+            D_800D6B6C = 1;
+        }
+        D_800BE4F8 = 0;
+        utilSetRectColorFullScreen(0, 0, 0);
+        utilSpawnRect(0, 0x20, 2);
+        auSetBGMVolumeSmooth(0, 0, 8);
+        while (D_800D6B24 != 0) {
+            ohSleep(1);
+        }
+        auStopSong(0);
+    } else {
+        utilSpawnRect(0, 0x10, 0);
+        while (D_800D6B24 != 0) {
+            ohSleep(1);
+        }
+        D_800E9AA0[omCurrentObj->objId] = NULL;
+        D_800E9C60[omCurrentObj->objId] = 1;
+        auSetBGMVolumeSmooth(0, 0x7800, 0x10);
+        func_80023794();
+        utilSpawnRect(0xFF, -0x10, 0);
+        while (D_800D6B24 != 0) {
+            ohSleep(1);
+        }
+        D_800BE544 = 0x8000;
+    }
+    func_800B1900((u16) omCurrentObj->objId);
+}
 #endif
 
 extern u32 D_800ED500[];
@@ -868,105 +822,7 @@ void func_800BDD98(void) {
     D_800D6EB4 = D_800D6EB8 = D_800D6EBC = D_800F4D10 = D_800D6EC0 = 0;
 }
 
-#ifdef MIPS_TO_C
-/* FACTORY: DIFF 2/72 -- MEASURED 2026-08-25, was 13/72.
- * The 11 words were the caller-saved register swap the old note described
- * (ROM holds the fill halfword in $a0 and the inner counter in $v1; the draft
- * got the same code with $v1/$a0 exchanged), and LEVER 61 pays for all of it:
- * the empty `do { } while (0)` wrapped round the row loop is an IDO
- * SCHEDULING BARRIER. Without it IDO hoists the row-pointer setup up past the
- * `lhu` of the fill value and the register assignment falls out one slot
- * rotated; with it the setup stays below and $a0/$v1 land where the ROM puts
- * them. Nothing else in the block changed.
- *
- * This one came out of tools/decomp/harvest_zero_scores.py -- decomp-permuter
- * had scored a barrier-wrapped variant at zero and the queue never published
- * it, because permute_queue.py used to copy the wrong output directory.
- *
- * The 2 that remain are the two `addiu` that complete the %hi/%lo pairs for
- * D_800F4324 and D_800EDA10, emitted in the opposite order. The ROM's three
- * `lui` come out in source order (EDA10, EDA24, F4324) and its three `addiu`
- * come out in the REVERSE of that (F4324, EDA24, EDA10); the draft emits both
- * groups in source order. That reversal is not reachable from source
- * position. Measured and rejected 2026-08-25:
- *   - hoisting the loop bound into a `u8 *end` local assigned before rb, so
- *     D_800F4324 is named first: 5/72, worse -- it reorders the `lui` group
- *     as well and loses the two that already matched.
- *   - writing the condition constant-first, `(u8 *) D_800F4324 != ra`
- *     (lever 20): byte-identical at 2/72.
- *   - assigning ra before rb: 5/72, worse, same reason as the first.
- * NOT permuter fuel, and this is now measured rather than assumed. The queue
- * has produced TWO zero-score candidates for this function and NEITHER
- * transfers to the real translation unit:
- *   - one whose diff is whitespace only (eleven lines of the loop collapsed
- *     onto one), which cannot change codegen at all;
- *   - one that adds a SECOND `do { } while (0)` wrap around the first, plus
- *     two commutative operand swaps. Applied by hand: 2/72, unchanged.
- * Both score 0 in decomp-permuter's own preprocessed standalone file, which is
- * LEVER 72's second failure mode showing up twice on one function. The two
- * remaining words are the `addiu` %lo addends for D_800F4324 and D_800EDA10
- * emitted in the opposite order, and the permuter's environment evidently
- * schedules that pair differently from the TU. Removed from
- * priority_queue.py's TARGETS: it will keep re-finding this and the queue slot
- * is better spent elsewhere. */
-void func_800BDE0C(s32 arg0) {
-    extern s32 D_800F4D14;
-    extern s32 D_800F6198;
-    extern s32 D_800D6F50;
-    extern u16 D_800EDA10[];
-    extern u16 D_800EDA24[];
-    extern u16 D_800EDA60[];
-    extern u16 D_800F4324[];
-    extern u16 *D_800D6F58;
-    extern u32 D_800D52FC[];
-    void func_800A8934(u32, s32, s32, void *);
-    u16 fill;
-    u8 *q;
-    u8 *ra;
-    u8 *rb;
-    s32 n;
-
-    D_800D6F58 = D_800ED510;
-    if (D_800F4D14 != 0) {
-        if (D_800F6198 != 0) {
-            func_800A8934(0x50002, 0x10, 0, D_800ED510);
-            fill = D_800EDA60[0];
-            do {
-                rb = (u8 *) D_800EDA10;
-                ra = (u8 *) D_800EDA24;
-                do {
-                    *(u16 *) ra = fill;
-                    *(u16 *) (ra + 2) = fill;
-                    n = 0xC;
-                    q = rb + 0x18;
-                loop4:
-                    n += 4;
-                    *(u16 *) (q + 2) = fill;
-                    *(u16 *) (q + 4) = fill;
-                    *(u16 *) (q + 6) = fill;
-                    q += 8;
-                    *(u16 *) (q - 8) = fill;
-                    if (n != 0xD8) {
-                        goto loop4;
-                    }
-                    ra += 0x280;
-                    rb += 0x280;
-                } while (ra != (u8 *) D_800F4324);
-            } while (0);
-        } else {
-            D_800D6F50 = 0;
-            func_800A8934(D_800D52FC[saveHUDTheme], 0x10, 0, D_800ED510);
-            func_800BDB18();
-        }
-        D_800F4D14 = 0;
-    }
-    if (D_800F6198 != 0) {
-        func_800BDD68();
-        return;
-    }
-    func_800BDD08();
-}
-#elif defined(PORT)
+#ifdef PORT
 /* HUD frame service: on first-dirty either clears the HUD arena rows to the
  * fill value (pause/transition path) or reloads the themed HUD texture bank,
  * then draws lives/health/stars. Row geometry from the ROM draft above: 42
@@ -1010,7 +866,39 @@ void func_800BDE0C(s32 arg0) {
     func_800BDD08();
 }
 #else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl1/ovl1_13/func_800BDE0C.s")
+void func_800BDE0C(s32 arg0) {
+    extern s32 D_800F4D14;
+    extern s32 D_800F6198;
+    extern s32 D_800D6F50;
+    extern u16 *D_800D6F58;
+    extern u32 D_800D52FC[];
+    u16 fill;
+    s32 i;
+    s32 j;
+
+    D_800D6F58 = D_800ED510;
+    if (D_800F4D14 != 0) {
+        if (D_800F6198 != 0) {
+            func_800A8934(0x50002, 0x10, 0, D_800ED510);
+            fill = D_800ED510[0x2A8];
+            for (i = 2; i < 44; i++) {
+                for (j = 10; j < 216; j++) {
+                    D_800ED510[i * 320 + j] = fill;
+                }
+            }
+        } else {
+            D_800D6F50 = 0;
+            func_800A8934(D_800D52FC[saveHUDTheme], 0x10, 0, D_800ED510);
+            func_800BDB18();
+        }
+        D_800F4D14 = 0;
+    }
+    if (D_800F6198 != 0) {
+        func_800BDD68();
+        return;
+    }
+    func_800BDD08();
+}
 #endif
 
 // Draft, 4/35: `or $a1,$zero,$zero` (counter init) scheduled 3 slots early.
@@ -1049,105 +937,7 @@ void func_800BE028(s32 *arg0, s32 arg1, u32 arg2) {
     }
 }
 
-#ifdef MIPS_TO_C
-/* FACTORY: DIFF 127/161, but structurally complete -- the residue is one
- * register-naming permutation that shifts nearly every line. Real defects,
- * all allocator-shaped: (a) the ROM keeps NO callee-saved register and homes
- * the request_track_3 result at 0x18(sp) (frame 0x28); we allocate it to a
- * saved register (frame 0x20); (b) the unrolled clear loop's `addiu a1,a1,4`
- * sits in slot 0 of the body in the ROM and slot 6 for us -- the same
- * counter-slot residue already documented for the matched sibling
- * func_800BDF2C above; (c) the saveHUDTheme*10 expansion emits its
- * `addu at,a1,zero` one slot later. Solved semantics: the loop end is
- * &D_800F4D70[10] (NOT the D_800F5770 symbol -- spelling it as D_800F5770
- * makes IDO CSE the two addresses into one lui and costs 29 diffs), the
- * hand-unrolled 4-word body with goto form, and the in-place +D_800ED510
- * relocation of the D_800ED500 header's +8/+0xC words. */
-s32 func_800BE098(void) {
-    extern s32 D_800F4D18;
-    extern s32 D_800F4D20[];
-    extern s32 D_800F4D48[];
-    extern s32 D_800F6170[];
-    extern s32 D_800D6EC4;
-    extern s32 D_800F6198;
-    extern s32 D_800D6F3C;
-    extern s32 func_800F8560(void);
-    extern s32 func_800AEA64(s32, s32, s32, void *);
-    extern void scSetPostProcessFunc(void *);
-    s32 sp18;
-    u32 *v0;
-    u32 *v1;
-    s32 a1;
-    u32 *t3;
-    u32 *a3;
-    s32 *t0;
-    s32 *t1;
-    s32 *t2;
-    u32 *end;
-
-    D_800F4D18 = 2;
-    end = (u32 *) D_800F4D70[10];
-    a3 = (u32 *) D_800F4D70;
-    t3 = (u32 *) D_800F5770;
-    t2 = D_800F4D20;
-    t1 = D_800F4D48;
-    t0 = D_800F6170;
-    do {
-        *t0 = 0;
-        *t1 = 0;
-        *t2 = 0;
-        a1 = 0;
-        v0 = t3;
-        v1 = a3;
-    loop2:
-        a1 += 4;
-        v0[0] = 0xFFFE7961;
-        v1[0] = 0;
-        v0[1] = 0xFFFE7961;
-        v1[1] = 0;
-        v0[2] = 0xFFFE7961;
-        v1[2] = 0;
-        v0[3] = 0xFFFE7961;
-        v1[3] = 0;
-        v0 += 4;
-        v1 += 4;
-        if (a1 != 0x40) {
-            goto loop2;
-        }
-        a3 += 0x40;
-        t0 += 1;
-        t1 += 1;
-        t2 += 1;
-        t3 += 0x40;
-    } while (a3 != end);
-    sp18 = request_track_3(0x26, 0x4A, 0x50);
-    if (func_800F8560() != 9) {
-        func_800BDFB8(D_800D5310, saveHUDTheme * 0xA, 8);
-    } else {
-        D_800D6E54 = 0;
-        D_800D6E90 = 0;
-        func_800BDFB8(D_800D5310, saveHUDTheme * 0xA, 0xA);
-    }
-    func_800BDFB8(D_800D53DC, saveHUDTheme * 2, 2);
-    func_800BDFB8(D_800D5408, saveHUDTheme * 2, 2);
-    func_800BDFB8(D_800D5434, saveHUDTheme * 2, 2);
-    func_800BDFB8(D_800D5460, saveHUDTheme * 0xA, 0xA);
-    func_800A8934(0x50001, 0, 0x10, &D_800ED500);
-    D_800ED500[2] = D_800ED500[2] + (u32) D_800ED510;
-    D_800ED500[3] = D_800ED500[3] + (u32) D_800ED510;
-    D_800F6198 = 0;
-    D_800D6EC4 = 0;
-    if ((D_800D6F3C == 4) || (D_800D6F3C == 3)) {
-        D_800F6198 = 1;
-        sp18 = func_800AEA64(0x2D, 0x4A, 0x50, &D_800ED500);
-        D_800E98E0[sp18] = 0;
-    }
-    func_800BDF2C();
-    func_800BDE0C(0);
-    scSetPostProcessFunc(func_800BDE0C);
-    return sp18;
-}
-#elif defined(PORT)
+#ifdef PORT
 /* PORT: in-level HUD init, from asm/nonmatchings/ovl1/ovl1_13/
  * func_800BE098.s. The N64 clears the ten 0x100-byte digit rows by walking
  * a pointer from D_800F4D70 to D_800F5770 (cross-symbol arithmetic that
@@ -1224,7 +1014,60 @@ s32 func_800BE098(void) {
     return sp18;
 }
 #else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl1/ovl1_13/func_800BE098.s")
+s32 func_800BE098(void) {
+    extern s32 D_800F4D18;
+    extern s32 D_800F4D20[];
+    extern s32 D_800F4D48[];
+    extern s32 D_800F6170[];
+    extern s32 D_800D6EC4;
+    extern s32 D_800F6198;
+    extern s32 D_800D6F3C;
+    extern s32 func_800F8560(void);
+    extern s32 func_800AEA64(s32, s32, s32, void *);
+    extern void scSetPostProcessFunc(void *);
+    s32 i;
+    s32 j;
+    s32 pad;
+    s32 sp18;
+
+    D_800F4D18 = 2;
+    for (i = 0; i < 10; i++) {
+        D_800F6170[i] = 0;
+        D_800F4D48[i] = 0;
+        D_800F4D20[i] = 0;
+        j = 0;
+        do {
+            D_800F5770[i][j] = 0xFFFE7961;
+            D_800F4D70[i][j] = 0;
+            j++;
+        } while (j != 0x40);
+    }
+    sp18 = request_track_3(0x26, 0x4A, 0x50);
+    if (func_800F8560() != 9) {
+        func_800BDFB8(D_800D5310, saveHUDTheme * 0xA, 8);
+    } else {
+        D_800D6E90 = D_800D6E54 = 0;
+        func_800BDFB8(D_800D5310, saveHUDTheme * 0xA, 0xA);
+    }
+    func_800BDFB8(D_800D53DC, saveHUDTheme * 2, 2);
+    func_800BDFB8(D_800D5408, saveHUDTheme * 2, 2);
+    func_800BDFB8(D_800D5434, saveHUDTheme * 2, 2);
+    func_800BDFB8(D_800D5460, saveHUDTheme * 0xA, 0xA);
+    func_800A8934(0x50001, 0, 0x10, &D_800ED500);
+    D_800ED500[2] = D_800ED500[2] + (u32) D_800ED510;
+    D_800ED500[3] = D_800ED500[3] + (u32) D_800ED510;
+    D_800F6198 = 0;
+    D_800D6EC4 = 0;
+    if ((D_800D6F3C == 4) || (D_800D6F3C == 3)) {
+        D_800F6198 = 1;
+        sp18 = func_800AEA64(0x2D, 0x4A, 0x50, &D_800ED500);
+        D_800E98E0[sp18] = 0;
+    }
+    func_800BDF2C();
+    func_800BDE0C(0);
+    scSetPostProcessFunc(func_800BDE0C);
+    return sp18;
+}
 #endif
 
 /* HAND-WRITTEN ASSEMBLY FROM HERE: func_800BE320 and func_800BE374 are the

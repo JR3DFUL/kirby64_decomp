@@ -3731,119 +3731,7 @@ GObj *func_800A04B8(s32 arg0) {
 
 
 
-#ifdef MIPS_TO_C
-/* FACTORY: DIFF 59/277 -- one saved-register permutation. The ROM holds the
- * accumulator matrix pointer in $s5 and the scratch matrix in $s4; IDO picks
- * them the other way round, and the `or $s3,$a2` copy lands one slot later
- * than the ROM's. Everything else -- frame 0xF8, both matrices at 0xB8/0x78,
- * all eight saved registers, f20/f22, the three DObj SRT blocks, the
- * dynamic-store record walk and the whole normalize/transform tail -- is the
- * ROM's, instruction for instruction. Measured levers, in order of value:
- * declaring the ACCUMULATOR matrix before the scratch one (later locals take
- * the lower addresses, so the declaration order is inverted from the frame
- * order) 261 -> 185; writing the kinds dispatch as a SWITCH with an explicit
- * empty `case 0` rather than an if/else-if chain 180 -> 79 (the switch is
- * what produces the ROM's `beql` chain; an if-chain emits bne + nop); and
- * dropping the `kind` temporary to switch on *kinds directly 79 -> 59, which
- * also fixed the frame (0x100 -> 0xF8). Solved semantics: the walk is up the
- * DObj parent chain to the sentinel parent == 1; per node scale (vs 1.0f),
- * rotation and translation (vs 0.0f) are folded in, then the optional
- * DObjDynamicStore at +0x4C contributes up to three records read in kinds[]
- * order from data at +4 with N64 record sizes 0x10 / 0x14 / 0x10 (kind 1
- * translate, 2 rotate, 3 scale) and applied in the REVERSE order
- * scale-rotate-translate; finally arg0 gets the accumulated translation row
- * and arg1 is rotated by the column-normalized basis. */
-void func_800A0558(f32 *arg0, f32 *arg1, struct DObj *arg2) {
-    void guMtxIdentF(f32 m[4][4]);
-    void guMtxCatF(f32 m[4][4], f32 n[4][4], f32 r[4][4]);
-    void HS64_MkScaleMtxF(f32 m[4][4], f32 x, f32 y, f32 z);
-    void HS64_MkRotationMtxF(f32 m[4][4], f32 x, f32 y, f32 z);
-    void HS64_MkTranslateMtxF(f32 m[4][4], f32 x, f32 y, f32 z);
-    void guNormalize(f32 *x, f32 *y, f32 *z);
-    f32 spB8[4][4];
-    f32 sp78[4][4];
-    struct DObj *node;
-    OMMtxFloat3 *translate;
-    OMMtxFloat4 *rotate;
-    OMMtxFloat3 *scale;
-    u8 *csr;
-    u8 *kinds;
-    s32 i;
-    f32 vx;
-    f32 vy;
-    f32 vz;
-
-    node = arg2;
-    guMtxIdentF(spB8);
-    do {
-        if ((node->scale.v.x != 1.0f) || (node->scale.v.y != 1.0f) || (node->scale.v.z != 1.0f)) {
-            HS64_MkScaleMtxF(sp78, node->scale.v.x, node->scale.v.y, node->scale.v.z);
-            guMtxCatF(spB8, sp78, spB8);
-        }
-        if ((node->angle.v.x != 0.0f) || (node->angle.v.y != 0.0f) || (node->angle.v.z != 0.0f)) {
-            HS64_MkRotationMtxF(sp78, node->angle.v.x, node->angle.v.y, node->angle.v.z);
-            guMtxCatF(spB8, sp78, spB8);
-        }
-        if ((node->pos.v.x != 0.0f) || (node->pos.v.y != 0.0f) || (node->pos.v.z != 0.0f)) {
-            HS64_MkTranslateMtxF(sp78, node->pos.v.x, node->pos.v.y, node->pos.v.z);
-            guMtxCatF(spB8, sp78, spB8);
-        }
-        if (node->unk4C != NULL) {
-            translate = NULL;
-            scale = NULL;
-            rotate = NULL;
-            csr = (u8 *) node->unk4C + 4;
-            i = 0;
-            kinds = (u8 *) node->unk4C;
-            do {
-                i += 1;
-                switch (*kinds) {
-                case 0:
-                    break;
-                case 1:
-                    translate = (OMMtxFloat3 *) csr;
-                    csr += 0x10;
-                    break;
-                case 2:
-                    rotate = (OMMtxFloat4 *) csr;
-                    csr += 0x14;
-                    break;
-                case 3:
-                    scale = (OMMtxFloat3 *) csr;
-                    csr += 0x10;
-                    break;
-                }
-                kinds += 1;
-            } while (i != 3);
-            if ((scale != NULL) && ((scale->v.x != 1.0f) || (scale->v.y != 1.0f) || (scale->v.z != 1.0f))) {
-                HS64_MkScaleMtxF(sp78, scale->v.x, scale->v.y, scale->v.z);
-                guMtxCatF(spB8, sp78, spB8);
-            }
-            if ((rotate != NULL) && ((rotate->v.x != 0.0f) || (rotate->v.y != 0.0f) || (rotate->v.z != 0.0f))) {
-                HS64_MkRotationMtxF(sp78, rotate->v.x, rotate->v.y, rotate->v.z);
-                guMtxCatF(spB8, sp78, spB8);
-            }
-            if ((translate != NULL) && ((translate->v.x != 0.0f) || (translate->v.y != 0.0f) || (translate->v.z != 0.0f))) {
-                HS64_MkTranslateMtxF(sp78, translate->v.x, translate->v.y, translate->v.z);
-                guMtxCatF(spB8, sp78, spB8);
-            }
-        }
-        node = node->parent;
-    } while (node != (struct DObj *) 1);
-    arg0[0] = spB8[3][0];
-    arg0[1] = spB8[3][1];
-    arg0[2] = spB8[3][2];
-    vy = arg1[1];
-    vx = arg1[0];
-    vz = arg1[2];
-    guNormalize(&spB8[0][0], &spB8[1][0], &spB8[2][0]);
-    guNormalize(&spB8[0][1], &spB8[1][1], &spB8[2][1]);
-    guNormalize(&spB8[0][2], &spB8[1][2], &spB8[2][2]);
-    arg1[0] = (spB8[2][0] * vz) + ((spB8[0][0] * vx) + (spB8[1][0] * vy));
-    arg1[1] = (spB8[2][1] * vz) + ((spB8[0][1] * vx) + (spB8[1][1] * vy));
-    arg1[2] = (spB8[2][2] * vz) + ((spB8[0][2] * vx) + (spB8[1][2] * vy));
-}
-#elif defined(PORT)
+#ifdef PORT
 /* Accumulate the local transform of arg2's DObj chain (chain roots carry
  * the sentinel parent == 1, same as the emitter-track walkers above):
  * per node scale * rotation * translation from the DObj itself, then the
@@ -3952,7 +3840,94 @@ void func_800A0558(f32 *arg0, f32 *arg1, struct DObj *arg2) {
     arg1[2] = (acc[2][2] * vz) + ((acc[0][2] * vx) + (acc[1][2] * vy));
 }
 #else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl1/ovl1/func_800A0558.s")
+void func_800A0558(f32 *arg0, f32 *arg1, struct DObj *arg2) {
+    void guMtxIdentF(f32 m[4][4]);
+    void guMtxCatF(f32 m[4][4], f32 n[4][4], f32 r[4][4]);
+    void HS64_MkScaleMtxF(f32 m[4][4], f32 x, f32 y, f32 z);
+    void HS64_MkRotationMtxF(f32 m[4][4], f32 x, f32 y, f32 z);
+    void HS64_MkTranslateMtxF(f32 m[4][4], f32 x, f32 y, f32 z);
+    void guNormalize(f32 *x, f32 *y, f32 *z);
+    f32 spB8[4][4];
+    f32 sp78[4][4];
+    OMMtxFloat3 *translate;
+    OMMtxFloat4 *rotate;
+    f32 vz;
+    OMMtxFloat3 *scale;
+    u8 *csr;
+    u8 *kinds;
+    s32 i;
+    f32 vx;
+    f32 vy;
+
+    guMtxIdentF(spB8);
+    do {
+        if ((arg2->scale.v.x != 1.0f) || (arg2->scale.v.y != 1.0f) || (arg2->scale.v.z != 1.0f)) {
+            HS64_MkScaleMtxF(sp78, arg2->scale.v.x, arg2->scale.v.y, arg2->scale.v.z);
+            guMtxCatF(spB8, sp78, spB8);
+        }
+        if ((arg2->angle.v.x != 0.0f) || (arg2->angle.v.y != 0.0f) || (arg2->angle.v.z != 0.0f)) {
+            HS64_MkRotationMtxF(sp78, arg2->angle.v.x, arg2->angle.v.y, arg2->angle.v.z);
+            guMtxCatF(spB8, sp78, spB8);
+        }
+        if ((arg2->pos.v.x != 0.0f) || (arg2->pos.v.y != 0.0f) || (arg2->pos.v.z != 0.0f)) {
+            HS64_MkTranslateMtxF(sp78, arg2->pos.v.x, arg2->pos.v.y, arg2->pos.v.z);
+            guMtxCatF(spB8, sp78, spB8);
+        }
+        if (arg2->unk4C != NULL) {
+            do { } while (0);
+            translate = NULL;
+            rotate = NULL;
+            scale = NULL;
+            csr = (u8 *) arg2->unk4C + 4;
+            i = 0;
+            kinds = (u8 *) arg2->unk4C;
+            do {
+                i += 1;
+                switch (*kinds) {
+                case 0:
+                    break;
+                case 1:
+                    translate = (OMMtxFloat3 *) csr;
+                    csr += 0x10;
+                    break;
+                case 2:
+                    rotate = (OMMtxFloat4 *) csr;
+                    csr += 0x14;
+                    break;
+                case 3:
+                    scale = (OMMtxFloat3 *) csr;
+                    csr += 0x10;
+                    break;
+                }
+                kinds += 1;
+            } while (i != 3);
+            if ((scale != NULL) && ((scale->v.x != 1.0f) || (scale->v.y != 1.0f) || (scale->v.z != 1.0f))) {
+                HS64_MkScaleMtxF(sp78, scale->v.x, scale->v.y, scale->v.z);
+                guMtxCatF(spB8, sp78, spB8);
+            }
+            if ((rotate != NULL) && ((rotate->v.x != 0.0f) || (rotate->v.y != 0.0f) || (rotate->v.z != 0.0f))) {
+                HS64_MkRotationMtxF(sp78, rotate->v.x, rotate->v.y, rotate->v.z);
+                guMtxCatF(spB8, sp78, spB8);
+            }
+            if ((translate != NULL) && ((translate->v.x != 0.0f) || (translate->v.y != 0.0f) || (translate->v.z != 0.0f))) {
+                HS64_MkTranslateMtxF(sp78, translate->v.x, translate->v.y, translate->v.z);
+                guMtxCatF(spB8, sp78, spB8);
+            }
+        }
+        arg2 = arg2->parent;
+    } while (arg2 != (struct DObj *) 1);
+    arg0[0] = spB8[3][0];
+    arg0[1] = spB8[3][1];
+    arg0[2] = spB8[3][2];
+    vx = arg1[0]; vy = arg1[1];
+    vz = arg1[2];
+    guNormalize(&spB8[0][0], &spB8[1][0], &spB8[2][0]);
+    guNormalize(&spB8[0][1], &spB8[1][1], &spB8[2][1]);
+    guNormalize(&spB8[0][2], &spB8[1][2], &spB8[2][2]);
+    arg1[0] = (spB8[0][0] * vx) + (spB8[1][0] * vy) + (spB8[2][0] * vz);
+    arg1[1] = (spB8[0][1] * vx) + (spB8[1][1] * vy) + (spB8[2][1] * vz);
+    arg1[2] = (spB8[0][2] * vx) + (spB8[1][2] * vy) + (spB8[2][2] * vz);
+}
 #endif
 
 #ifdef PORT
@@ -5445,16 +5420,13 @@ void func_800A2300(GObj *arg0) {
     }
 }
 
-/* FACTORY: 16/45, whole-loop $v0/$v1 swap */
-#ifdef NON_MATCHING
 void func_800A238C(f32 arg0, f32 arg1, f32 arg2) {
     UnkParticle *p;
-    UnkParticle **q;
+    s32 i;
     struct Ovl1PNode *n;
 
-    q = D_800D69C8; do {
-        p = *q;
-        q++;
+    for (i = 0; i < 16; i++) {
+        p = D_800D69C8[i];
         if (p != NULL) {
             do {
                 p->posX += arg0;
@@ -5463,7 +5435,7 @@ void func_800A238C(f32 arg0, f32 arg1, f32 arg2) {
                 p = p->next;
             } while (p != NULL);
         }
-    } while (q < &D_800D6A08);
+    }
     n = (struct Ovl1PNode *) D_800D6A0C;
     if (n != NULL) {
         do {
@@ -5474,9 +5446,6 @@ void func_800A238C(f32 arg0, f32 arg1, f32 arg2) {
         } while (n != NULL);
     }
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl1/ovl1/func_800A238C.s")
-#endif
 
 // The ROM's dead `sw $a0, 0x0($sp)` home store plus the
 // `andi $a0, $a0, 0xFFFF` truncation is IDO's promoted-short prologue.
@@ -5528,32 +5497,7 @@ void func_800A24C4(u16 arg0, s32 arg1) {
 }
 
 #ifdef MIPS_TO_C
-/* FACTORY: DIFF 211/220. THE PADDING TRAP IS GONE: `- [0x4AB00, pad]` is in
- * kirby64.yaml, sha1-gated green, and verify.py scores this draft normally
- * now. The old note said fixing it "needs a pad subsegment plus the matching
- * `. += ` in kirby.ld" -- the second half was wrong, the Makefile derives
- * build/kirby.ld from the yaml and no hand edit of the linker script is
- * involved. It also called the fix "a layout change outside this lane"; it
- * was one yaml line and a deleted stale object.
- * 211 of 220 words still differ, so being scorable is all that changed.)
- * Residue is a whole-function register assignment: the ROM walks the layout
- * with the node pointer in $s1 (callee-saved, then reused as the entry
- * cursor `s1 += 0x2C`) and holds the 0x12 terminator constant in $v0, while
- * IDO puts the walker in $v1/$v0 and the constant in $a1, so nothing lines
- * up from instruction 8 on; our body is also 6 instructions longer. Tried:
- * m2c's node[1].type walk shape, and the `if (unk4 == 0) return;` early-exit
- * that would explain the ROM's `sltiu $v0,$v0,1` + `bnel`.
- * Solved semantics (this is the useful part): arg0 is the 0x2C-stride layout
- * array; walk to the type == 0x12 terminator; if the terminator's word +4 is
- * nonzero a SECOND 0x2C-stride array follows it, each entry
- * { s32 id; s32 pad; Vector pos, rot, scale } and the last flagged by bit 31
- * of id (still processed). Each id spawns func_800A19EC((id >> 16) & 0xF,
- * id & 0xFFFF); the entry SRT (func_8001C2E4, which takes the three Vectors
- * BY VALUE) is concatenated with the terminator-node SRT and applied:
- * position from row 3, velocity rotated by the 3x3, then per kind --
- * kinds 0/2/3/4/6/7/8 scale unk38 by the length of column 0, kind 1
- * transforms the point at +0x50, kind 5 scales the 3x3 at +0x50 by the
- * matrix columns. All strides are N64 (0x2C nodes, 4-byte words). */
+/* FACTORY: 11/214 words, arg0's SRT copy lands in $s0 where the ROM keeps it in $v1 */
 void func_800A2550(void *arg0) {
     /* The 0x2C-stride geo layout node. The emitter nodes this places are
      * plain UnkGenerator records (func_800A19EC hands them out). */
@@ -5564,81 +5508,75 @@ void func_800A2550(void *arg0) {
         /* 0x14 */ Vector rot;
         /* 0x20 */ Vector scale;
     };
-    f32 sp64[4][4];
-    f32 spA4[4][4];
-    struct LNode *node;
-    struct LNode *ent;
-    UnkGenerator *em;
+    void guMtxCatF(f32 m[4][4], f32 n[4][4], f32 r[4][4]);
+    void func_8001C2E4(f32 m[4][4], f32, f32, f32, f32, f32, f32, f32, f32, f32);
     s32 id;
+    f32 spA4[4][4];
+    f32 sp64[4][4];
+    struct LNode *p;
+    UnkGenerator *em;
     f32 vx;
     f32 vy;
     f32 vz;
 
-    node = (struct LNode *) arg0;
-    if (((struct LNode *) arg0)->type != 0x12) {
-        do {
-            id = node[1].type;
-            node += 1;
-        } while (id != 0x12);
+    p = (struct LNode *) arg0;
+    while (p->type != 0x12) {
+        p++;
     }
-    ent = node + 1;
-    if (node->unk4 != 0) {
-        func_8001C2E4(spA4, ((struct LNode *) arg0)->pos, ((struct LNode *) arg0)->rot,
-                      ((struct LNode *) arg0)->scale);
-        do {
-            id = ent->type;
-            em = (UnkGenerator *) func_800A19EC((id >> 0x10) & 0xF, id & 0xFFFF);
-            if (em != NULL) {
-                func_8001C2E4(sp64, ent->pos, ent->rot, ent->scale);
-                guMtxCatF(sp64, spA4, sp64);
-                vx = em->velX;
-                vy = em->velY;
-                em->posX = sp64[3][0];
-                vz = em->velZ;
-                em->posY = sp64[3][1];
-                em->posZ = sp64[3][2];
-                em->velX = (sp64[2][0] * vz) + ((sp64[0][0] * vx) + (sp64[1][0] * vy));
-                em->velY = (sp64[2][1] * vz) + ((sp64[0][1] * vx) + (sp64[1][1] * vy));
-                em->velZ = (sp64[2][2] * vz) + ((sp64[0][2] * vx) + (sp64[1][2] * vy));
-                switch (em->kind) {
-                case 0:
-                case 2:
-                case 3:
-                case 4:
-                case 6:
-                case 7:
-                case 8:
-                    em->radius = em->radius * sqrtf((sp64[2][0] * sp64[2][0]) +
-                                                  ((sp64[0][0] * sp64[0][0]) + (sp64[1][0] * sp64[1][0])));
-                    break;
-                case 1:
-                    vx = em->vars.box.axis[0];
-                    vy = em->vars.box.axis[1];
-                    vz = em->vars.box.axis[2];
-                    em->vars.box.axis[0] = sp64[3][0] + ((sp64[0][0] * vx) + (sp64[1][0] * vy) + (sp64[2][0] * vz));
-                    em->vars.box.axis[1] = sp64[3][1] + ((sp64[0][1] * vx) + (sp64[1][1] * vy) + (sp64[2][1] * vz));
-                    em->vars.box.axis[2] = sp64[3][2] + ((sp64[0][2] * vx) + (sp64[1][2] * vy) + (sp64[2][2] * vz));
-                    break;
-                case 5:
-                    vx = em->vars.box.axis[0];
-                    vy = em->vars.box.axis[4];
-                    vz = em->vars.box.axis[8];
-                    em->vars.box.axis[0] = sp64[0][0] * vx;
-                    em->vars.box.axis[1] = sp64[1][0] * vy;
-                    em->vars.box.axis[2] = sp64[2][0] * vz;
-                    em->vars.box.axis[3] = sp64[0][1] * vx;
-                    em->vars.box.axis[4] = sp64[1][1] * vy;
-                    em->vars.box.axis[5] = sp64[2][1] * vz;
-                    em->vars.box.axis[6] = sp64[0][2] * vx;
-                    em->vars.box.axis[7] = sp64[1][2] * vy;
-                    em->vars.box.axis[8] = sp64[2][2] * vz;
-                    break;
-                }
+    if ((p++)->unk4 == 0) {
+        return;
+    }
+    func_8001C2E4(spA4, ((struct LNode *) arg0)->pos.x, ((struct LNode *) arg0)->pos.y, ((struct LNode *) arg0)->pos.z, ((struct LNode *) arg0)->rot.x, ((struct LNode *) arg0)->rot.y, ((struct LNode *) arg0)->rot.z, ((struct LNode *) arg0)->scale.x, ((struct LNode *) arg0)->scale.y, ((struct LNode *) arg0)->scale.z);
+    do {
+        id = p->type;
+        em = (UnkGenerator *) func_800A19EC((id >> 0x10) & 0xF, id & 0xFFFF);
+        if (em != NULL) {
+            func_8001C2E4(sp64, p->pos.x, p->pos.y, p->pos.z, p->rot.x, p->rot.y, p->rot.z, p->scale.x, p->scale.y, p->scale.z);
+            guMtxCatF(sp64, spA4, sp64);
+            vx = em->velX;
+            vy = em->velY;
+            em->posX = sp64[3][0];
+            vz = em->velZ;
+            em->posY = sp64[3][1];
+            em->posZ = sp64[3][2];
+            em->velX = (sp64[0][0] * vx) + (sp64[1][0] * vy) + (sp64[2][0] * vz);
+            em->velY = (sp64[0][1] * vx) + (sp64[1][1] * vy) + (sp64[2][1] * vz);
+            em->velZ = (sp64[0][2] * vx) + (sp64[1][2] * vy) + (sp64[2][2] * vz);
+            switch (em->kind) {
+            case 0:
+            case 2:
+            case 3:
+            case 4:
+            case 6:
+            case 7:
+            case 8:
+                em->radius *= sqrtf((sp64[0][0] * sp64[0][0]) + (sp64[1][0] * sp64[1][0]) + (sp64[2][0] * sp64[2][0]));
+                break;
+            case 1:
+                vx = em->vars.box.axis[0];
+                vy = em->vars.box.axis[1];
+                vz = em->vars.box.axis[2];
+                em->vars.box.axis[0] = (sp64[0][0] * vx) + (sp64[1][0] * vy) + (sp64[2][0] * vz) + sp64[3][0];
+                em->vars.box.axis[1] = (sp64[0][1] * vx) + (sp64[1][1] * vy) + (sp64[2][1] * vz) + sp64[3][1];
+                em->vars.box.axis[2] = (sp64[0][2] * vx) + (sp64[1][2] * vy) + (sp64[2][2] * vz) + sp64[3][2];
+                break;
+            case 5:
+                vx = em->vars.box.axis[0];
+                vy = em->vars.box.axis[4];
+                vz = em->vars.box.axis[8];
+                em->vars.box.axis[0] = sp64[0][0] * vx;
+                em->vars.box.axis[1] = sp64[1][0] * vy;
+                em->vars.box.axis[2] = sp64[2][0] * vz;
+                em->vars.box.axis[3] = sp64[0][1] * vx;
+                em->vars.box.axis[4] = sp64[1][1] * vy;
+                em->vars.box.axis[5] = sp64[2][1] * vz;
+                em->vars.box.axis[6] = sp64[0][2] * vx;
+                em->vars.box.axis[7] = sp64[1][2] * vy;
+                em->vars.box.axis[8] = sp64[2][2] * vz;
+                break;
             }
-            id = ent->type;
-            ent += 1;
-        } while (!(id & 0x80000000));
-    }
+        }
+    } while (!((p++)->type & 0x80000000));
 }
 #elif defined(PORT)
 /* PORT: still assembly on the matching build; the m2c sketch above is not
