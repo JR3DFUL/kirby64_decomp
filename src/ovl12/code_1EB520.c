@@ -1661,7 +1661,11 @@ void func_801E0DF8_ovl12(GObj *arg0) {
         ohSleep(1);
     }
     D_800E9E20[omCurrentObj->objId] = 1;
+#ifdef PORT
+    D_800E9AA0[omCurrentObj->objId] = (struct EntityThing800E9AA0 *) 1;
+#else
     *(s32 *)&D_800E9AA0[omCurrentObj->objId] = 1;
+#endif
     D_800D7098.unk8 = 1;
     D_800E64D0[omCurrentObj->objId] = 0.0f;
     D_800E6690[omCurrentObj->objId] = D_800E6A10[omCurrentObj->objId] * 0.5f;
@@ -1696,7 +1700,11 @@ void func_801E0FC8_ovl12(GObj *arg0) {
 // register between the two stores instead of materialising it twice.
 void func_801E10C4_ovl12(GObj *arg0) {
     D_800DDFD0[omCurrentObj->objId] = 8;
+#ifdef PORT
+    D_800E9AA0[omCurrentObj->objId] = (struct EntityThing800E9AA0 *) 1;
+#else
     *(s32 *)&D_800E9AA0[omCurrentObj->objId] = 1;
+#endif
     *(s32 *)&D_800D7098.unk2C = 1;
     curObjSleepForever();
 }

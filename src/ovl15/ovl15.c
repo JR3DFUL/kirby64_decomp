@@ -1890,7 +1890,16 @@ void func_801E1230_ovl15(s32 arg0) {
     D_800D7098.unk14 = 0;
     D_800DDFD0[omCurrentObj->objId] = 0xB;
     func_800B33F4();
+#ifdef PORT
+    /* The boss keeps a plain s32 in its D_800E9AA0 cell, and every other
+       access to it in this file (func_801DD318_ovl15, func_801DD7C8_ovl15,
+       func_801DF52C_ovl15, func_801E15B0_ovl15) indexes ((s32 *) D_800E9AA0)
+       at a 4-byte stride. At LP64 a pointer-typed store lands at objId * 8
+       and clears two other objects' cells instead of this one. */
+    ((s32 *) D_800E9AA0)[omCurrentObj->objId] = 0;
+#else
     D_800E9AA0[omCurrentObj->objId] = NULL;
+#endif
     D_800D7118.unk3C = 0;
     D_800D7098.unk3C = 6;
     if (D_800D6B54 == 0) {

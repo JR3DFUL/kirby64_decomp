@@ -1713,10 +1713,20 @@ struct Ovl9AnimCmd2 {
     s32 unk8;
 };
 
+/* func_80111C88 returns a struct CollSlot * (ovl2_9.c). CollSlot leads with
+ * a pointer, so at LP64 its unk24 sits at 48, not at the N64's 0x24; same
+ * fix as struct Ovl7AnimObj in ovl7_2.c. */
+#ifdef PORT
+struct Ovl9AnimObj2 {
+    u8 filler0[48];   /* = offsetof(struct CollSlot, unk24) at LP64 */
+    struct Ovl9AnimCmd2 *unk24;
+};
+#else
 struct Ovl9AnimObj2 {
     u8 filler0[0x24];
     struct Ovl9AnimCmd2 *unk24;
 };
+#endif
 
 void func_80111550(s32);
 struct Ovl9AnimObj2 *func_80111C88(s32 *, u32);
