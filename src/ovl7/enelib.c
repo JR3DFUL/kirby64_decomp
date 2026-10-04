@@ -1091,53 +1091,31 @@ s32 func_8019AC60_ovl7(f32 arg0, f32 arg1, f32 arg2, struct TrackPosition *arg3)
     }
     return 1;
 }
-// m2c draft, measured 74/85 diffs; 71/85 after zerofork_sweep 2026-08-26:
-// ALL FOUR compares against 0.0f flipped to the integer `0` (LEVER 99's
-// pairing rule -- each single flip is 79, the set of four is 71).
-#ifdef NON_MATCHING
 s32 func_8019ADB4_ovl7(f32 arg0, struct TrackPosition *arg1) {
-    f32 *temp_v0;
-    f32 *var_v0;
-    f32 temp_f0;
-    f32 var_f0;
-    f32 var_f12;
+    f32 d;
+    f32 step;
 
     if (func_8019A900_ovl7(arg1) == 0) {
         return 0;
     }
-    temp_f0 = func_8019AAD0_ovl7(D_800EB320[omCurrentObj->objId], 0, 0);
-    if (temp_f0 == 0) {
+    d = func_8019AAD0_ovl7(D_800EB320[omCurrentObj->objId], 0.0f, 0.0f);
+    if (d == 0.0f) {
         return 0;
     }
-    if (temp_f0 > 0) {
-        var_f12 = arg0;
+    if (d > 0) {
+        step = arg0;
     } else {
-        var_f12 = -arg0;
+        step = -arg0;
     }
-    temp_v0 = &D_800EB320[omCurrentObj->objId];
-    *temp_v0 += var_f12;
-    var_v0 = &D_800EB320[omCurrentObj->objId];
-    var_f0 = *var_v0;
-    if (var_f0 > 6.2831855f) {
-        do {
-            *var_v0 = var_f0 - 6.2831855f;
-            var_v0 = &D_800EB320[omCurrentObj->objId];
-            var_f0 = *var_v0;
-        } while (var_f0 > 6.2831855f);
+    D_800EB320[omCurrentObj->objId] += step;
+    while (D_800EB320[omCurrentObj->objId] > 6.283185482f) {
+        D_800EB320[omCurrentObj->objId] -= 6.283185482f;
     }
-    if (var_f0 < 0) {
-        do {
-            *var_v0 = var_f0 + 6.2831855f;
-            var_v0 = &D_800EB320[omCurrentObj->objId];
-            var_f0 = *var_v0;
-        } while (var_f0 < 0);
+    while (D_800EB320[omCurrentObj->objId] < 0.0f) {
+        D_800EB320[omCurrentObj->objId] += 6.283185482f;
     }
     return 1;
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl7/enelib/func_8019ADB4_ovl7.s")
-#endif
-#ifdef NON_MATCHING
 void func_8019AF00_ovl7(f32 arg0) {
     f32 angleSin = sinf(D_800EB320[omCurrentObj->objId]) * arg0;
     f32 angleCos = cosf(D_800EB320[omCurrentObj->objId]) * arg0;
@@ -1145,11 +1123,8 @@ void func_8019AF00_ovl7(f32 arg0) {
     D_800E6690[omCurrentObj->objId] = angleSin * 0.5f;
     D_800E6850[omCurrentObj->objId] = ABS(ABS(angleSin));
     D_800E3750[omCurrentObj->objId] = D_800EB160[omCurrentObj->objId] + (angleCos * 0.5f);
-    D_800E3C90[omCurrentObj->objId] = ABS(ABS(D_800EB160[omCurrentObj->objId]) + ABS(angleCos));
+    D_800E3C90[omCurrentObj->objId] = ABS(ABS(angleCos) + ABS(D_800EB160[omCurrentObj->objId]));
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl7/enelib/func_8019AF00_ovl7.s")
-#endif
 
 f32 eneGetPlayerHeight(void) {
     f32 ret = gEntitiesNextPosYArray[0];
@@ -2004,107 +1979,27 @@ void func_8019CD68_ovl7(void) {
     *(f32 *)&ent->unk14 = gEntitiesNextPosZArray[omCurrentObj->objId] + vec.z;
 }
 
-/* FACTORY: 70/106 diffs (words DIFFERING), re-measured 2026-08-25.
- * LEVER 70 candidate, WORKED AND NEGATIVE -- do not re-spend on the macro here.
- * The listing really does hold FOUR ABSF expansions (the sweep's 10 cmp / 4 neg
- * is right; a mid-session note claiming this function has no `neg.s` and should
- * be dropped from the ABSF list is WRONG -- grep the .s, there are four, each
- * the textbook `bc1fl / mov.s / b / neg.s / mov.s` ternary with the third,
- * unreachable `mov.s` at .L8019CEC4 that only the macro's else-arm produces).
- * Measured, all three at VERIFY_MAXDIFF=200 on a scratch copy:
- *   m2c's hand-written if/else expansions (this draft)   70/106
- *   ABSF(temp_f0) / ABSF(temp_f2) at all four sites      70/106  (FLAT)
- *   ABS()  instead of ABSF() (lever 3)                   78/112  WORSE --
- *     the integer 0 forces a conversion and the draft grows past the ROM's 106
- *   short-circuit rewrite (`(a >= 0.0f || ABSF(a) <= 0.001f) && (...)`,
- *     one `return 1` arm and one `var_a0 = 1` arm)       83/106  WORSE
- * Why the macro does not pay here: the residue is NOT a missing negation, it is
- * that BOTH source spellings let IDO reuse the outer sign test's zero. Our
- * build emits `c.lt.s $f0, $f14` against the $f14 the `temp_f0 >= 0.0f` test
- * already loaded; the ROM re-materialises a fresh `mtc1 $zero, $f4` (and $f8,
- * $f16, $f4) for each expansion, so each of the four sites is exactly two words
- * short (the mtc1 and one nop) and everything after slides. Lever 7's
- * double-literal fork cannot be spelled inside the macro, and the explicit
- * if/else forks no better than ABSF does.
- * Second, independent residue: a whole-prologue register rename. The ROM holds
- * the shifted objId in $v1 and the accumulator in $a0 (`or $a0, $zero, $zero`
- * ... `or $v0, $a0, $zero`); every draft shape gets $a1/$v1. Fix that before
- * the zero -- diff 3 is in the prologue (lever 69's rule).
- */
-#ifdef NON_MATCHING
 s32 func_8019CE28_ovl7(void) {
-    EnemyRecord *temp_v0;
-    f32 temp_f0;
-    f32 temp_f2;
-    f32 var_f0;
-    f32 var_f0_2;
-    f32 var_f12;
-    f32 var_f12_2;
-    s32 var_a0;
+    EnemyRecord *ent;
+    f32 dx;
+    f32 dz;
+    s32 ret;
 
-    var_a0 = 0;
-    temp_v0 = D_800E1B50[omCurrentObj->objId];
-    temp_f0 = gEntitiesNextPosXArray[omCurrentObj->objId] - *(f32 *) &temp_v0->unkC;
-    temp_f2 = gEntitiesNextPosZArray[omCurrentObj->objId] - *(f32 *) &temp_v0->unk14;
+    ent = D_800E1B50[omCurrentObj->objId];
+    dx = gEntitiesNextPosXArray[omCurrentObj->objId] - *(f32 *) &ent->unkC;
+    dz = gEntitiesNextPosZArray[omCurrentObj->objId] - *(f32 *) &ent->unk14;
+    ret = 0;
     if (D_800E6A10[omCurrentObj->objId] == 1.0f) {
-        if (!(temp_f0 >= 0.0f)) {
-            if (temp_f0 < 0.0f) {
-                var_f12 = -temp_f0;
-            } else {
-                var_f12 = temp_f0;
-            }
-            if (var_f12 <= 0.001f) {
-                goto block_6;
-            }
-            /* Duplicate return node #23. Try simplifying control flow for better match */
-            return var_a0;
+        if ((dx >= 0 || ABSF(dx) <= 0.001f) && (dz >= 0 || ABSF(dz) <= 0.001f)) {
+            ret = 1;
+            goto exit;
         }
-block_6:
-        if (!(temp_f2 >= 0.0f)) {
-            if (temp_f2 < 0.0f) {
-                var_f0 = -temp_f2;
-            } else {
-                var_f0 = temp_f2;
-            }
-            if (var_f0 <= 0.001f) {
-                /* Duplicate return node #11. Try simplifying control flow for better match */
-                return 1;
-            }
-            /* Duplicate return node #23. Try simplifying control flow for better match */
-            return var_a0;
-        }
-        return 1;
+    } else if ((dx <= 0 || ABSF(dx) <= 0.001f) && (dz <= 0 || ABSF(dz) <= 0.001f)) {
+        ret = 1;
     }
-    if (!(temp_f0 <= 0.0f)) {
-        if (temp_f0 < 0.0f) {
-            var_f12_2 = -temp_f0;
-        } else {
-            var_f12_2 = temp_f0;
-        }
-        if (var_f12_2 <= 0.001f) {
-            goto block_17;
-        }
-    } else {
-block_17:
-        if (!(temp_f2 <= 0.0f)) {
-            if (temp_f2 < 0.0f) {
-                var_f0_2 = -temp_f2;
-            } else {
-                var_f0_2 = temp_f2;
-            }
-            if (var_f0_2 <= 0.001f) {
-                goto block_22;
-            }
-        } else {
-block_22:
-            var_a0 = 1;
-        }
-    }
-    return var_a0;
+exit:
+    return ret;
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl7/enelib/func_8019CE28_ovl7.s")
-#endif
 /* FACTORY: 104/144, from a raw m2c draft at 135/144 (the note here said 137;
    measure_seeds says 135). INSTRUCTION COUNT and FRAME (0x38) are now EXACT
    and the first 12 words match. Same family as func_8019C844_ovl7 above,
@@ -2646,92 +2541,27 @@ void func_8019E860_ovl7(s32 *arg0) {
     gSPLight(gDisplayListHeads[1]++, &D_800BE548, 2);
 }
 
-/* FACTORY: 114/118 (m2c draft).
-   Signature corrected: the ROM calls func_8019E128_ovl7 twice with $a0
-   UNTOUCHED (jal ... / nop at 8019EBB4), so this is not a `void` function --
-   it is a GObj callback that passes its own argument straight through.  Its
-   only reference is a callback table in asm/data/ovl1/ovl1_2.data.s, so there
-   is no C call site to update. */
-#ifdef NON_MATCHING
 void func_8019E9F0_ovl7(GObj *arg0) {
-    s32 sp1C;
-    Gfx *temp_a1;
-    Gfx *temp_a1_2;
-    Gfx *temp_a1_3;
-    Gfx *temp_a1_4;
-    Gfx *temp_a1_5;
-    Gfx *temp_a1_6;
-    Gfx *temp_v1;
-    Gfx *temp_v1_2;
-    Gfx *temp_v1_3;
-    Gfx *temp_v1_4;
-    Gfx *temp_v1_5;
-    Gfx *temp_v1_6;
-    s32 temp_t9;
-    u8 *temp_t0;
-    u8 *temp_t1;
+    s32 idx = D_800E77A0[D_800D7090] - 0x24;
 
-    temp_t9 = D_800E77A0[D_800D7090] - 0x24;
-    sp1C = temp_t9;
-    if ((temp_t9 >= 0) && (temp_t9 < 9)) {
-        temp_v1 = gDisplayListHeads[0];
-        gDisplayListHeads[0] = temp_v1 + 1;
-        temp_v1->words.w1 = 0x18;
-        temp_v1->words.w0 = 0xDB020000;
-        temp_v1_2 = gDisplayListHeads[0];
-        gDisplayListHeads[0] = temp_v1_2 + 1;
-        temp_v1_2->words.w0 = 0xDC08060A;
-        temp_t0 = (sp1C * 0x18) + &D_801C27E8_ovl7;
-        temp_t1 = temp_t0 + 8;
-        temp_v1_2->words.w1 = temp_t1;
-        temp_v1_3 = gDisplayListHeads[0];
-        gDisplayListHeads[0] = temp_v1_3 + 1;
-        temp_v1_3->words.w1 = temp_t0;
-        temp_v1_3->words.w0 = 0xDC08090A;
-        temp_a1 = gDisplayListHeads[1];
-        gDisplayListHeads[1] = temp_a1 + 1;
-        temp_a1->words.w1 = 0x18;
-        temp_a1->words.w0 = 0xDB020000;
-        temp_a1_2 = gDisplayListHeads[1];
-        gDisplayListHeads[1] = temp_a1_2 + 1;
-        temp_a1_2->words.w1 = temp_t1;
-        temp_a1_2->words.w0 = 0xDC08060A;
-        temp_a1_3 = gDisplayListHeads[1];
-        gDisplayListHeads[1] = temp_a1_3 + 1;
-        temp_a1_3->words.w1 = temp_t0;
-        temp_a1_3->words.w0 = 0xDC08090A;
+    if (idx >= 0 && idx < 9) {
+        gSPNumLights(gDisplayListHeads[0]++, 1);
+        gSPLight(gDisplayListHeads[0]++, &((Lights1 *) &D_801C27E8_ovl7)[idx].l[0], 1);
+        gSPLight(gDisplayListHeads[0]++, &((Lights1 *) &D_801C27E8_ovl7)[idx].a, 2);
+        gSPNumLights(gDisplayListHeads[1]++, 1);
+        gSPLight(gDisplayListHeads[1]++, &((Lights1 *) &D_801C27E8_ovl7)[idx].l[0], 1);
+        gSPLight(gDisplayListHeads[1]++, &((Lights1 *) &D_801C27E8_ovl7)[idx].a, 2);
         func_8019E128_ovl7(arg0);
-        temp_v1_4 = gDisplayListHeads[0];
-        gDisplayListHeads[0] = temp_v1_4 + 1;
-        temp_v1_4->words.w1 = 0x18;
-        temp_v1_4->words.w0 = 0xDB020000;
-        temp_v1_5 = gDisplayListHeads[0];
-        gDisplayListHeads[0] = temp_v1_5 + 1;
-        temp_v1_5->words.w0 = 0xDC08060A;
-        temp_v1_5->words.w1 = &D_800BE550;
-        temp_v1_6 = gDisplayListHeads[0];
-        gDisplayListHeads[0] = temp_v1_6 + 1;
-        temp_v1_6->words.w0 = 0xDC08090A;
-        temp_v1_6->words.w1 = &D_800BE548;
-        temp_a1_4 = gDisplayListHeads[1];
-        gDisplayListHeads[1] = temp_a1_4 + 1;
-        temp_a1_4->words.w1 = 0x18;
-        temp_a1_4->words.w0 = 0xDB020000;
-        temp_a1_5 = gDisplayListHeads[1];
-        gDisplayListHeads[1] = temp_a1_5 + 1;
-        temp_a1_5->words.w1 = &D_800BE550;
-        temp_a1_5->words.w0 = 0xDC08060A;
-        temp_a1_6 = gDisplayListHeads[1];
-        gDisplayListHeads[1] = temp_a1_6 + 1;
-        temp_a1_6->words.w1 = &D_800BE548;
-        temp_a1_6->words.w0 = 0xDC08090A;
-        return;
+        gSPNumLights(gDisplayListHeads[0]++, 1);
+        gSPLight(gDisplayListHeads[0]++, &D_800BE550, 1);
+        gSPLight(gDisplayListHeads[0]++, &D_800BE548, 2);
+        gSPNumLights(gDisplayListHeads[1]++, 1);
+        gSPLight(gDisplayListHeads[1]++, &D_800BE550, 1);
+        gSPLight(gDisplayListHeads[1]++, &D_800BE548, 2);
+    } else {
+        func_8019E128_ovl7(arg0);
     }
-    func_8019E128_ovl7(arg0);
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl7/enelib/func_8019E9F0_ovl7.s")
-#endif
 void func_8019EBCC_ovl7(Unused GObj *gobj) {
     EnemyRecord *ent = D_800E1B50[omCurrentObj->objId];
 

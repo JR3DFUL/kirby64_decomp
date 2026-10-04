@@ -7,6 +7,8 @@
 #include "ovl1/util.h"
 #include "ovl1/save_file.h"
 
+void play_sound(s32);
+
 extern s32 D_80187384_ovl5[];
 extern Gfx D_80186A80_ovl5[];
 extern Vector2 D_8018E3A0_ovl5[];
@@ -3346,8 +3348,6 @@ void func_8016EF44_ovl5(u8 *arg0, u16 *arg1) {
     arg0[0x1A] = arg1[5];
 }
 
-#ifdef NON_MATCHING
-/* FACTORY: 6/222 words, $v0/$v1 after implicit-int play_sound; MATCH with file-scope void play_sound(s32) */
 extern u8 D_8018E440_ovl5;
 extern f32 D_8018D770_ovl5;
 extern f32 D_80187094_ovl5[][2];
@@ -3440,9 +3440,6 @@ void func_8016EF78_ovl5(GObj *arg0) {
         ohSleep(1);
     }
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl5/ovl5_4/func_8016EF78_ovl5.s")
-#endif
 
 
 void func_8016F2F0_ovl5(GObj *arg0) {

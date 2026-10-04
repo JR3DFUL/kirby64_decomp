@@ -8,6 +8,8 @@
 #include "ovl1/save_file.h"
 #include "buffers.h"
 
+void play_sound(s32);
+
 extern s32 D_8018E030_ovl5[];
 extern u8 D_8018E22C_ovl5[];
 extern f32 D_80186950_ovl5[];
@@ -4297,99 +4299,7 @@ void func_801649CC_ovl5(void)
     }
   }
 }
-/* FACTORY: 6/223 words, $v0/$v1 after implicit-int play_sound; MATCH with file-scope void play_sound(s32) */
-#ifdef MIPS_TO_C
-void func_80164A34_ovl5(GObj *arg0) {
-    extern struct UnkStruct8015C740 D_801864C4_ovl5;
-    extern struct UnkStruct8015C740 D_801864E4_ovl5;
-    extern struct UnkStruct8015C740 D_80186504_ovl5;
-    extern struct UnkStruct8015C740 D_80186524_ovl5;
-    extern struct UnkStruct8015C740 D_80186544_ovl5;
-    extern struct UnkStruct8015C740 D_80186564_ovl5;
-    extern struct UnkStruct8015C740 D_80186584_ovl5;
-    extern struct UnkStruct8015C740 D_801865A4_ovl5;
-    extern f32 D_801865C4_ovl5[][2];
-    extern u8 D_8018E259_ovl5;
-    void func_80164DB0_ovl5(void);
-    SPObj *cursor;
-    s32 counter;
-
-    D_800DEF90[omCurrentObj->objId] = NULL;
-    setProcessMain(gEntityGObjProcessArray5[omCurrentObj->objId], procMainStub);
-    D_8018E259_ovl5 = 0;
-    omLinkGObjDL(arg0, (void (*)(GObj *)) func_800AD1A0, 0xA, 0x80000000, 0xA);
-    func_800BB3F0();
-    cursor = func_8015C740_ovl5(arg0, &D_80186544_ovl5);
-    cursor->xScale = 52.0f;
-    cursor->yScale = 1.33f;
-    func_8015C740_ovl5(arg0, &D_801864C4_ovl5);
-    func_8015C740_ovl5(arg0, &D_801864E4_ovl5);
-    func_8015C740_ovl5(arg0, &D_80186504_ovl5);
-    func_8015C740_ovl5(arg0, &D_80186524_ovl5);
-    func_8015C740_ovl5(arg0, &D_80186564_ovl5);
-    func_8015C740_ovl5(arg0, &D_80186584_ovl5);
-    cursor = func_8015C740_ovl5(arg0, &D_801865A4_ovl5);
-    cursor->xOffset = D_801865C4_ovl5[D_8018E259_ovl5][0];
-    cursor->yOffset = D_801865C4_ovl5[D_8018E259_ovl5][1];
-    ohSleep(6);
-    counter = 5;
-    while (1) {
-        if (counter != 0) {
-            counter--;
-            if ((gPlayerControllers[0].buttonHeld & 0xF00) == 0) {
-                counter = 0;
-            }
-        } else {
-            if (gPlayerControllers[0].buttonPressed & 0x9000) {
-                ((s32 *) D_800D7178)[0x1E] = 1;
-                switch (D_8018E259_ovl5) {
-                    case 0:
-                        ((s32 *) D_800D7178)[0x1E] = 2;
-                        play_sound(0x113);
-                        func_800ACBDC(arg0);
-                        func_800B1900(*(u16 *)((u8 *)omCurrentObj + 2));
-                        break;
-                    case 1:
-                        play_sound(0xED);
-                        gGameState = 0x1F;
-                        break;
-                    case 2:
-                        play_sound(0xED);
-                        D_800D6B68 = gGameState;
-                        gGameState = 0x1B;
-                        break;
-                    case 3:
-                        play_sound(0x2B);
-                        D_800D6B68 = gGameState;
-                        gGameState = 0xA;
-                        break;
-                }
-                func_80164DB0_ovl5();
-                curObjSleepForever();
-            } else if (gPlayerControllers[0].buttonHeld & 0x800) {
-                play_sound(0x113);
-                if (D_8018E259_ovl5 == 0) {
-                    D_8018E259_ovl5 = 3;
-                } else {
-                    D_8018E259_ovl5--;
-                }
-                counter = 5;
-            } else if (gPlayerControllers[0].buttonHeld & 0x400) {
-                play_sound(0x113);
-                if (D_8018E259_ovl5 == 3) {
-                    D_8018E259_ovl5 = 0;
-                } else {
-                    D_8018E259_ovl5++;
-                }
-                counter = 5;
-            }
-            cursor->xOffset = D_801865C4_ovl5[D_8018E259_ovl5][0];
-            cursor->yOffset = D_801865C4_ovl5[D_8018E259_ovl5][1];
-        }
-        ohSleep(1);
-    }
-}
-#elif defined(PORT)
+#ifdef PORT
 /* Pause-menu thread (near-clone of func_8016EF78_ovl5 in ovl5_4 and
  * func_80176170_ovl5 in ovl5_5): draws the pause panel and the four menu
  * entries, moves the cursor sprite along D_801865C4_ovl5 with C-up/C-down,
@@ -4489,7 +4399,96 @@ void func_80164A34_ovl5(GObj *arg0) {
     }
 }
 #else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl5/ovl5_2/func_80164A34_ovl5.s")
+void func_80164A34_ovl5(GObj *arg0) {
+    extern struct UnkStruct8015C740 D_801864C4_ovl5;
+    extern struct UnkStruct8015C740 D_801864E4_ovl5;
+    extern struct UnkStruct8015C740 D_80186504_ovl5;
+    extern struct UnkStruct8015C740 D_80186524_ovl5;
+    extern struct UnkStruct8015C740 D_80186544_ovl5;
+    extern struct UnkStruct8015C740 D_80186564_ovl5;
+    extern struct UnkStruct8015C740 D_80186584_ovl5;
+    extern struct UnkStruct8015C740 D_801865A4_ovl5;
+    extern f32 D_801865C4_ovl5[][2];
+    extern u8 D_8018E259_ovl5;
+    void func_80164DB0_ovl5(void);
+    SPObj *cursor;
+    s32 counter;
+
+    D_800DEF90[omCurrentObj->objId] = NULL;
+    setProcessMain(gEntityGObjProcessArray5[omCurrentObj->objId], procMainStub);
+    D_8018E259_ovl5 = 0;
+    omLinkGObjDL(arg0, (void (*)(GObj *)) func_800AD1A0, 0xA, 0x80000000, 0xA);
+    func_800BB3F0();
+    cursor = func_8015C740_ovl5(arg0, &D_80186544_ovl5);
+    cursor->xScale = 52.0f;
+    cursor->yScale = 1.33f;
+    func_8015C740_ovl5(arg0, &D_801864C4_ovl5);
+    func_8015C740_ovl5(arg0, &D_801864E4_ovl5);
+    func_8015C740_ovl5(arg0, &D_80186504_ovl5);
+    func_8015C740_ovl5(arg0, &D_80186524_ovl5);
+    func_8015C740_ovl5(arg0, &D_80186564_ovl5);
+    func_8015C740_ovl5(arg0, &D_80186584_ovl5);
+    cursor = func_8015C740_ovl5(arg0, &D_801865A4_ovl5);
+    cursor->xOffset = D_801865C4_ovl5[D_8018E259_ovl5][0];
+    cursor->yOffset = D_801865C4_ovl5[D_8018E259_ovl5][1];
+    ohSleep(6);
+    counter = 5;
+    while (1) {
+        if (counter != 0) {
+            counter--;
+            if ((gPlayerControllers[0].buttonHeld & 0xF00) == 0) {
+                counter = 0;
+            }
+        } else {
+            if (gPlayerControllers[0].buttonPressed & 0x9000) {
+                ((s32 *) D_800D7178)[0x1E] = 1;
+                switch (D_8018E259_ovl5) {
+                    case 0:
+                        ((s32 *) D_800D7178)[0x1E] = 2;
+                        play_sound(0x113);
+                        func_800ACBDC(arg0);
+                        func_800B1900(*(u16 *)((u8 *)omCurrentObj + 2));
+                        break;
+                    case 1:
+                        play_sound(0xED);
+                        gGameState = 0x1F;
+                        break;
+                    case 2:
+                        play_sound(0xED);
+                        D_800D6B68 = gGameState;
+                        gGameState = 0x1B;
+                        break;
+                    case 3:
+                        play_sound(0x2B);
+                        D_800D6B68 = gGameState;
+                        gGameState = 0xA;
+                        break;
+                }
+                func_80164DB0_ovl5();
+                curObjSleepForever();
+            } else if (gPlayerControllers[0].buttonHeld & 0x800) {
+                play_sound(0x113);
+                if (D_8018E259_ovl5 == 0) {
+                    D_8018E259_ovl5 = 3;
+                } else {
+                    D_8018E259_ovl5--;
+                }
+                counter = 5;
+            } else if (gPlayerControllers[0].buttonHeld & 0x400) {
+                play_sound(0x113);
+                if (D_8018E259_ovl5 == 3) {
+                    D_8018E259_ovl5 = 0;
+                } else {
+                    D_8018E259_ovl5++;
+                }
+                counter = 5;
+            }
+            cursor->xOffset = D_801865C4_ovl5[D_8018E259_ovl5][0];
+            cursor->yOffset = D_801865C4_ovl5[D_8018E259_ovl5][1];
+        }
+        ohSleep(1);
+    }
+}
 #endif
 
 void func_80164DB0_ovl5(void) {

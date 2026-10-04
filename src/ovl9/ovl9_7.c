@@ -305,7 +305,11 @@ extern u32 D_800BE4EC;
  * "too few arguments". */
 void func_801A0D74_ovl7();
 void func_800A8100(s32, s32, s32, void *);
+#ifdef PORT
 void func_801A03B4_ovl7(void);
+#else
+s32 func_801A03B4_ovl7(void);
+#endif
 
 void func_801F09E4_ovl9(GObj *arg0) {
     switch (D_800BE4EC % 6) {
@@ -326,7 +330,7 @@ void func_801F09E4_ovl9(GObj *arg0) {
 }
 
 #ifdef MIPS_TO_C
-/* FACTORY: 33/208 words, index-temp rotation (ROM objId*4 in $v0 and bases a2/a3/t0, ours t0 and v0/a2/a3) */
+/* FACTORY: 8/208 words, late objId*4 in t0 not v0 (implicit-int ohSleep holds v0; MATCH with file-scope void ohSleep(s32)) */
 void func_801F0ABC_ovl9(GObj *arg0) {
     struct Ovl9Curve {
         Vector unk0;
@@ -342,6 +346,7 @@ void func_801F0ABC_ovl9(GObj *arg0) {
     void func_801F0DFC_ovl9(GObj *);
     void func_801A3E80_ovl7(struct GObj *);
     void func_800B33F4(void);
+    void func_800A22D4(void *);
     EnemyRecord *rec;
     struct Ovl9Curve curve;
     void *gen;
@@ -729,10 +734,20 @@ struct Ovl9AnimCmd {
     f32 unk18;
 };
 
+/* func_801A0464_ovl7 returns func_80111C88's struct CollSlot * (ovl2_9.c).
+ * CollSlot leads with a pointer, so at LP64 its unk24 sits at 48, not at the
+ * N64's 0x24; same fix as struct Ovl7AnimObj in ovl7_2.c. */
+#ifdef PORT
+struct Ovl9AnimObj {
+    u8 filler0[48];   /* = offsetof(struct CollSlot, unk24) at LP64 */
+    struct Ovl9AnimCmd *unk24;
+};
+#else
 struct Ovl9AnimObj {
     u8 filler0[0x24];
     struct Ovl9AnimCmd *unk24;
 };
+#endif
 
 void func_80111ECC(struct Ovl9AnimObj *);
 struct Ovl9AnimObj *func_801A0464_ovl7(void);
@@ -927,7 +942,11 @@ void func_801F1784_ovl9(GObj *arg0) {
 #endif
 
 void func_801A0D74_ovl7();
+#ifdef PORT
 void func_801A03B4_ovl7(void);
+#else
+s32 func_801A03B4_ovl7(void);
+#endif
 
 void func_801F1C68_ovl9(void) {
     func_801A0D74_ovl7();
@@ -1268,7 +1287,11 @@ void func_801F2584_ovl9(GObj *arg0) {
 #endif
 
 void func_801A0D74_ovl7();
+#ifdef PORT
 void func_801A03B4_ovl7(void);
+#else
+s32 func_801A03B4_ovl7(void);
+#endif
 
 void func_801F2910_ovl9(void) {
     f32 dx;

@@ -1547,68 +1547,10 @@ void func_8016D81C_ovl3(GObj *arg0) {
 extern void func_80122A80(void);
 extern void func_8012307C(s32, s32, f32, s32);
 
-#ifdef NON_MATCHING
-/* FACTORY: 1/190, constant-materialisation SCHEDULING floor -- re-confirmed
-   2026-08-23. Only `addiu $a2, $zero, 1` vs `move $a2, $s2` for the third
-   argument of the tail func_801230E8(0x200FF, 0x20100, 1); the ROM
-   re-materialises the literal 1 as a fresh addiu scheduled early
-   (unconditionally, right after the D_800E6850 = 65535.0f store, well
-   before the switch even branches), while IDO here instead moves it out of
-   the callee-saved $s2 that already holds constant 1 (used for the case-1/
-   case-2 compares, the ohSleep(1) call, and the unk44=1 store). Swept, all
-   reproduce the identical 1/190 diff: (u32)1, 1L, (s16)1, and an
-   unprototyped local declaration of func_801230E8 -- none forks the
-   constant node or blocks the $s2 reuse. This is a pure IDO scheduling
-   choice, not a source spelling; good permuter seed.
-   LEVER 45 (constant CSE is keyed on TYPE) IS THE RIGHT THEORY AND IS
-   UNREACHABLE FROM THIS FILE, measured 2026-08-25. A cast at the call site
-   cannot fork the node because the prototype converts it back; the only
-   spelling that would is a third parameter typed differently from the int
-   the switch labels and `unk44 = 1` produce. The declaration on line 39 here
-   is a duplicate -- src/ovl2/ovl2_8.h:159 already declares
-   `void func_801230E8(s32, s32, s32)` and reaches this TU transitively
-   through plylib.h, so retyping the local copy is rejected outright by IDO
-   ("redeclaration ... previous declaration at line 159"). Forking this one
-   word means retyping the SHARED header, which re-types every call site in
-   the tree; not worth one word. */
-/* FACTORY: 1/190. The single wrong word is
- *     ROM  addiu $a2, $zero, 0x1        (materialise the literal)
- *     IDO  move  $a2, $s2               (reuse the register that holds 1)
- * for the third argument of `func_801230E8(0x200FF, 0x20100, 1)`. $s2 is
- * IDO's hoisted constant 1: it serves the `case 1:` comparison
- * (`beq $a0, $s2`) and both `sw $s2, 0x44($s0)` stores. Everything else in
- * 190 words is byte-exact, so this is a value-numbering decision and not a
- * shape: two one-instruction encodings of the same constant, and IDO picked
- * the move because it could see $s2 already held it.
- *
- * MEASURED AND REVERTED 2026-08-25: `gKirbyState.unk44 = 1;` in place of
- * `gKirbyState.unk44 = gKirbyState.unk44 + 1;`. The ROM stores $s2 (i.e. the
- * constant 1) at both 0x44 sites, which makes the plain assignment look like
- * the honest reading -- it is not, it costs 76/190. The increment is
- * load-bearing: with it, $s3 takes %hi(D_800E64D0) and $s2 the constant; with
- * the assignment those two swap and the whole saved-register file rotates.
- * Do not "simplify" it again.
- *
- * THE PERMUTER HAS ANSWERED AND THE ANSWER IS NOT USABLE, 2026-08-25. It
- * reaches score 0 by retyping the callee:
- *     void func_801230E8(s32, s32, volatile unsigned short);
- * which stops IDO folding the argument to the register already holding 1 and
- * produces the ROM's `addiu $a2, $zero, 0x1`. It is byte-exact in the
- * permuter's preprocessed blob and it fails the linked-ROM gate, because
- * func_801230E8 is DEFINED and matched in src/ovl2/plylib.c:4881 as
- * `void func_801230E8(s32 arg0, s32 arg1, s32 arg2)` -- it hands arg2
- * straight to func_8012307C -- so the retype contradicts the definition and
- * is a matching crutch rather than a type clarification.
- *
- * The legal version of the same idea does not work: `(u16) 1`, `(s16) 1` and
- * `1U` at the call site are each byte-identical at 1/190, because IDO folds a
- * constant conversion before value numbering. There is no source spelling
- * left, so this is REMOVED from priority_queue.py's TARGETS -- left in, the
- * permuter re-finds the same illegal answer every pass and factory rejects it
- * every pass. */
 void func_8016DA14_ovl3(GObj *arg0) {
     f32 temp;
     f32 temp2;
+    u32 one = 1;
 
     gKirbyState.unk7 = 1;
     func_8011CF58();
@@ -1653,7 +1595,7 @@ void func_8016DA14_ovl3(GObj *arg0) {
         D_800E6850[omCurrentObj->objId] = 65535.0f;
         switch (gKirbyState.unk4) {
         case 0:
-            func_801230E8(0x200FF, 0x20100, 1);
+            func_801230E8(0x200FF, 0x20100, one);
             break;
         case 1:
             break;
@@ -1663,9 +1605,6 @@ void func_8016DA14_ovl3(GObj *arg0) {
     }
     curObjSleepForever();
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl3/kirby/func_8016DA14_ovl3.s")
-#endif
 
 void func_8016DD0C_ovl3(s32 arg0) {
     Unk80196C74 sp18 = D_80196C5C_ovl3;
@@ -1685,21 +1624,14 @@ void func_8016DD0C_ovl3(s32 arg0) {
 
 extern u8 D_801903E0_ovl3[];
 
-#ifdef NON_MATCHING
-/* FACTORY: 150/221 words, one-slot temp rotation */
 void func_8016DDE8_ovl3(GObj *arg0) {
     s32 launched;
 
     gKirbyState.unk30 = 0;
-    gKirbyState.isFullJump = 0;
-    gKirbyState.jumpHeight = 0;
+    gKirbyState.jumpHeight = gKirbyState.isFullJump = 0;
     func_8011CF58();
     D_800DDFD0[omCurrentObj->objId] = 3;
-    if (gKirbyState.unk4 == 1) {
-        gKirbyState.unk15C = (u32) D_801903E0_ovl3;
-    } else {
-        gKirbyState.unk15C = (u32) D_80190358_ovl3;
-    }
+    gKirbyState.unk15C = (gKirbyState.unk4 == 1) ? (u32) D_801903E0_ovl3 : (u32) D_80190358_ovl3;
     if ((D_800E8AE0[omCurrentObj->objId] & 6) == 6) {
         launched = 1;
     } else {
@@ -1754,9 +1686,6 @@ void func_8016DDE8_ovl3(GObj *arg0) {
     gKirbyState.unk30 = gKirbyState.unk30 + 1;
     curObjSleepForever();
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl3/kirby/func_8016DDE8_ovl3.s")
-#endif
 
 #ifdef MIPS_TO_C
 /* FACTORY: 273/310 [was noted 31/310], whole-function callee-saved permutation (same floor class documented across this cluster). Gives func_8015449C_ovl3 a local s32-returning extern (dropping the PORT arm's function-pointer cast, which triggered an unrelated cfe redeclaration error against a later unguarded call site) and drops list[] as a literal initializer instead of a struct copy -- both real, not just register-shaped; a residual defect for whoever continues is that the ROM copies the 7-byte predicate list via an unaligned lwr/swr pair from its rodata source, not a byte-literal local array (same class of issue as func_8016F240_ovl3's D_80196C6C_ovl3). Queued for the permuter. */
@@ -1981,27 +1910,14 @@ void func_8016E15C_ovl3(GObj *arg0) {
 #pragma GLOBAL_ASM("asm/nonmatchings/ovl3/kirby/func_8016E15C_ovl3.s")
 #endif
 
-#ifdef NON_MATCHING
-/* 46/154: instruction-for-instruction exact, same length, same branches; every
-   $t register is exactly ONE lower than the ROM's ($t7->$t6 for the `3`, and so
-   on uniformly through both switches and the ohSleep loop), so IDO started the
-   temp cycle one slot earlier. Swept: `s32 arg0` instead of `GObj *arg0`, and
-   the unk4 test written `!= 1` with the arms swapped (byte-identical output --
-   the polarity of this if does NOT reach codegen here). Nothing in the source
-   changes the count of values, which is what the cycle start follows. */
-extern u8 D_801903E0_ovl3[];
-
 void func_8016E638_ovl3(GObj *arg0) {
-    gKirbyState.unk44 = 0;
-    gKirbyState.unk30 = 0;
+    extern u8 D_801903E0_ovl3[];
+
+    gKirbyState.unk30 = gKirbyState.unk44 = 0;
     func_8011CF58();
     D_800DDFD0[omCurrentObj->objId] = 3;
     D_800E8920[omCurrentObj->objId] = 0;
-    if (gKirbyState.unk4 == 1) {
-        gKirbyState.unk15C = (u32) D_801903E0_ovl3;
-    } else {
-        gKirbyState.unk15C = (u32) D_80190358_ovl3;
-    }
+    gKirbyState.unk15C = (gKirbyState.unk4 == 1) ? (u32) D_801903E0_ovl3 : (u32) D_80190358_ovl3;
     D_800E83E0[omCurrentObj->objId] = 0;
     if (gKirbyState.previousAction == 0xB) {
         func_800AA78C(0x2009F, 0x20007, 3.0f);
@@ -2037,43 +1953,13 @@ void func_8016E638_ovl3(GObj *arg0) {
     gKirbyState.unk30 = gKirbyState.unk30 + 1;
     curObjSleepForever();
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl3/kirby/func_8016E638_ovl3.s")
-#endif
 
-#ifdef NON_MATCHING
-/* FACTORY: 118/367 (was an untouched m2c dump at 364/370), reworked
-   2026-08-26 by LEVER 108's cleanup, each step measured:
-     364 -> 362  every temp_ / var_ prefix deleted: the objId caches spelled
-                 omCurrentObj->objId at every use, temp_a2 (a cached
-                 omCurrentObj) gone, var_v1's objId*4 byte-index gone --
-                 which also fixes a live PORT bug: `*(D_800E3210 + var_v1)`
-                 scaled objId by 16 on the s32* (LEVER 108c), and the
-                 3-argument `ohSleep(1, D_800E9720, temp_a2)` artefact.
-     362 -> 313  `launched` written as an if/else with BOTH constant arms
-                 (LEVER 109: the ROM's `or $v0,$zero` default-hoist plus
-                 the redundant `b` is the two-armed form), and the frame
-                 came back to the ROM's -0x20 with it -- the direct
-                 one-armed spelling made IDO hoist &D_800E3210 into a
-                 third saved register.
-     313 -> 123  the LEVER 90/99 zero pair: `D_800E3750[objId] = 0` and
-                 `D_800E6690[objId] = 0` as integer literals, TOGETHER
-                 (zerofork_sweep flagged the pair's worth on the raw dump).
-     123 -> 118  `u32 snd` NAMED for the D_800EC2E0 read (m2c's temp_a0 is
-                 a genuine value-carrying temp, LEVER 108's caveat): the
-                 ROM tests $v0 and fills the play_sound delay slot with
-                 `nop`, which the re-read spelling cannot produce.
-   aligndiff on the residue prints only li/addiu aliases: the 118 is the
-   whole-function one-slot temp rotation (ROM's first temp is $t7, this
-   C's is $t6) -- the same +1 ucode-temp shift recorded on
-   func_80161058_ovl3/func_8015BBE4_ovl3 in plyshot.c, still unreached
-   from source. */
 void func_8016E8A0_ovl3(s32 arg0) {
+    extern u8 D_801903E0_ovl3[];
     s32 launched;
     u32 snd;
 
-    gKirbyState.unk44 = 0;
-    gKirbyState.unk30 = 0;
+    gKirbyState.unk30 = gKirbyState.unk44 = 0;
     gKirbyState.isFullJump = 1;
     func_8011CF58();
     D_800DDFD0[omCurrentObj->objId] = 4;
@@ -2159,9 +2045,6 @@ void func_8016E8A0_ovl3(s32 arg0) {
     gKirbyState.unk30 += 1;
     curObjSleepForever();
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl3/kirby/func_8016E8A0_ovl3.s")
-#endif
 
 void func_8016EE5C_ovl3(GObj *arg0) {
     if ((gKirbyState.unkCC < D_800E3210[omCurrentObj->objId]) && (gKirbyState.unk4 == 0)) {
@@ -2630,20 +2513,9 @@ void func_8016FB58_ovl3(GObj *arg0) {
     }
 }
 
-#ifdef NON_MATCHING
-/* 137/155: shape and every call/loop are right, but the ROM keeps the
-   gKirbyState base in CALLER-saved registers as two short ranges ($v0 for the
-   unk30/unkA pair, $a3 for the unk15C/abilityInUse pair) and spends its one
-   callee-saved register ($s0) on the hoisted 0x20105 argument and then on
-   &gKirbyController; this C hands $s0 to the gKirbyState base instead and
-   everything downstream renumbers. Swept: a temp for the abilityInUse read
-   (no change). The two-group split is not reachable from any spelling of the
-   field accesses tried -- D_8012E7DC/D_8012E80C-style separate symbols cannot
-   apply here because the ROM's two groups each SHARE one base register. */
-extern u8 D_80190448_ovl3[];
-
 void func_8016FD88_ovl3(GObj *arg0) {
     extern s32 D_800D6F10;
+    extern u8 D_80190448_ovl3[];
 
     gKirbyState.unk30 = 0;
     gKirbyState.unkA = 0;
@@ -2654,7 +2526,17 @@ void func_8016FD88_ovl3(GObj *arg0) {
     gKirbyState.unk15C = (u32) D_80190448_ovl3;
     D_800E98E0[omCurrentObj->objId] = gKirbyState.abilityInUse;
     D_800E9AA0[omCurrentObj->objId].as_s32 = 0;
-    if (gKirbyState.abilityInUse == 0x12) {
+    if (gKirbyState.abilityInUse != 0x12) {
+        func_800AA78C(0x20105, 0x20007, 3.0f);
+        func_801230E8(0x20105, 0x20106, 0);
+        D_800D6F10 = 1;
+        while (gKirbyController.buttonHeld & 0x400) {
+            ohSleep(1);
+        }
+        D_800D6F10 = 0;
+        D_800E9AA0[omCurrentObj->objId].as_s32 = D_800E9AA0[omCurrentObj->objId].as_s32 + 1;
+        func_801230E8(0x20107, 0x20108, 1);
+    } else {
         func_801693C4_ovl3(9);
         func_801230E8(0x20109, 0x2010A, 1);
         func_801230E8(0x2010B, 0x2010C, 0);
@@ -2666,23 +2548,10 @@ void func_8016FD88_ovl3(GObj *arg0) {
         D_800E98E0[omCurrentObj->objId] = 0;
         D_800E9AA0[omCurrentObj->objId].as_s32 = D_800E9AA0[omCurrentObj->objId].as_s32 + 1;
         func_801230E8(0x2010D, 0x2010E, 1);
-    } else {
-        func_800AA78C(0x20105, 0x20007, 3.0f);
-        func_801230E8(0x20105, 0x20106, 0);
-        D_800D6F10 = 1;
-        while (gKirbyController.buttonHeld & 0x400) {
-            ohSleep(1);
-        }
-        D_800D6F10 = 0;
-        D_800E9AA0[omCurrentObj->objId].as_s32 = D_800E9AA0[omCurrentObj->objId].as_s32 + 1;
-        func_801230E8(0x20107, 0x20108, 1);
     }
-    *(s32 *) ((u8 *) &D_8012E7E8 + 8) = *(s32 *) ((u8 *) &D_8012E7E8 + 8) + 1;
+    gKirbyState.unk30 = gKirbyState.unk30 + 1;
     curObjSleepForever();
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl3/kirby/func_8016FD88_ovl3.s")
-#endif
 
 typedef struct Unk80196C84 {
     u8 unk0[3];
@@ -2850,25 +2719,8 @@ void func_80170794_ovl3(GObj *arg0) {
     curObjSleepForever();
 }
 
-#ifdef NON_MATCHING
-/* FACTORY: 3/97, shared FP-constant REGISTER floor -- re-confirmed
-   2026-08-23. Instruction-for-instruction exact; the shared 0.0f constant
-   lands in $f14 where the ROM uses $f0 for both the `arg2 == 0.0f` and
-   `temp != 0.0f` compares (which the ROM also spells in OPPOSITE
-   c.eq.s operand order between the two uses: $f12,$f0 then $f0,$f12).
-   Swept, all reproduce the identical 3/97 or worse: `||` vs two early
-   returns, nesting instead of returns, a named `zero` local, swapping the
-   two guards, `0.0f != temp` (no change, still 3/97), `arg2 == 0` int
-   (worse, 7/97 -- forces an int/float conversion path), `arg2 == 0.0`
-   double (much worse, 94/99 -- forks a whole cvt.d.s/c.eq.d compare chain),
-   `temp != 0.0` double (much worse, 89/99, same class), and dropping the
-   change_kirby_hp prototype (77 diffs). The integer `0` in `temp < 0` IS
-   load-bearing -- it forks the second zero the ROM materialises
-   separately. Good permuter seed for the $f0/$f14 register floor. */
-extern f32 gKirbyHp;
-
 void func_801708A0_ovl3(s32 arg0, s32 arg1, f32 arg2) {
-    f32 temp;
+    extern f32 gKirbyHp;
     s32 flags;
 
     if (arg1 != 0) {
@@ -2877,19 +2729,18 @@ void func_801708A0_ovl3(s32 arg0, s32 arg1, f32 arg2) {
     if (arg2 == 0.0f) {
         return;
     }
-    temp = *(f32 *) &gKirbyState.unk84;
-    if (temp != 0.0f) {
-        if (temp < 0) {
-            if (1.0f <= gKirbyHp + temp) {
-                change_kirby_hp(temp);
+    if (gKirbyState.unk84 != 0.0f) {
+        if (gKirbyState.unk84 < 0) {
+            if (1.0f <= gKirbyHp + gKirbyState.unk84) {
+                change_kirby_hp(gKirbyState.unk84);
             } else {
                 change_kirby_hp(-(gKirbyHp - 1.0f));
             }
             play_sound(0xDA);
         } else {
-            change_kirby_hp(temp);
+            change_kirby_hp(gKirbyState.unk84);
         }
-        *(f32 *) &gKirbyState.unk84 = 0.0f;
+        gKirbyState.unk84 = 0;
     }
     flags = gKirbyState.unk8C;
     if (flags & 0xFFFF) {
@@ -2914,9 +2765,6 @@ void func_801708A0_ovl3(s32 arg0, s32 arg1, f32 arg2) {
     gKirbyState.unkD = 7;
     func_800BB468(0xB, 0xA);
 }
-#else
-#pragma GLOBAL_ASM("asm/nonmatchings/ovl3/kirby/func_801708A0_ovl3.s")
-#endif
 
 void func_80170A24_ovl3(s32 arg0) {
     func_80153984_ovl3();
